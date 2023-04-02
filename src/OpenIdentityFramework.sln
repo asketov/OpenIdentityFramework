@@ -24,7 +24,19 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E7B2F2DB
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "hosts", "hosts", "{0756FECA-49AC-4C0B-A902-8BC81A44D6A9}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenIdentityFramework", "libs\OpenIdentityFramework\OpenIdentityFramework.csproj", "{F3A375BC-E065-417F-AE03-817C132947F2}"
+EndProject
 Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F3A375BC-E065-417F-AE03-817C132947F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3A375BC-E065-417F-AE03-817C132947F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3A375BC-E065-417F-AE03-817C132947F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3A375BC-E065-417F-AE03-817C132947F2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
@@ -33,6 +45,7 @@ Global
 		{5BBC0E2D-53B2-42D7-B556-69D357176698} = {92C71BF1-2FC2-4F50-9967-FFA605B6A41A}
 		{E7B2F2DB-5540-4D9D-993C-BDAB015052F4} = {92C71BF1-2FC2-4F50-9967-FFA605B6A41A}
 		{0756FECA-49AC-4C0B-A902-8BC81A44D6A9} = {92C71BF1-2FC2-4F50-9967-FFA605B6A41A}
+		{F3A375BC-E065-417F-AE03-817C132947F2} = {5BBC0E2D-53B2-42D7-B556-69D357176698}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FAAB9E1F-0588-4372-BAAD-2F2C114682AC}

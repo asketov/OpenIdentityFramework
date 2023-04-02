@@ -5,15 +5,30 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
+using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Endpoints.Results;
 using OpenIdentityFramework.Endpoints.Results.Implementations;
 using OpenIdentityFramework.Extensions;
+using OpenIdentityFramework.Services.Core;
 
 namespace OpenIdentityFramework.Endpoints.Handlers.Implementations;
 
 public class DefaultAuthorizeEndpointHandler : IAuthorizeEndpointHandler
 {
-    public async Task<IEndpointHandlerResult> HandleAsync(HttpContext httpContext, CancellationToken cancellationToken)
+    public DefaultAuthorizeEndpointHandler(
+        OpenIdentityFrameworkOptions frameworkOptions,
+        IIssuerUrlProvider issuerUrlProvider)
+    {
+        ArgumentNullException.ThrowIfNull(frameworkOptions);
+        ArgumentNullException.ThrowIfNull(issuerUrlProvider);
+        FrameworkOptions = frameworkOptions;
+        IssuerUrlProvider = issuerUrlProvider;
+    }
+
+    protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
+    protected IIssuerUrlProvider IssuerUrlProvider { get; }
+
+    public virtual async Task<IEndpointHandlerResult> HandleAsync(HttpContext httpContext, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
         cancellationToken.ThrowIfCancellationRequested();
@@ -32,7 +47,7 @@ public class DefaultAuthorizeEndpointHandler : IAuthorizeEndpointHandler
                 return new DefaultStatusCodeResult(HttpStatusCode.UnsupportedMediaType);
             }
 
-            var form = await httpContext.Request.ReadFormAsync(cancellationToken).ConfigureAwait(false);
+            var form = await httpContext.Request.ReadFormAsync(cancellationToken);
             parameters = form.AsReadOnlyDictionary();
         }
         else
@@ -40,6 +55,7 @@ public class DefaultAuthorizeEndpointHandler : IAuthorizeEndpointHandler
             return new DefaultStatusCodeResult(HttpStatusCode.MethodNotAllowed);
         }
 
+        var issuer = await IssuerUrlProvider.GetIssuerAsync(httpContext, cancellationToken);
         throw new NotImplementedException();
     }
 }

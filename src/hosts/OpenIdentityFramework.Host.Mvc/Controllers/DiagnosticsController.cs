@@ -9,7 +9,7 @@ public class DiagnosticsController : Controller
 {
     public async Task<IActionResult> Index()
     {
-        var authentication = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme).ConfigureAwait(false);
+        var authentication = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return View(authentication);
     }
 }

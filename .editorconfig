@@ -408,3 +408,7 @@ dotnet_diagnostic.CA1716.severity = suggestion
 # CA1819: Properties should not return arrays
 # A property returns an array.
 dotnet_diagnostic.CA1819.severity = suggestion
+
+# CA2007: Do not directly await a Task
+# An asynchronous method awaits a Task directly.
+dotnet_diagnostic.CA2007.severity = none

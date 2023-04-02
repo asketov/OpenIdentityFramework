@@ -1,0 +1,54 @@
+@model Microsoft.AspNetCore.Authentication.AuthenticateResult
+<div class="row">
+    <div class="col">
+        <h1 class="mt-5">Authentication Cookie</h1>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-6 col-sm-12">
+        <div class="card">
+            <div class="card-header">
+                <h3>Claims</h3>
+            </div>
+            <div class="card-body">
+                @if (Model.Succeeded)
+                {
+                    <dl>
+                        @foreach (var claim in Model.Principal.Claims)
+                        {
+                            <dt>@claim.Type</dt>
+                            <dd>@claim.Value</dd>
+                        }
+                    </dl>
+                }
+                else
+                {
+                    <p class="card-text">Anonymous user</p>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-sm-12 mt-2 mt-md-0">
+        <div class="card">
+            <div class="card-header">
+                <h3>Properties</h3>
+            </div>
+            <div class="card-body">
+                @if (Model.Succeeded)
+                {
+                    <dl>
+                        @foreach (var prop in Model.Properties.Items)
+                        {
+                            <dt>@prop.Key</dt>
+                            <dd>@prop.Value</dd>
+                        }
+                    </dl>
+                }
+                else
+                {
+                    <p class="card-text">Anonymous user</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,40 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.33516.290
+MinimumVisualStudioVersion = 17.5.33516.290
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "root", "root", "{1E5FDE67-D5D9-4CD6-A137-428080A6277F}"
+	ProjectSection(SolutionItems) = preProject
+		..\.editorconfig = ..\.editorconfig
+		..\.gitattributes = ..\.gitattributes
+		..\.gitignore = ..\.gitignore
+		..\global.json = ..\global.json
+		..\LICENSE = ..\LICENSE
+		..\NOTICE.md = ..\NOTICE.md
+		..\README.md = ..\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{92C71BF1-2FC2-4F50-9967-FFA605B6A41A}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "libs", "libs", "{5BBC0E2D-53B2-42D7-B556-69D357176698}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E7B2F2DB-5540-4D9D-993C-BDAB015052F4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "hosts", "hosts", "{0756FECA-49AC-4C0B-A902-8BC81A44D6A9}"
+EndProject
+Global
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{92C71BF1-2FC2-4F50-9967-FFA605B6A41A} = {1E5FDE67-D5D9-4CD6-A137-428080A6277F}
+		{5BBC0E2D-53B2-42D7-B556-69D357176698} = {92C71BF1-2FC2-4F50-9967-FFA605B6A41A}
+		{E7B2F2DB-5540-4D9D-993C-BDAB015052F4} = {92C71BF1-2FC2-4F50-9967-FFA605B6A41A}
+		{0756FECA-49AC-4C0B-A902-8BC81A44D6A9} = {92C71BF1-2FC2-4F50-9967-FFA605B6A41A}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FAAB9E1F-0588-4372-BAAD-2F2C114682AC}
+	EndGlobalSection
+EndGlobal

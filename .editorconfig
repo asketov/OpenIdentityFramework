@@ -408,4 +408,3 @@ dotnet_diagnostic.CA1716.severity = suggestion
 # CA1819: Properties should not return arrays
 # A property returns an array.
 dotnet_diagnostic.CA1819.severity = suggestion
-

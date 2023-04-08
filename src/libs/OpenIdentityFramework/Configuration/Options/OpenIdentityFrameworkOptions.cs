@@ -6,4 +6,6 @@ namespace OpenIdentityFramework.Configuration.Options;
 public class OpenIdentityFrameworkOptions
 {
     public EndpointOptions Endpoints { get; set; } = new();
+
+    public InputLengthRestrictionsOptions InputLengthRestrictions { get; set; } = new();
 }

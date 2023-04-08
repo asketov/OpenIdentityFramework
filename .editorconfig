@@ -18,6 +18,7 @@ ij_formatter_enabled = false
 # Xml config files
 [*.props]
 indent_size = 2
+ij_formatter_enabled = false
 
 # Xml files
 [*.xml]

@@ -56,6 +56,7 @@ public class DefaultAuthorizeEndpointHandler : IAuthorizeEndpointHandler
         }
 
         var issuer = await IssuerUrlProvider.GetIssuerAsync(httpContext, cancellationToken);
+
         throw new NotImplementedException();
     }
 }

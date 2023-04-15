@@ -16,4 +16,9 @@ public class InputLengthRestrictionsOptions
     ///     Single "scope" entry.
     /// </summary>
     public int ScopeSingleEntry { get; set; } = 100;
+
+    /// <summary>
+    ///     Max length for "state".
+    /// </summary>
+    public int State { get; set; } = 2000;
 }

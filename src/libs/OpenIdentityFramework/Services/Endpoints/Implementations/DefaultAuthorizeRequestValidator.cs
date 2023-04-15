@@ -41,19 +41,35 @@ public class DefaultAuthorizeRequestValidator<TClient> : IAuthorizeRequestValida
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var isOpenIdRequest = IsOpenIdConnectRequest(httpContext, parameters, cancellationToken);
+        var isOpenIdRequest = await IsOpenIdConnectRequestAsync(httpContext, parameters, cancellationToken);
         var clientValidation = await ValidateClientAsync(httpContext, parameters, cancellationToken);
         if (clientValidation.HasError)
         {
             throw new NotImplementedException();
         }
 
-        var responseTypeValidation = ValidateResponseType(httpContext, parameters, clientValidation.Client, isOpenIdRequest, cancellationToken);
+        var responseTypeValidation = await ValidateResponseTypeAsync(httpContext, parameters, clientValidation.Client, isOpenIdRequest, cancellationToken);
+        if (responseTypeValidation.HasError)
+        {
+            throw new NotImplementedException();
+        }
 
-        throw new NotImplementedException();
+        var stateValidation = await ValidateStateAsync(httpContext, parameters, cancellationToken);
+        if (stateValidation.HasError)
+        {
+            throw new NotImplementedException();
+        }
+
+        var responseModeValidation = await ValidateResponseModeAsync(httpContext, parameters, responseTypeValidation.ResponseType, cancellationToken);
+        if (responseModeValidation.HasError)
+        {
+            throw new NotImplementedException();
+        }
+
+        var redirectUri = ValidateRedirectUri(httpContext, parameters, clientValidation.Client, isOpenIdRequest, cancellationToken);
     }
 
-    protected virtual bool IsOpenIdConnectRequest(
+    protected virtual Task<bool> IsOpenIdConnectRequestAsync(
         HttpContext httpContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         CancellationToken cancellationToken)
@@ -75,14 +91,14 @@ public class DefaultAuthorizeRequestValidator<TClient> : IAuthorizeRequestValida
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
         if (!parameters.TryGetValue(RequestParameters.Scope, out var scopeValues) || scopeValues.Count == 0)
         {
-            return false;
+            return Task.FromResult(false);
         }
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
         // Request and response parameters defined by this specification MUST NOT be included more than once.
         if (scopeValues.Count != 1)
         {
-            return false;
+            return Task.FromResult(false);
         }
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
@@ -90,7 +106,7 @@ public class DefaultAuthorizeRequestValidator<TClient> : IAuthorizeRequestValida
         var scope = scopeValues.ToString();
         if (string.IsNullOrEmpty(scope))
         {
-            return false;
+            return Task.FromResult(false);
         }
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.2.2.1
@@ -102,7 +118,8 @@ public class DefaultAuthorizeRequestValidator<TClient> : IAuthorizeRequestValida
 
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.1
         // "scope" - REQUIRED. OpenID Connect requests MUST contain the "openid" scope value.
-        return requestedScopes.Contains(DefaultScopes.OpenId);
+        var isOpenIdRequest = requestedScopes.Contains(DefaultScopes.OpenId);
+        return Task.FromResult(isOpenIdRequest);
     }
 
     protected virtual async Task<ClientValidationResult> ValidateClientAsync(
@@ -160,7 +177,7 @@ public class DefaultAuthorizeRequestValidator<TClient> : IAuthorizeRequestValida
         return new(client);
     }
 
-    protected ResponseTypeValidationResult ValidateResponseType(
+    protected virtual Task<ResponseTypeValidationResult> ValidateResponseTypeAsync(
         HttpContext httpContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         TClient client,
@@ -174,16 +191,18 @@ public class DefaultAuthorizeRequestValidator<TClient> : IAuthorizeRequestValida
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.1 (Authorization Code)
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.3.2.1 (Hybrid Flow)
         // response_type - REQUIRED in both specs
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // Parameters sent without a value MUST be treated as if they were omitted from the request.
         if (!parameters.TryGetValue(RequestParameters.ResponseType, out var responseTypeValues) || responseTypeValues.Count == 0)
         {
-            return ResponseTypeValidationResult.ResponseTypeIsMissing;
+            return Task.FromResult(ResponseTypeValidationResult.ResponseTypeIsMissing);
         }
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
         // Request and response parameters defined by this specification MUST NOT be included more than once.
         if (responseTypeValues.Count != 1)
         {
-            return ResponseTypeValidationResult.MultipleResponseTypeValuesNotAllowed;
+            return Task.FromResult(ResponseTypeValidationResult.MultipleResponseTypeValuesNotAllowed);
         }
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
@@ -191,7 +210,7 @@ public class DefaultAuthorizeRequestValidator<TClient> : IAuthorizeRequestValida
         var responseType = responseTypeValues.ToString();
         if (string.IsNullOrEmpty(responseType))
         {
-            return ResponseTypeValidationResult.ResponseTypeIsMissing;
+            return Task.FromResult(ResponseTypeValidationResult.ResponseTypeIsMissing);
         }
 
         var allowedResponseTypes = client.GetAllowedResponseTypes();
@@ -203,7 +222,7 @@ public class DefaultAuthorizeRequestValidator<TClient> : IAuthorizeRequestValida
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.1
         // When using the Authorization Code Flow, this value is "code".
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.3.2.1
-        //  When using the Hybrid Flow, this value is "code id_token", "code token", or "code id_token token"
+        // When using the Hybrid Flow, this value is "code id_token", "code token", or "code id_token token"
         // ==================================
         // OAuth 2.1 deprecates the issuance of tokens directly from the authorization endpoint. Only 'code id_token' is compatible with OAuth 2.1 and OpenID Connect 1.0
         // OpenID Connect 1.0-specific
@@ -213,22 +232,148 @@ public class DefaultAuthorizeRequestValidator<TClient> : IAuthorizeRequestValida
             var hybridFlowResponseTypes = ResponseType.CodeIdToken.Split(' ').ToHashSet();
             if (multipleResponseTypes.Except(hybridFlowResponseTypes).Any())
             {
-                return ResponseTypeValidationResult.UnsupportedResponseType;
+                return Task.FromResult(ResponseTypeValidationResult.UnsupportedResponseType);
             }
 
-            return ResponseTypeValidationResult.CodeIdToken;
+            return Task.FromResult(ResponseTypeValidationResult.CodeIdToken);
         }
 
         // Both OAuth 2.1 and OpenID Connect 1.0
         if (responseType == ResponseType.Code && allowedResponseTypes.Contains(ResponseType.Code))
         {
-            return ResponseTypeValidationResult.Code;
+            return Task.FromResult(ResponseTypeValidationResult.Code);
         }
 
-        return ResponseTypeValidationResult.UnsupportedResponseType;
+        return Task.FromResult(ResponseTypeValidationResult.UnsupportedResponseType);
     }
 
-    #region ValidationResult
+    protected virtual Task<StateValidationResult> ValidateStateAsync(
+        HttpContext httpContext,
+        IReadOnlyDictionary<string, StringValues> parameters,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(parameters);
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-4.1.1
+        // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.1
+        // "state" - OPTIONAL (OAuth 2.1) / RECOMMENDED (OpenID Connect 1.0).
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // Parameters sent without a value MUST be treated as if they were omitted from the request.
+        if (!parameters.TryGetValue(RequestParameters.State, out var stateValues) || stateValues.Count == 0)
+        {
+            return Task.FromResult(StateValidationResult.Null);
+        }
+
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // Request and response parameters defined by this specification MUST NOT be included more than once.
+        if (stateValues.Count != 1)
+        {
+            return Task.FromResult(StateValidationResult.MultipleStateValuesNotAllowed);
+        }
+
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // Parameters sent without a value MUST be treated as if they were omitted from the request.
+        var state = stateValues.ToString();
+        if (string.IsNullOrEmpty(state))
+        {
+            return Task.FromResult(StateValidationResult.Null);
+        }
+
+        // length check
+        if (state.Length > FrameworkOptions.InputLengthRestrictions.State)
+        {
+            return Task.FromResult(StateValidationResult.StateIsTooLong);
+        }
+
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.1
+        // "client_id" syntax validation
+        if (!StateSyntaxValidator.IsValid(state))
+        {
+            return Task.FromResult(StateValidationResult.InvalidStateSyntax);
+        }
+
+        var stateResult = new StateValidationResult(state);
+        return Task.FromResult(stateResult);
+    }
+
+    protected virtual Task<ResponseModeValidationResult> ValidateResponseModeAsync(
+        HttpContext httpContext,
+        IReadOnlyDictionary<string, StringValues> parameters,
+        string responseType,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(parameters);
+        cancellationToken.ThrowIfCancellationRequested();
+        // https://openid.net/specs/oauth-v2-multiple-response-types-1_0.html
+        // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.1
+        // "response_mode" - OPTIONAL (OAuth 2.0, OpenID Connect 1.0).
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // Parameters sent without a value MUST be treated as if they were omitted from the request.
+        if (!parameters.TryGetValue(RequestParameters.ResponseMode, out var responseModeValues) || responseModeValues.Count == 0)
+        {
+            return Task.FromResult(InferResponseMode(responseType));
+        }
+
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // Request and response parameters defined by this specification MUST NOT be included more than once.
+        if (responseModeValues.Count != 1)
+        {
+            return Task.FromResult(ResponseModeValidationResult.MultipleResponseModeValuesNotAllowed);
+        }
+
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // Parameters sent without a value MUST be treated as if they were omitted from the request.
+        var responseMode = responseModeValues.ToString();
+        if (string.IsNullOrEmpty(responseMode))
+        {
+            return Task.FromResult(InferResponseMode(responseType));
+        }
+
+        return Task.FromResult(ResponseModeToResult(responseMode));
+
+        static ResponseModeValidationResult InferResponseMode(string responseType)
+        {
+            if (ResponseMode.ResponseTypeToResponseMode.TryGetValue(responseType, out var inferredResponseMode))
+            {
+                return ResponseModeToResult(inferredResponseMode);
+            }
+
+            return ResponseModeValidationResult.UnableToInferResponseMode;
+        }
+
+        static ResponseModeValidationResult ResponseModeToResult(string responseMode)
+        {
+            // https://openid.net/specs/oauth-v2-multiple-response-types-1_0.html#rfc.section.2.1
+            // https://openid.net/specs/oauth-v2-form-post-response-mode-1_0.html#rfc.section.2
+            if (responseMode == ResponseMode.Fragment)
+            {
+                return ResponseModeValidationResult.Fragment;
+            }
+
+            if (responseMode == ResponseMode.Query)
+            {
+                return ResponseModeValidationResult.Query;
+            }
+
+            if (responseMode == ResponseMode.FormPost)
+            {
+                return ResponseModeValidationResult.FormPost;
+            }
+
+            return ResponseModeValidationResult.UnsupportedResponseMode;
+        }
+    }
+
+    protected RedirectUriValidationResult ValidateRedirectUri(
+        HttpContext httpContext,
+        IReadOnlyDictionary<string, StringValues> parameters,
+        TClient client,
+        bool isOpenIdRequest,
+        CancellationToken cancellationToken)
+    {
+    }
+
+
+    #region ValidationResults
 
     protected class ClientValidationResult
     {
@@ -254,14 +399,15 @@ public class DefaultAuthorizeRequestValidator<TClient> : IAuthorizeRequestValida
 
         public ClientValidationResult(ProtocolError error)
         {
+            ArgumentNullException.ThrowIfNull(error);
             Error = error;
             HasError = true;
         }
 
         public ClientValidationResult(TClient client)
         {
+            ArgumentNullException.ThrowIfNull(client);
             Client = client;
-            HasError = false;
         }
 
         public TClient? Client { get; }
@@ -292,20 +438,143 @@ public class DefaultAuthorizeRequestValidator<TClient> : IAuthorizeRequestValida
 
         public ResponseTypeValidationResult(ProtocolError error)
         {
+            ArgumentNullException.ThrowIfNull(error);
             Error = error;
             HasError = true;
         }
 
         public ResponseTypeValidationResult(string responseType)
         {
+            ArgumentNullException.ThrowIfNull(responseType);
             ResponseType = responseType;
-            HasError = false;
         }
 
         public string? ResponseType { get; }
 
         public ProtocolError? Error { get; }
 
+        [MemberNotNullWhen(true, nameof(Error))]
+        [MemberNotNullWhen(false, nameof(ResponseType))]
+        public bool HasError { get; }
+    }
+
+    protected class StateValidationResult
+    {
+        public static readonly StateValidationResult Null = new((string?) null);
+
+        public static readonly StateValidationResult MultipleStateValuesNotAllowed = new(new ProtocolError(
+            Errors.InvalidRequest,
+            "Multiple \"state\" values are present, but only one is allowed"));
+
+        public static readonly StateValidationResult StateIsTooLong = new(new ProtocolError(
+            Errors.InvalidRequest,
+            "\"state\" is too long"));
+
+        public static readonly StateValidationResult InvalidStateSyntax = new(new ProtocolError(
+            Errors.InvalidRequest,
+            "Invalid \"state\" syntax"));
+
+        public StateValidationResult(string? state)
+        {
+            State = state;
+        }
+
+        public StateValidationResult(ProtocolError error)
+        {
+            ArgumentNullException.ThrowIfNull(error);
+            Error = error;
+            HasError = true;
+        }
+
+        public string? State { get; }
+
+        public ProtocolError? Error { get; }
+
+        [MemberNotNullWhen(true, nameof(Error))]
+        public bool HasError { get; }
+    }
+
+    protected class ResponseModeValidationResult
+    {
+        public static readonly ResponseModeValidationResult Query = new(Constants.Requests.Authorize.ResponseMode.Query);
+        public static readonly ResponseModeValidationResult Fragment = new(Constants.Requests.Authorize.ResponseMode.Fragment);
+        public static readonly ResponseModeValidationResult FormPost = new(Constants.Requests.Authorize.ResponseMode.FormPost);
+
+        public static readonly ResponseModeValidationResult MultipleResponseModeValuesNotAllowed = new(new ProtocolError(
+            Errors.InvalidRequest,
+            "Multiple \"response_mode\" values are present, but only one is allowed"));
+
+        public static readonly ResponseModeValidationResult UnsupportedResponseMode = new(new ProtocolError(
+            Errors.InvalidRequest,
+            "Unsupported \"response_mode\""));
+
+        public static readonly ResponseModeValidationResult UnableToInferResponseMode = new(new ProtocolError(
+            Errors.InvalidRequest,
+            "Unable to infer parameter \"response_mode\""));
+
+        public ResponseModeValidationResult(string responseMode)
+        {
+            ArgumentNullException.ThrowIfNull(responseMode);
+            ResponseMode = responseMode;
+        }
+
+        public ResponseModeValidationResult(ProtocolError error)
+        {
+            ArgumentNullException.ThrowIfNull(error);
+            Error = error;
+            HasError = true;
+        }
+
+        public string? ResponseMode { get; }
+
+        public ProtocolError? Error { get; }
+
+        [MemberNotNullWhen(true, nameof(Error))]
+        [MemberNotNullWhen(false, nameof(ResponseMode))]
+        public bool HasError { get; }
+    }
+
+    protected class RedirectUriValidationResult
+    {
+        public static readonly RedirectUriValidationResult RedirectUriIsMissing = new(new ProtocolError(
+            Errors.InvalidRequest,
+            "\"redirect_uri\" is missing"));
+
+        public static readonly RedirectUriValidationResult MultipleRedirectUriValuesNotAllowed = new(new ProtocolError(
+            Errors.InvalidRequest,
+            "Multiple \"redirect_uri\" values are present, but only one is allowed"));
+
+        public static readonly RedirectUriValidationResult RedirectUriIsTooLong = new(new ProtocolError(
+            Errors.InvalidRequest,
+            "\"redirect_uri\" is too long"));
+
+        public static readonly RedirectUriValidationResult InvalidRedirectUriSyntax = new(new ProtocolError(
+            Errors.InvalidRequest,
+            "Invalid \"redirect_uri\" syntax"));
+
+        public static readonly RedirectUriValidationResult InvalidRedirectUri = new(new ProtocolError(
+            Errors.InvalidRequest,
+            "Invalid \"redirect_uri\""));
+
+        public RedirectUriValidationResult(string redirectUri)
+        {
+            ArgumentNullException.ThrowIfNull(redirectUri);
+            RedirectUri = redirectUri;
+        }
+
+        public RedirectUriValidationResult(ProtocolError error)
+        {
+            ArgumentNullException.ThrowIfNull(error);
+            Error = error;
+            HasError = true;
+        }
+
+        public string? RedirectUri { get; }
+
+        public ProtocolError? Error { get; }
+
+        [MemberNotNullWhen(true, nameof(Error))]
+        [MemberNotNullWhen(false, nameof(RedirectUri))]
         public bool HasError { get; }
     }
 

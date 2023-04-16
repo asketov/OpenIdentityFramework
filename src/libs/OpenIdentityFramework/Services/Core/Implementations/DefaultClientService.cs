@@ -7,22 +7,23 @@ using OpenIdentityFramework.Storages.Configuration;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultClientService<TClient> : IClientService<TClient>
-    where TClient : AbstractClient
+public class DefaultClientService<TClient, TClientSecret> : IClientService<TClient, TClientSecret>
+    where TClient : AbstractClient<TClientSecret>
+    where TClientSecret : AbstractSecret
 {
-    public DefaultClientService(IClientStorage<TClient> storage)
+    public DefaultClientService(IClientStorage<TClient, TClientSecret> storage)
     {
         ArgumentNullException.ThrowIfNull(storage);
         Storage = storage;
     }
 
-    protected IClientStorage<TClient> Storage { get; }
+    protected IClientStorage<TClient, TClientSecret> Storage { get; }
 
-    public virtual async Task<TClient?> FindEnabledAsync(HttpContext httpContext, string clientId, CancellationToken cancellationToken)
+    public virtual async Task<TClient?> FindAsync(HttpContext httpContext, string clientId, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var client = await Storage.FindEnabledAsync(httpContext, clientId, cancellationToken);
-        if (client != null && client.IsEnabled() && string.Equals(clientId, client.GetClientId(), StringComparison.Ordinal))
+        if (client != null && string.Equals(clientId, client.GetClientId(), StringComparison.Ordinal))
         {
             return client;
         }

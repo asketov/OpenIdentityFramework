@@ -5,7 +5,9 @@ using OpenIdentityFramework.Models.Configuration;
 
 namespace OpenIdentityFramework.Services.Core;
 
-public interface IClientService<TClient> where TClient : AbstractClient
+public interface IClientService<TClient, TClientSecret>
+    where TClient : AbstractClient<TClientSecret>
+    where TClientSecret : AbstractSecret
 {
-    Task<TClient?> FindEnabledAsync(HttpContext httpContext, string clientId, CancellationToken cancellationToken);
+    Task<TClient?> FindAsync(HttpContext httpContext, string clientId, CancellationToken cancellationToken);
 }

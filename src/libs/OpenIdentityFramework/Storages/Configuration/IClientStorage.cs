@@ -5,7 +5,9 @@ using OpenIdentityFramework.Models.Configuration;
 
 namespace OpenIdentityFramework.Storages.Configuration;
 
-public interface IClientStorage<TClient> where TClient : AbstractClient
+public interface IClientStorage<TClient, TClientSecret>
+    where TClient : AbstractClient<TClientSecret>
+    where TClientSecret : AbstractSecret
 {
     Task<TClient?> FindEnabledAsync(HttpContext httpContext, string clientId, CancellationToken cancellationToken);
 }

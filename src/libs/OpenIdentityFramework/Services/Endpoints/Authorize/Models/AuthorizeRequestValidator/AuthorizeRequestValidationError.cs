@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 
-namespace OpenIdentityFramework.Services.Endpoints.Authorize.Models;
+namespace OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestValidator;
 
 public class AuthorizeRequestValidationError<TClient, TClientSecret>
     where TClient : AbstractClient<TClientSecret>

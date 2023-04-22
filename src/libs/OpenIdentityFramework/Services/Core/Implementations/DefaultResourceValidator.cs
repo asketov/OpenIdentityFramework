@@ -44,25 +44,26 @@ public class DefaultResourceValidator<TClient, TClientSecret, TScope, TResource,
         // If the issued access token scope is different from the one requested by the client, the authorization server MUST include the scope response parameter in the token response (Section 3.2.3)
         // to inform the client of the actual scope granted.
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.1
-        // REQUIRED. OpenID Connect requests MUST contain the openid scope value. If the openid scope value is not present, the behavior is entirely unspecified.
+        // REQUIRED. OpenID Connect requests MUST contain the "openid" scope value. If the "openid" scope value is not present, the behavior is entirely unspecified.
         // Other scope values MAY be present. Scope values used that are not understood by an implementation SHOULD be ignored.
         var clientScopes = client.GetAllowedScopes();
         var filteredScopes = clientScopes.Intersect(requestedScopes).ToHashSet(StringComparer.Ordinal);
         filteredScopes.Remove(DefaultScopes.OfflineAccess); // it depends on allowed grant type and hasn't storage-related configuration
 
         // errors accumulation
-        var requestedScopesThatIncompatibleWithClient = new HashSet<string>(filteredScopes.Count, StringComparer.Ordinal);
+        var disallowedScopes = new HashSet<string>(filteredScopes.Count, StringComparer.Ordinal);
         var scopesDuplicates = new HashSet<string>();
         var resourcesDuplicates = new HashSet<string>();
         var misconfiguredScopes = new HashSet<TScope>();
+        var misconfiguredResources = new HashSet<TResource>();
 
         // temp
-        var hasOpenIdScope = filteredScopes.Contains(DefaultScopes.OpenId);
+        var isOpenId = filteredScopes.Contains(DefaultScopes.OpenId);
         var hasOfflineAccess = false;
         var processedScopes = new HashSet<string>();
         var idTokenScopeNames = new HashSet<string>();
         var accessTokenScopeNames = new HashSet<string>();
-        var processedResources = new HashSet<string>();
+        var processedResourceNames = new HashSet<string>();
 
         // result accumulation
         var resultScopes = new HashSet<TScope>();
@@ -74,10 +75,11 @@ public class DefaultResourceValidator<TClient, TClientSecret, TScope, TResource,
             if (client.GetAllowedGrantTypes().Contains(DefaultGrantTypes.RefreshToken))
             {
                 hasOfflineAccess = true;
+                processedScopes.Add(DefaultScopes.OfflineAccess);
             }
             else
             {
-                requestedScopesThatIncompatibleWithClient.Add(DefaultScopes.OfflineAccess);
+                disallowedScopes.Add(DefaultScopes.OfflineAccess);
             }
         }
 
@@ -97,7 +99,7 @@ public class DefaultResourceValidator<TClient, TClientSecret, TScope, TResource,
             var scopeTokenType = scope.GetScopeTokenType();
             if (!allowedTokenTypesForScopes.Contains(scopeTokenType))
             {
-                requestedScopesThatIncompatibleWithClient.Add(scopeName);
+                disallowedScopes.Add(scopeName);
             }
 
             if (scopeTokenType == DefaultTokenTypes.IdToken)
@@ -135,17 +137,26 @@ public class DefaultResourceValidator<TClient, TClientSecret, TScope, TResource,
         }
 
         // "id_token" scopes allowed only when "openid" scope provided
-        if (idTokenScopeNames.Count > 0 && !hasOpenIdScope)
+        if (!isOpenId && idTokenScopeNames.Count > 0)
         {
-            foreach (var idTokenScope in idTokenScopeNames)
+            foreach (var idTokenScopeName in idTokenScopeNames)
             {
-                requestedScopesThatIncompatibleWithClient.Add(idTokenScope);
+                disallowedScopes.Add(idTokenScopeName);
             }
         }
 
-        if (requestedScopesThatIncompatibleWithClient.Count > 0)
+        // requested scopes must be covered by allowed scopes
+        if (!processedScopes.IsSupersetOf(requestedScopes))
         {
-            return new(new ResourcesValidationError<TScope>(requestedScopesThatIncompatibleWithClient));
+            foreach (var disallowedScope in requestedScopes.Except(processedScopes))
+            {
+                disallowedScopes.Add(disallowedScope);
+            }
+        }
+
+        if (disallowedScopes.Count > 0)
+        {
+            return new(new ResourcesValidationError<TScope, TResource, TResourceSecret>(disallowedScopes));
         }
 
         // processing resources
@@ -153,15 +164,23 @@ public class DefaultResourceValidator<TClient, TClientSecret, TScope, TResource,
         {
             var resourceName = resource.GetProtocolName();
             var resourceScopes = resource.GetAccessTokenScopes();
+            // resource can't contain id_token scopes in allowed scopes
+            if (resourceScopes.Overlaps(idTokenScopeNames))
+            {
+                misconfiguredResources.Add(resource);
+                processedResourceNames.Add(resourceName);
+                continue;
+            }
+
             // we got unexpected data
             if (!resourceScopes.Overlaps(accessTokenScopeNames))
             {
                 continue;
             }
 
-            if (!processedResources.Contains(resourceName))
+            if (!processedResourceNames.Contains(resourceName))
             {
-                processedResources.Add(resourceName);
+                processedResourceNames.Add(resourceName);
                 resultResources.Add(resource);
             }
             else
@@ -172,12 +191,14 @@ public class DefaultResourceValidator<TClient, TClientSecret, TScope, TResource,
 
         if (scopesDuplicates.Count > 0
             || resourcesDuplicates.Count > 0
-            || misconfiguredScopes.Count > 0)
+            || misconfiguredScopes.Count > 0
+            || misconfiguredResources.Count > 0)
         {
-            return new(new ResourcesValidationError<TScope>(new ConfigurationError<TScope>(
+            return new(new ResourcesValidationError<TScope, TResource, TResourceSecret>(new ConfigurationError<TScope, TResource, TResourceSecret>(
                 scopesDuplicates,
                 resourcesDuplicates,
-                misconfiguredScopes)));
+                misconfiguredScopes,
+                misconfiguredResources)));
         }
 
         return new(new ValidResources<TScope, TResource, TResourceSecret>(

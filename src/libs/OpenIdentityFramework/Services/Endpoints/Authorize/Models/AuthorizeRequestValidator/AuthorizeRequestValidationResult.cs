@@ -2,7 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using OpenIdentityFramework.Models.Configuration;
 
-namespace OpenIdentityFramework.Services.Endpoints.Authorize.Models;
+namespace OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestValidator;
 
 public class AuthorizeRequestValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>
     where TClient : AbstractClient<TClientSecret>

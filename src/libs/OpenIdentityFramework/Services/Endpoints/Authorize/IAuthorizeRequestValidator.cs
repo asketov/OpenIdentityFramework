@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using OpenIdentityFramework.Models.Configuration;
-using OpenIdentityFramework.Services.Endpoints.Authorize.Models;
+using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestValidator;
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize;
 
@@ -19,7 +19,7 @@ public interface IAuthorizeRequestValidator<TClient, TClientSecret, TScope, TRes
     Task<AuthorizeRequestValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>> ValidateAsync(
         HttpContext httpContext,
         IReadOnlyDictionary<string, StringValues> parameters,
-        DateTimeOffset requestDate,
+        DateTimeOffset initialRequestDate,
         string issuer,
         CancellationToken cancellationToken);
 }

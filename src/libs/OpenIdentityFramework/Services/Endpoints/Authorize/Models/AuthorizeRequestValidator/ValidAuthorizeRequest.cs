@@ -4,7 +4,7 @@ using Microsoft.Extensions.Primitives;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
 
-namespace OpenIdentityFramework.Services.Endpoints.Authorize.Models;
+namespace OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestValidator;
 
 public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>
     where TClient : AbstractClient<TClientSecret>
@@ -14,7 +14,7 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
     where TResourceSecret : AbstractSecret
 {
     public ValidAuthorizeRequest(
-        DateTimeOffset requestDate,
+        DateTimeOffset initialRequestDate,
         string issuer,
         TClient client,
         string redirectUri,
@@ -66,7 +66,7 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(responseMode));
         }
 
-        RequestDate = requestDate;
+        InitialRequestDate = initialRequestDate;
         Issuer = issuer;
         Client = client;
         RedirectUri = redirectUri;
@@ -82,7 +82,7 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
     }
 
     public ValidAuthorizeRequest(
-        DateTimeOffset requestDate,
+        DateTimeOffset initialRequestDate,
         string issuer,
         TClient client,
         string redirectUri,
@@ -141,7 +141,7 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(responseMode));
         }
 
-        RequestDate = requestDate;
+        InitialRequestDate = initialRequestDate;
         Issuer = issuer;
         Client = client;
         RedirectUri = redirectUri;
@@ -163,7 +163,7 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
         IsOpenIdRequest = true;
     }
 
-    public DateTimeOffset RequestDate { get; }
+    public DateTimeOffset InitialRequestDate { get; }
 
     public string Issuer { get; }
 

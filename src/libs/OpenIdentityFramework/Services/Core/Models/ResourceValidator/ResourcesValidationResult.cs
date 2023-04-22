@@ -15,7 +15,7 @@ public class ResourcesValidationResult<TScope, TResource, TResourceSecret>
         Valid = valid;
     }
 
-    public ResourcesValidationResult(ResourcesValidationError<TScope> error)
+    public ResourcesValidationResult(ResourcesValidationError<TScope, TResource, TResourceSecret> error)
     {
         ArgumentNullException.ThrowIfNull(error);
         Error = error;
@@ -24,7 +24,7 @@ public class ResourcesValidationResult<TScope, TResource, TResourceSecret>
 
     public ValidResources<TScope, TResource, TResourceSecret>? Valid { get; }
 
-    public ResourcesValidationError<TScope>? Error { get; }
+    public ResourcesValidationError<TScope, TResource, TResourceSecret>? Error { get; }
 
     [MemberNotNullWhen(false, nameof(Valid))]
     [MemberNotNullWhen(true, nameof(Error))]

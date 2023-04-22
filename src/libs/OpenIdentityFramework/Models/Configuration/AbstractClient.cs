@@ -14,6 +14,9 @@ public abstract class AbstractClient<TClientSecret>
     public abstract IReadOnlyCollection<TClientSecret> GetSecrets();
     public abstract IReadOnlySet<string> GetAllowedGrantTypes();
     public abstract IReadOnlySet<string> GetAllowedCodeChallengeMethods();
+    public abstract bool IsConsentRequired();
+    public abstract bool CanRememberConsent();
+    public abstract TimeSpan? GetConsentLifetime();
 
     public bool IsConfidential()
     {

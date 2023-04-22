@@ -5,27 +5,29 @@ using OpenIdentityFramework.Models.Configuration;
 
 namespace OpenIdentityFramework.Services.Core.Models.ResourceValidator;
 
-public class ResourcesValidationError<TScope>
+public class ResourcesValidationError<TScope, TResource, TResourceSecret>
     where TScope : AbstractScope
+    where TResource : AbstractResource<TResourceSecret>
+    where TResourceSecret : AbstractSecret
 {
-    public ResourcesValidationError(ConfigurationError<TScope> configurationError)
+    public ResourcesValidationError(ConfigurationError<TScope, TResource, TResourceSecret> configurationError)
     {
         ArgumentNullException.ThrowIfNull(configurationError);
         ConfigurationError = configurationError;
         HasConfigurationError = true;
     }
 
-    public ResourcesValidationError(IReadOnlySet<string> requestedScopesThatIncompatibleWithClient)
+    public ResourcesValidationError(IReadOnlySet<string> disallowedScopes)
     {
-        ArgumentNullException.ThrowIfNull(requestedScopesThatIncompatibleWithClient);
-        RequestedScopesThatIncompatibleWithClient = requestedScopesThatIncompatibleWithClient;
+        ArgumentNullException.ThrowIfNull(disallowedScopes);
+        DisallowedScopes = disallowedScopes;
     }
 
-    public ConfigurationError<TScope>? ConfigurationError { get; }
+    public ConfigurationError<TScope, TResource, TResourceSecret>? ConfigurationError { get; }
 
-    public IReadOnlySet<string>? RequestedScopesThatIncompatibleWithClient { get; }
+    public IReadOnlySet<string>? DisallowedScopes { get; }
 
     [MemberNotNullWhen(true, nameof(ConfigurationError))]
-    [MemberNotNullWhen(false, nameof(RequestedScopesThatIncompatibleWithClient))]
+    [MemberNotNullWhen(false, nameof(DisallowedScopes))]
     public bool HasConfigurationError { get; }
 }

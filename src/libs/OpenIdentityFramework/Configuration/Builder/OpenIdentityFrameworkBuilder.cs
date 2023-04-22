@@ -3,8 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using OpenIdentityFramework.Configuration.Options;
-using OpenIdentityFramework.Endpoints.Handlers;
-using OpenIdentityFramework.Endpoints.Handlers.Implementations;
 using OpenIdentityFramework.Services.Core;
 using OpenIdentityFramework.Services.Core.Implementations;
 
@@ -42,7 +40,7 @@ public class OpenIdentityFrameworkBuilder : IOpenIdentityFrameworkBuilder
         // -----------------------
         // ------ Authorize ------
         // -----------------------
-        Services.TryAddSingleton<IAuthorizeEndpointHandler, DefaultAuthorizeEndpointHandler>();
+        //Services.TryAddSingleton<IAuthorizeEndpointHandler, DefaultAuthorizeEndpointHandler>();
         return this;
     }
 }

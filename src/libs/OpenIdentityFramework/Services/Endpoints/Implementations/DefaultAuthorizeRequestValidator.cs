@@ -16,7 +16,7 @@ using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core;
 using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
 using OpenIdentityFramework.Services.Endpoints.Authorize;
-using OpenIdentityFramework.Services.Endpoints.Authorize.Models;
+using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestValidator;
 using OpenIdentityFramework.Services.Static.SyntaxValidation;
 
 namespace OpenIdentityFramework.Services.Endpoints.Implementations;
@@ -50,7 +50,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     public virtual async Task<AuthorizeRequestValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>> ValidateAsync(
         HttpContext httpContext,
         IReadOnlyDictionary<string, StringValues> parameters,
-        DateTimeOffset requestDate,
+        DateTimeOffset initialRequestDate,
         string issuer,
         CancellationToken cancellationToken)
     {
@@ -59,14 +59,14 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
         var coreParametersValidation = await ValidateCoreParametersAsync(
             httpContext,
             parameters,
-            requestDate,
+            initialRequestDate,
             issuer,
             isOpenIdRequest,
             cancellationToken);
         if (coreParametersValidation.HasError)
         {
             return new(new AuthorizeRequestValidationError<TClient, TClientSecret>(
-                requestDate,
+                initialRequestDate,
                 issuer,
                 coreParametersValidation.Error));
         }
@@ -93,7 +93,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
         if (!isOpenIdRequest)
         {
             return new(new ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
-                requestDate,
+                initialRequestDate,
                 issuer,
                 coreParameters.Client,
                 coreParameters.RedirectUri,
@@ -168,7 +168,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
         }
 
         return new(new ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
-            requestDate,
+            initialRequestDate,
             issuer,
             coreParameters.Client,
             coreParameters.RedirectUri,
@@ -712,9 +712,9 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
         string scopeParameterValue;
-        if (!parameters.TryGetValue(RequestParameters.RedirectUri, out var redirectUriValues)
-            || redirectUriValues.Count == 0
-            || string.IsNullOrEmpty(scopeParameterValue = redirectUriValues.ToString()))
+        if (!parameters.TryGetValue(RequestParameters.Scope, out var scopeValues)
+            || scopeValues.Count == 0
+            || string.IsNullOrEmpty(scopeParameterValue = scopeValues.ToString()))
         {
             if (!isOpenIdRequest)
             {
@@ -743,7 +743,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
         // Request and response parameters defined by this specification MUST NOT be included more than once.
-        if (redirectUriValues.Count != 1)
+        if (scopeValues.Count != 1)
         {
             return ScopeValidationResult.MultipleScope;
         }
@@ -781,7 +781,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
             allowedTokenTypes = DefaultTokenTypes.OpenIdConnect;
         }
 
-        var requestedScopesValidation = await ResourceValidator.ValidateRequestedScopesAsync(httpContext, client, client.GetAllowedScopes(), allowedTokenTypes, cancellationToken);
+        var requestedScopesValidation = await ResourceValidator.ValidateRequestedScopesAsync(httpContext, client, requestedScopes, allowedTokenTypes, cancellationToken);
         if (requestedScopesValidation.HasError)
         {
             if (requestedScopesValidation.Error.HasConfigurationError)

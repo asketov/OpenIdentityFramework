@@ -13,4 +13,6 @@ public abstract class AbstractScope
     /// </summary>
     /// <returns></returns>
     public abstract string GetScopeTokenType();
+
+    public abstract bool IsRequired();
 }

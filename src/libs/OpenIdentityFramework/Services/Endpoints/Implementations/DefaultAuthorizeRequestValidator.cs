@@ -662,8 +662,10 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
             return Task.FromResult(RedirectUriValidationResult.InvalidRedirectUri);
         }
 
-        // OAuth 2.1 non-loopback
-        if (!redirectUri.IsLoopback && preRegisteredRedirectUris.Contains(redirectUriString, StringComparer.Ordinal))
+        // OAuth 2.1 non-loopback didn't allow http
+        if (!redirectUri.IsLoopback
+            && redirectUri.Scheme != Uri.UriSchemeHttp
+            && preRegisteredRedirectUris.Contains(redirectUriString, StringComparer.Ordinal))
         {
             return Task.FromResult(new RedirectUriValidationResult(redirectUriString));
         }

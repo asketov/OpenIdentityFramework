@@ -628,11 +628,19 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
         // Authorization servers MUST reject authorization requests that specify a redirect URI that doesn't exactly match one that was registered,
         // with an exception for loopback redirects, where an exact match is required except for the port URI component.
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-4.1.1
-        // In particular, the authorization server MUST validate the redirect_uri in the request if present, ensuring that it matches one of the registered redirect URIs previously established during client registration (Section 2).
+        // In particular, the authorization server MUST validate the redirect_uri in the request if present,
+        // ensuring that it matches one of the registered redirect URIs previously established during client registration (Section 2).
         // When comparing the two URIs the authorization server MUST using simple character-by-character string comparison as defined in [RFC3986], Section 6.2.1.
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-7.5.1
+        // Loopback interface redirect URIs MAY use the http scheme (i.e., without TLS). This is acceptable for loopback interface redirect URIs as the HTTP request never leaves the device.
+        // Clients should use loopback IP literals rather than the string localhost as described in Section 8.4.2.
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-8.4.2
+        // While redirect URIs using the name localhost (i.e., http://localhost:{port}/{path}) function similarly to loopback IP redirects, the use of localhost is NOT RECOMMENDED.
         // The authorization server MUST allow any port to be specified at the time of the request for loopback IP redirect URIs,
         // to accommodate clients that obtain an available ephemeral port from the operating system at the time of the request.
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-8.4.3
+        // To perform an authorization request with a private-use URI scheme redirect, the native app launches the browser with a standard authorization request,
+        // but one where the redirect URI utilizes a private-use URI scheme it registered with the operating system.
         if (redirectUri.IsLoopback)
         {
             foreach (var preRegisteredRedirectUri in preRegisteredRedirectUris)
@@ -655,7 +663,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
         }
 
         // OAuth 2.1 non-loopback
-        if (preRegisteredRedirectUris.Contains(redirectUriString, StringComparer.Ordinal))
+        if (!redirectUri.IsLoopback && preRegisteredRedirectUris.Contains(redirectUriString, StringComparer.Ordinal))
         {
             return Task.FromResult(new RedirectUriValidationResult(redirectUriString));
         }

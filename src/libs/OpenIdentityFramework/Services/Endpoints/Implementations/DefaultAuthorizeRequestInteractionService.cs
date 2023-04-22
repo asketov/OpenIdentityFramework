@@ -301,12 +301,12 @@ public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, T
 
     protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret> InteractionLogin()
     {
-        return new(DefaultInteractionResults.Login);
+        return new(DefaultInteractionResult.Login);
     }
 
     protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret> InteractionConsent()
     {
-        return new(DefaultInteractionResults.Consent);
+        return new(DefaultInteractionResult.Consent);
     }
 
     #endregion

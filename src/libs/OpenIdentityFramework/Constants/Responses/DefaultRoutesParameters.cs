@@ -3,4 +3,5 @@
 public static class DefaultRoutesParameters
 {
     public static readonly string ErrorId = "errorId";
+    public static readonly string AuthorizeRequestId = "authzId";
 }

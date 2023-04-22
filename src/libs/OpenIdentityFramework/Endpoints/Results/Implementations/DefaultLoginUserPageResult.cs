@@ -8,31 +8,31 @@ using OpenIdentityFramework.Configuration.Options;
 
 namespace OpenIdentityFramework.Endpoints.Results.Implementations;
 
-public class DefaultErrorPageResult : IEndpointHandlerResult
+public class DefaultLoginUserPageResult : IEndpointHandlerResult
 {
-    public DefaultErrorPageResult(OpenIdentityFrameworkOptions frameworkOptions, string errorId)
+    public DefaultLoginUserPageResult(OpenIdentityFrameworkOptions frameworkOptions, string authorizeRequestId)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
-        ArgumentNullException.ThrowIfNull(errorId);
+        ArgumentNullException.ThrowIfNull(authorizeRequestId);
         FrameworkOptions = frameworkOptions;
-        ErrorId = errorId;
+        AuthorizeRequestId = authorizeRequestId;
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
-    protected string ErrorId { get; }
+    protected string AuthorizeRequestId { get; }
 
-    public Task ExecuteAsync(HttpContext httpContext, CancellationToken cancellationToken)
+    public virtual Task ExecuteAsync(HttpContext httpContext, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
         cancellationToken.ThrowIfCancellationRequested();
         httpContext.Response.Redirect(QueryHelpers.AddQueryString(
-            FrameworkOptions.UserInteraction.ErrorUrl,
+            FrameworkOptions.UserInteraction.LoginUrl,
             BuildParameters()));
         return Task.CompletedTask;
     }
 
     protected virtual IEnumerable<KeyValuePair<string, string?>> BuildParameters()
     {
-        yield return new(FrameworkOptions.UserInteraction.ErrorId, ErrorId);
+        yield return new(FrameworkOptions.UserInteraction.AuthorizeRequestId, AuthorizeRequestId);
     }
 }

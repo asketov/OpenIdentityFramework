@@ -21,8 +21,8 @@ public class DefaultUserAuthenticationService : IUserAuthenticationService
         SchemeProvider = schemeProvider;
     }
 
-    protected virtual OpenIdentityFrameworkOptions FrameworkOptions { get; }
-    protected virtual IAuthenticationSchemeProvider SchemeProvider { get; }
+    protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
+    protected IAuthenticationSchemeProvider SchemeProvider { get; }
 
     public virtual async Task<UserAuthenticationResult> AuthenticateAsync(HttpContext httpContext, CancellationToken cancellationToken)
     {

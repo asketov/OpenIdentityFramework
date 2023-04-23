@@ -8,12 +8,11 @@ using OpenIdentityFramework.Constants.Requests.Authorize;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core;
 using OpenIdentityFramework.Services.Core.Models.TokenService;
-using OpenIdentityFramework.Services.Endpoints.Authorize;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizationCodeService;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestInteractionService;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeResponseGenerator;
 
-namespace OpenIdentityFramework.Services.Endpoints.Implementations;
+namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations;
 
 public class DefaultAuthorizeResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret>
     : IAuthorizeResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret>

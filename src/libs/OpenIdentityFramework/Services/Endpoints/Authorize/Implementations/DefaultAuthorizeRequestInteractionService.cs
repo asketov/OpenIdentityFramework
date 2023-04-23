@@ -12,12 +12,11 @@ using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
 using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
-using OpenIdentityFramework.Services.Endpoints.Authorize;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestInteractionService;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestValidator;
 using OpenIdentityFramework.Services.Operation;
 
-namespace OpenIdentityFramework.Services.Endpoints.Implementations;
+namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations;
 
 public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent, TGrantedConsent>
     : IAuthorizeRequestInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent>

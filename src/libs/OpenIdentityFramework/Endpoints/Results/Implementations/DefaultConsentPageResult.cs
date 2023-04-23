@@ -33,6 +33,6 @@ public class DefaultConsentPageResult : IEndpointHandlerResult
 
     protected virtual IEnumerable<KeyValuePair<string, string?>> BuildParameters()
     {
-        yield return new(FrameworkOptions.UserInteraction.AuthorizeRequestId, AuthorizeRequestId);
+        yield return new(FrameworkOptions.UserInteraction.AuthorizeRequestIdParameterName, AuthorizeRequestId);
     }
 }

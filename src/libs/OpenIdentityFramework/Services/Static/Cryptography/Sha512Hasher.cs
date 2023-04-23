@@ -7,7 +7,7 @@ namespace OpenIdentityFramework.Services.Static.Cryptography;
 
 public static class Sha512Hasher
 {
-    public const int Sha512BytesCount = 384 / 8;
+    public const int Sha512BytesCount = 512 / 8;
 
     public static void ComputeSha512(ReadOnlySpan<char> rawValue, Span<byte> output)
     {

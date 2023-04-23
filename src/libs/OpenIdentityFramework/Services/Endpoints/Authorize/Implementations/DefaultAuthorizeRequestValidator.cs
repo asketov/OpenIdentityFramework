@@ -15,11 +15,10 @@ using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core;
 using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
-using OpenIdentityFramework.Services.Endpoints.Authorize;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestValidator;
 using OpenIdentityFramework.Services.Static.SyntaxValidation;
 
-namespace OpenIdentityFramework.Services.Endpoints.Implementations;
+namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations;
 
 [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
 public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret>

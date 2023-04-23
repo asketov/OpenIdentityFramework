@@ -10,5 +10,6 @@ public class AuthorizeEndpointOptions
     public bool Enable { get; set; } = true;
     public string Path { get; set; } = DefaultRoutes.Authorize;
     public string CallbackPath { get; set; } = DefaultRoutes.AuthorizeCallback;
-    public TimeSpan AuthorizeRequestTimeout { get; set; } = TimeSpan.Zero;
+
+    public TimeSpan? AuthorizeRequestLifetime { get; set; } = TimeSpan.FromMinutes(15);
 }

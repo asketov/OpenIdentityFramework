@@ -3,11 +3,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Models.Configuration;
-using OpenIdentityFramework.Services.Endpoints.Authorize;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizationCodeService;
 using OpenIdentityFramework.Storages.Operation;
 
-namespace OpenIdentityFramework.Services.Endpoints.Implementations;
+namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations;
 
 public class DefaultAuthorizationCodeService<TClient, TClientSecret> : IAuthorizationCodeService<TClient, TClientSecret>
     where TClient : AbstractClient<TClientSecret>

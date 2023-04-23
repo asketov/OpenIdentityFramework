@@ -92,7 +92,7 @@ public class DefaultJwtService : IJwtService
             // The iss value is a case sensitive URL using the https scheme that contains scheme, host, and optionally, port number and path components and no query or fragment components.
             { DefaultJwtClaimTypes.Issuer, issuer }
         };
-        // https://openid.net/specs/openid-connect-core-1_0.html#IDToken
+        // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.2
         // sub - REQUIRED. Subject Identifier. A locally unique and never reassigned identifier within the Issuer for the End-User, which is intended to be consumed by the Client,
         // e.g., 24400320 or AItOawmwtWwcT0k51BayewNvutrJUqsvl6qs7A4.
         // It MUST NOT exceed 255 ASCII characters in length. The sub value is a case sensitive string.

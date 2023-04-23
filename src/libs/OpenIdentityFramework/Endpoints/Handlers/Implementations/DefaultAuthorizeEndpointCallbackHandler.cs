@@ -1,18 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Encodings.Web;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Primitives;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Constants.Responses.Authorize;
 using OpenIdentityFramework.Endpoints.Results;
 using OpenIdentityFramework.Endpoints.Results.Implementations;
-using OpenIdentityFramework.Extensions;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
@@ -24,8 +23,8 @@ using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRespons
 
 namespace OpenIdentityFramework.Endpoints.Handlers.Implementations;
 
-public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent, TAuthorizeRequestParameters>
-    : IAuthorizeEndpointHandler
+public class DefaultAuthorizeEndpointCallbackHandler<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent, TAuthorizeRequestParameters>
+    : IAuthorizeEndpointCallbackHandler
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
@@ -33,9 +32,8 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
     where TResourceSecret : AbstractSecret
     where TRequestConsent : AbstractAuthorizeRequestConsent
     where TAuthorizeRequestParameters : AbstractAuthorizeRequestParameters
-
 {
-    public DefaultAuthorizeEndpointHandler(
+    public DefaultAuthorizeEndpointCallbackHandler(
         OpenIdentityFrameworkOptions frameworkOptions,
         ISystemClock systemClock,
         IIssuerUrlProvider issuerUrlProvider,
@@ -43,6 +41,7 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
         HtmlEncoder htmlEncoder,
         IErrorService errorService,
         IUserAuthenticationTicketService userAuthentication,
+        IAuthorizeRequestConsentService<TRequestConsent> requestConsent,
         IAuthorizeRequestInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent> interactionService,
         IAuthorizeRequestParametersService<TAuthorizeRequestParameters> authorizeRequestParameters,
         IAuthorizeResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret> responseGenerator)
@@ -54,6 +53,7 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
         ArgumentNullException.ThrowIfNull(htmlEncoder);
         ArgumentNullException.ThrowIfNull(errorService);
         ArgumentNullException.ThrowIfNull(userAuthentication);
+        ArgumentNullException.ThrowIfNull(requestConsent);
         ArgumentNullException.ThrowIfNull(interactionService);
         ArgumentNullException.ThrowIfNull(authorizeRequestParameters);
         ArgumentNullException.ThrowIfNull(responseGenerator);
@@ -64,6 +64,7 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
         HtmlEncoder = htmlEncoder;
         ErrorService = errorService;
         UserAuthentication = userAuthentication;
+        RequestConsent = requestConsent;
         InteractionService = interactionService;
         AuthorizeRequestParameters = authorizeRequestParameters;
         ResponseGenerator = responseGenerator;
@@ -76,6 +77,7 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
     protected HtmlEncoder HtmlEncoder { get; }
     protected IErrorService ErrorService { get; }
     protected IUserAuthenticationTicketService UserAuthentication { get; }
+    protected IAuthorizeRequestConsentService<TRequestConsent> RequestConsent { get; }
     protected IAuthorizeRequestInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent> InteractionService { get; }
     protected IAuthorizeRequestParametersService<TAuthorizeRequestParameters> AuthorizeRequestParameters { get; }
     protected IAuthorizeResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret> ResponseGenerator { get; }
@@ -84,37 +86,29 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
     {
         ArgumentNullException.ThrowIfNull(httpContext);
         cancellationToken.ThrowIfCancellationRequested();
-        var initialRequestDate = SystemClock.UtcNow;
-        IReadOnlyDictionary<string, StringValues> parameters;
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
-        // The authorization server MUST support the use of the HTTP GET method Section 9.3.1 of [RFC9110] for the authorization endpoint
-        // and MAY support the POST method (Section 9.3.3 of RFC9110) as well.
-        // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.1
-        // Authorization Servers MUST support the use of the HTTP GET and POST methods defined in RFC 2616 [RFC2616] at the Authorization Endpoint.
-        // Clients MAY use the HTTP GET or POST methods to send the Authorization Request to the Authorization Server.
-        // If using the HTTP GET method, the request parameters are serialized using URI Query String Serialization, per Section 13.1.
-        // If using the HTTP POST method, the request parameters are serialized using Form Serialization, per Section 13.2.
+        var issuer = await IssuerUrlProvider.GetIssuerAsync(httpContext, cancellationToken);
+        IQueryCollection queryParameters;
         if (HttpMethods.IsGet(httpContext.Request.Method))
         {
-            parameters = httpContext.Request.Query.AsReadOnlyDictionary();
-        }
-        else if (HttpMethods.IsPost(httpContext.Request.Method))
-        {
-            if (!httpContext.Request.HasApplicationFormContentType())
-            {
-                return new DefaultStatusCodeResult(HttpStatusCode.UnsupportedMediaType);
-            }
-
-            var form = await httpContext.Request.ReadFormAsync(cancellationToken);
-            parameters = form.AsReadOnlyDictionary();
+            queryParameters = httpContext.Request.Query;
         }
         else
         {
             return new DefaultStatusCodeResult(HttpStatusCode.MethodNotAllowed);
         }
 
-        var issuer = await IssuerUrlProvider.GetIssuerAsync(httpContext, cancellationToken);
-        var validationResult = await RequestValidator.ValidateAsync(httpContext, parameters, initialRequestDate, issuer, cancellationToken);
+        var parametersReadResult = await ReadParametersAsync(httpContext, queryParameters, cancellationToken);
+        if (parametersReadResult.HasError)
+        {
+            return await HandleErrorWithoutRedirectAsync(httpContext, parametersReadResult.ProtocolError, issuer, cancellationToken);
+        }
+
+        var validationResult = await RequestValidator.ValidateAsync(
+            httpContext,
+            parametersReadResult.AuthorizeRequestParameters.GetAuthorizeRequestParameters(),
+            parametersReadResult.AuthorizeRequestParameters.GetInitialRequestDate(),
+            issuer,
+            cancellationToken);
         if (validationResult.HasError)
         {
             return await HandleValidationErrorAsync(httpContext, validationResult.ValidationError, cancellationToken);
@@ -127,11 +121,14 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
             return await HandlerErrorAsync(httpContext, authenticationError, validationResult.ValidRequest, cancellationToken);
         }
 
+        var userConsent = authenticationResult.IsAuthenticated
+            ? await RequestConsent.ReadAsync(httpContext, parametersReadResult.AuthorizeRequestId, cancellationToken)
+            : null;
         var interactionResult = await InteractionService.ProcessInteractionRequirementsAsync(
             httpContext,
             validationResult.ValidRequest,
             authenticationResult.Ticket,
-            null,
+            userConsent,
             cancellationToken);
         if (interactionResult.HasError)
         {
@@ -149,6 +146,8 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
         }
 
         var response = await ResponseGenerator.CreateResponseAsync(httpContext, interactionResult.ValidRequest, cancellationToken);
+        await AuthorizeRequestParameters.DeleteAsync(httpContext, parametersReadResult.AuthorizeRequestId, cancellationToken);
+        await RequestConsent.DeleteAsync(httpContext, parametersReadResult.AuthorizeRequestId, cancellationToken);
         var successfulResponseParameters = BuildSuccessfulResponseParameters(response);
         return new DefaultDirectAuthorizeResult(
             FrameworkOptions,
@@ -156,6 +155,25 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
             successfulResponseParameters,
             interactionResult.ValidRequest.AuthorizeRequest.RedirectUri,
             interactionResult.ValidRequest.AuthorizeRequest.ResponseMode);
+    }
+
+    protected virtual async Task<ReadAuthorizeRequestParametersResult> ReadParametersAsync(HttpContext httpContext, IQueryCollection queryParameters, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(queryParameters);
+        cancellationToken.ThrowIfCancellationRequested();
+        string authorizeRequestId;
+        if (queryParameters.TryGetValue(FrameworkOptions.UserInteraction.AuthorizeRequestIdParameterName, out var possibleAuthorizeRequestId)
+            && possibleAuthorizeRequestId.Count == 1
+            && !string.IsNullOrWhiteSpace(authorizeRequestId = possibleAuthorizeRequestId.ToString()))
+        {
+            var authorizeRequestParameters = await AuthorizeRequestParameters.ReadAsync(httpContext, authorizeRequestId, cancellationToken);
+            if (authorizeRequestParameters != null)
+            {
+                return new(authorizeRequestId, authorizeRequestParameters);
+            }
+        }
+
+        return new(new(Errors.InvalidRequest, "Authorize request not found"));
     }
 
     protected virtual async Task<IEndpointHandlerResult> HandleValidationErrorAsync(
@@ -202,6 +220,19 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
         }
 
         return await HandlerErrorAsync(httpContext, new(Errors.ServerError, "Incorrect interaction state"), authorizeRequest, cancellationToken);
+    }
+
+    protected virtual async Task<IEndpointHandlerResult> HandleErrorWithoutRedirectAsync(
+        HttpContext httpContext,
+        ProtocolError protocolError,
+        string issuer,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(protocolError);
+        cancellationToken.ThrowIfCancellationRequested();
+        var errorToSave = new Error(protocolError, null, null, null, issuer);
+        var errorId = await ErrorService.SaveAsync(httpContext, errorToSave, cancellationToken);
+        return new DefaultErrorPageResult(FrameworkOptions, errorId);
     }
 
     protected virtual async Task<IEndpointHandlerResult> HandlerErrorAsync(
@@ -273,5 +304,34 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
                || protocolError.Error == Errors.LoginRequired
                || protocolError.Error == Errors.AccountSelectionRequired
                || protocolError.Error == Errors.ConsentRequired;
+    }
+
+    protected class ReadAuthorizeRequestParametersResult
+    {
+        public ReadAuthorizeRequestParametersResult(ProtocolError protocolError)
+        {
+            ArgumentNullException.ThrowIfNull(protocolError);
+            ProtocolError = protocolError;
+            HasError = true;
+        }
+
+        public ReadAuthorizeRequestParametersResult(string authorizeRequestId, TAuthorizeRequestParameters authorizeRequestParameters)
+        {
+            ArgumentNullException.ThrowIfNull(authorizeRequestId);
+            ArgumentNullException.ThrowIfNull(authorizeRequestParameters);
+            AuthorizeRequestParameters = authorizeRequestParameters;
+            AuthorizeRequestId = authorizeRequestId;
+        }
+
+        public string? AuthorizeRequestId { get; }
+
+        public TAuthorizeRequestParameters? AuthorizeRequestParameters { get; }
+
+        public ProtocolError? ProtocolError { get; }
+
+        [MemberNotNullWhen(true, nameof(ProtocolError))]
+        [MemberNotNullWhen(false, nameof(AuthorizeRequestParameters))]
+        [MemberNotNullWhen(false, nameof(AuthorizeRequestId))]
+        public bool HasError { get; }
     }
 }

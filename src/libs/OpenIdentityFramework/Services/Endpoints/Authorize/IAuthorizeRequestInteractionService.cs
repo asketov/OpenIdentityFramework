@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
-using OpenIdentityFramework.Services.Core.Models.UserAuthenticationService;
+using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestInteractionService;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestValidator;
 
@@ -20,7 +20,7 @@ public interface IAuthorizeRequestInteractionService<TClient, TClientSecret, TSc
     Task<AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>> ProcessInteractionRequirementsAsync(
         HttpContext httpContext,
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
-        UserAuthentication? userAuthentication,
+        UserAuthenticationTicket? ticket,
         TRequestConsent? authorizeRequestConsent,
         CancellationToken cancellationToken);
 }

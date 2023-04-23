@@ -11,7 +11,7 @@ using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
-using OpenIdentityFramework.Services.Core.Models.UserAuthenticationService;
+using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
 using OpenIdentityFramework.Services.Endpoints.Authorize;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestInteractionService;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestValidator;
@@ -49,45 +49,45 @@ public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, T
     public virtual async Task<AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>> ProcessInteractionRequirementsAsync(
         HttpContext httpContext,
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
-        UserAuthentication? userAuthentication,
+        UserAuthenticationTicket? ticket,
         TRequestConsent? authorizeRequestConsent,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(authorizeRequest);
         cancellationToken.ThrowIfCancellationRequested();
         // special case when user without authentication issued an error prior to authenticating
-        if (userAuthentication == null && authorizeRequestConsent != null && !authorizeRequestConsent.HasGranted(out var error, out _))
+        if (ticket == null && authorizeRequestConsent != null && !authorizeRequestConsent.HasGranted(out var error, out _))
         {
             return ErrorDeniedConsent(error);
         }
 
         var isPromptNone = authorizeRequest.Prompt?.Contains(Prompt.None) == true;
-        if (userAuthentication == null)
+        if (ticket == null)
         {
             return LoginErrorOrInteractionRequired(isPromptNone);
         }
 
-        var authenticationResult = await HandleAuthenticationAsync(httpContext, authorizeRequest, userAuthentication, isPromptNone, cancellationToken);
+        var authenticationResult = await HandleAuthenticationAsync(httpContext, authorizeRequest, ticket, isPromptNone, cancellationToken);
         if (authenticationResult != null)
         {
             return authenticationResult;
         }
 
-        return await HandleConsentAsync(httpContext, authorizeRequest, userAuthentication, authorizeRequestConsent, isPromptNone, cancellationToken);
+        return await HandleConsentAsync(httpContext, authorizeRequest, ticket, authorizeRequestConsent, isPromptNone, cancellationToken);
     }
 
 
     protected virtual async Task<AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>?> HandleAuthenticationAsync(
         HttpContext httpContext,
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
-        UserAuthentication userAuthentication,
+        UserAuthenticationTicket ticket,
         bool isPromptNone,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(authorizeRequest);
-        ArgumentNullException.ThrowIfNull(userAuthentication);
+        ArgumentNullException.ThrowIfNull(ticket);
         cancellationToken.ThrowIfCancellationRequested();
-        var userIsActive = await UserProfile.IsActiveAsync(httpContext, userAuthentication, cancellationToken);
+        var userIsActive = await UserProfile.IsActiveAsync(httpContext, ticket, cancellationToken);
         if (!userIsActive)
         {
             return LoginErrorOrInteractionRequired(isPromptNone);
@@ -98,7 +98,7 @@ public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, T
         {
             if (authorizeRequest.MaxAge.Value > 0)
             {
-                var absoluteMaxAge = userAuthentication.AuthenticatedAt.AddSeconds(authorizeRequest.MaxAge.Value);
+                var absoluteMaxAge = ticket.UserAuthentication.AuthenticatedAt.AddSeconds(authorizeRequest.MaxAge.Value);
                 if (authorizeRequest.InitialRequestDate > absoluteMaxAge)
                 {
                     return LoginErrorOrInteractionRequired(isPromptNone);
@@ -109,7 +109,7 @@ public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, T
                 // force re-authentication once when max_age=0
                 // https://openid.net/specs/openid-connect-basic-1_0.html#rfc.section.2.1.1.1
                 // Note that max_age=0 is equivalent to prompt=login.
-                if (!IsReAuthenticationAlreadyPerformed(authorizeRequest, userAuthentication))
+                if (!IsReAuthenticationAlreadyPerformed(authorizeRequest, ticket.UserAuthentication))
                 {
                     return LoginErrorOrInteractionRequired(isPromptNone);
                 }
@@ -117,7 +117,7 @@ public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, T
         }
 
         // handle prompt=login and prompt=select_account
-        if (IsReAuthenticationRequired(authorizeRequest) && !IsReAuthenticationAlreadyPerformed(authorizeRequest, userAuthentication))
+        if (IsReAuthenticationRequired(authorizeRequest) && !IsReAuthenticationAlreadyPerformed(authorizeRequest, ticket.UserAuthentication))
         {
             return LoginErrorOrInteractionRequired(isPromptNone);
         }
@@ -128,15 +128,15 @@ public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, T
     protected virtual async Task<AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>> HandleConsentAsync(
         HttpContext httpContext,
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
-        UserAuthentication? userAuthentication,
+        UserAuthenticationTicket? ticket,
         TRequestConsent? authorizeRequestConsent,
         bool isPromptNone,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(authorizeRequest);
-        ArgumentNullException.ThrowIfNull(userAuthentication);
+        ArgumentNullException.ThrowIfNull(ticket);
         cancellationToken.ThrowIfCancellationRequested();
-        var consentRequired = await IsConsentRequiredAsync(httpContext, authorizeRequest, userAuthentication, cancellationToken);
+        var consentRequired = await IsConsentRequiredAsync(httpContext, authorizeRequest, ticket, cancellationToken);
         if (consentRequired && isPromptNone)
         {
             return ErrorConsentRequired();
@@ -165,19 +165,19 @@ public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, T
             grantedResources = authorizeRequest.RequestedResources.FilterGrantedScopes(grantedScopes);
             if (shouldRemember)
             {
-                scopesToPersist = grantedResources.Raw;
+                scopesToPersist = grantedResources.RawScopes;
             }
         }
         else
         {
             grantedResources = authorizeRequest.RequestedResources;
-            scopesToPersist = authorizeRequest.RequestedResources.Raw;
+            scopesToPersist = authorizeRequest.RequestedResources.RawScopes;
         }
 
-        await Consents.UpsertAsync(httpContext, userAuthentication.SubjectId, authorizeRequest.Client, scopesToPersist, cancellationToken);
+        await Consents.UpsertAsync(httpContext, ticket.UserAuthentication.SubjectId, authorizeRequest.Client, scopesToPersist, cancellationToken);
         return new(new ValidAuthorizeRequestInteraction<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
             authorizeRequest,
-            userAuthentication,
+            ticket,
             grantedResources));
     }
 
@@ -204,11 +204,11 @@ public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, T
     protected virtual async Task<bool> IsConsentRequiredAsync(
         HttpContext httpContext,
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
-        UserAuthentication userAuthentication,
+        UserAuthenticationTicket ticket,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(authorizeRequest);
-        ArgumentNullException.ThrowIfNull(userAuthentication);
+        ArgumentNullException.ThrowIfNull(ticket);
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.4
         // Once the End-User is authenticated, the Authorization Server MUST obtain an authorization decision before releasing information to the Relying Party.
         // When permitted by the request parameters used, this MAY be done through an interactive dialogue with the End-User that makes it clear what is being consented to
@@ -235,7 +235,7 @@ public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, T
             return true;
         }
 
-        var grantedConsent = await Consents.FindAsync(httpContext, userAuthentication.SubjectId, authorizeRequest.Client, cancellationToken);
+        var grantedConsent = await Consents.FindAsync(httpContext, ticket.UserAuthentication.SubjectId, authorizeRequest.Client, cancellationToken);
         if (grantedConsent != null && authorizeRequest.RequestedResources.IsFullyCoveredBy(grantedConsent.GetGrantedScopes()))
         {
             return false;

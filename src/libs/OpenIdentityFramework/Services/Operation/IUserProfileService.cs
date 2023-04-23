@@ -1,11 +1,22 @@
-﻿using System.Threading;
+﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
-using OpenIdentityFramework.Services.Core.Models.UserAuthenticationService;
+using OpenIdentityFramework.Models;
+using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
 
 namespace OpenIdentityFramework.Services.Operation;
 
 public interface IUserProfileService
 {
-    Task<bool> IsActiveAsync(HttpContext httpContext, UserAuthentication userAuthentication, CancellationToken cancellationToken);
+    Task<bool> IsActiveAsync(
+        HttpContext httpContext,
+        UserAuthenticationTicket ticket,
+        CancellationToken cancellationToken);
+
+    Task<IReadOnlySet<LightweightClaim>> GetProfileClaimsAsync(
+        HttpContext httpContext,
+        UserAuthenticationTicket ticket,
+        IReadOnlySet<string> requestedClaimTypes,
+        CancellationToken cancellationToken);
 }

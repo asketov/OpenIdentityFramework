@@ -20,6 +20,7 @@ using OpenIdentityFramework.Services.Core;
 using OpenIdentityFramework.Services.Core.Models.ErrorService;
 using OpenIdentityFramework.Services.Endpoints.Authorize;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestValidator;
+using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeResponseGenerator;
 
 namespace OpenIdentityFramework.Endpoints.Handlers.Implementations;
 
@@ -39,9 +40,10 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
         IAuthorizeRequestValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret> requestValidator,
         HtmlEncoder htmlEncoder,
         IErrorService errorService,
-        IUserAuthenticationService userAuthentication,
+        IUserAuthenticationTicketService userAuthenticationTicket,
         IAuthorizeRequestInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent> interactionService,
-        IAuthorizeRequestParametersService authorizeRequestParameters)
+        IAuthorizeRequestParametersService authorizeRequestParameters,
+        IAuthorizeResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret> responseGenerator)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
         ArgumentNullException.ThrowIfNull(systemClock);
@@ -49,18 +51,20 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
         ArgumentNullException.ThrowIfNull(requestValidator);
         ArgumentNullException.ThrowIfNull(htmlEncoder);
         ArgumentNullException.ThrowIfNull(errorService);
-        ArgumentNullException.ThrowIfNull(userAuthentication);
+        ArgumentNullException.ThrowIfNull(userAuthenticationTicket);
         ArgumentNullException.ThrowIfNull(interactionService);
         ArgumentNullException.ThrowIfNull(authorizeRequestParameters);
+        ArgumentNullException.ThrowIfNull(responseGenerator);
         FrameworkOptions = frameworkOptions;
         SystemClock = systemClock;
         IssuerUrlProvider = issuerUrlProvider;
         RequestValidator = requestValidator;
         HtmlEncoder = htmlEncoder;
         ErrorService = errorService;
-        UserAuthentication = userAuthentication;
+        UserAuthenticationTicket = userAuthenticationTicket;
         InteractionService = interactionService;
         AuthorizeRequestParameters = authorizeRequestParameters;
+        ResponseGenerator = responseGenerator;
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
@@ -69,9 +73,10 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
     protected IAuthorizeRequestValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret> RequestValidator { get; }
     protected HtmlEncoder HtmlEncoder { get; }
     protected IErrorService ErrorService { get; }
-    protected IUserAuthenticationService UserAuthentication { get; }
+    protected IUserAuthenticationTicketService UserAuthenticationTicket { get; }
     protected IAuthorizeRequestInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent> InteractionService { get; }
     protected IAuthorizeRequestParametersService AuthorizeRequestParameters { get; }
+    protected IAuthorizeResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret> ResponseGenerator { get; }
 
     public virtual async Task<IEndpointHandlerResult> HandleAsync(HttpContext httpContext, CancellationToken cancellationToken)
     {
@@ -113,7 +118,7 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
             return await HandleValidationErrorAsync(httpContext, validationResult.ValidationError, cancellationToken);
         }
 
-        var authenticationResult = await UserAuthentication.AuthenticateAsync(httpContext, cancellationToken);
+        var authenticationResult = await UserAuthenticationTicket.AuthenticateAsync(httpContext, cancellationToken);
         if (authenticationResult.HasError)
         {
             var authenticationError = new ProtocolError(Errors.ServerError, authenticationResult.ErrorDescription);
@@ -123,7 +128,7 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
         var interactionResult = await InteractionService.ProcessInteractionRequirementsAsync(
             httpContext,
             validationResult.ValidRequest,
-            authenticationResult.UserAuthentication,
+            authenticationResult.Ticket,
             null,
             cancellationToken);
         if (interactionResult.HasError)
@@ -141,8 +146,14 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
             return await HandlerErrorAsync(httpContext, new(Errors.ServerError, "Incorrect interaction state"), validationResult.ValidRequest, cancellationToken);
         }
 
-        // todo: create code and return result
-        throw new NotImplementedException();
+        var response = await ResponseGenerator.CreateResponseAsync(httpContext, interactionResult.ValidRequest, cancellationToken);
+        var successfulResponseParameters = BuildSuccessfulResponseParameters(response);
+        return new DefaultDirectAuthorizeResult(
+            FrameworkOptions,
+            HtmlEncoder,
+            successfulResponseParameters,
+            interactionResult.ValidRequest.AuthorizeRequest.RedirectUri,
+            interactionResult.ValidRequest.AuthorizeRequest.ResponseMode);
     }
 
     protected virtual async Task<IEndpointHandlerResult> HandleValidationErrorAsync(
@@ -232,6 +243,23 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
         }
 
         yield return new(ResponseParameters.Issuer, issuer);
+    }
+
+    protected virtual IEnumerable<KeyValuePair<string, string?>> BuildSuccessfulResponseParameters(AuthorizeResponse authorizeResponse)
+    {
+        ArgumentNullException.ThrowIfNull(authorizeResponse);
+        yield return new(ResponseParameters.Code, authorizeResponse.Code);
+        if (authorizeResponse.State != null)
+        {
+            yield return new(ResponseParameters.State, authorizeResponse.State);
+        }
+
+        if (authorizeResponse.IdToken != null)
+        {
+            yield return new(ResponseParameters.IdToken, authorizeResponse.IdToken);
+        }
+
+        yield return new(ResponseParameters.Issuer, authorizeResponse.Issuer);
     }
 
     protected virtual bool IsSafeError(ProtocolError protocolError)

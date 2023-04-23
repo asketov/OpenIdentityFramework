@@ -1,11 +1,11 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
-using OpenIdentityFramework.Services.Core.Models.UserAuthenticationService;
+using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
 
 namespace OpenIdentityFramework.Services.Core;
 
-public interface IUserAuthenticationService
+public interface IUserAuthenticationTicketService
 {
     Task<UserAuthenticationResult> AuthenticateAsync(HttpContext httpContext, CancellationToken cancellationToken);
 }

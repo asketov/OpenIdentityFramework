@@ -16,4 +16,6 @@ public class OpenIdentityFrameworkOptions
     public UserInteractionOptions UserInteraction { get; set; } = new();
 
     public AuthenticationOptions Authentication { get; set; } = new();
+
+    public bool EmitScopesAsSpaceDelimitedStringInJwt { get; set; }
 }

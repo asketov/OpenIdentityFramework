@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 
-namespace OpenIdentityFramework.Services.Core.Models.UserAuthenticationService;
+namespace OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
 
 public class UserAuthenticationResult
 {
-    public UserAuthenticationResult(UserAuthentication userAuthentication)
+    public UserAuthenticationResult(UserAuthenticationTicket ticket)
     {
-        ArgumentNullException.ThrowIfNull(userAuthentication);
+        ArgumentNullException.ThrowIfNull(ticket);
         IsAuthenticated = true;
-        UserAuthentication = userAuthentication;
+        Ticket = ticket;
         HasError = false;
         ErrorDescription = null;
     }
@@ -18,7 +18,7 @@ public class UserAuthenticationResult
     {
         ArgumentNullException.ThrowIfNull(errorDescription);
         IsAuthenticated = false;
-        UserAuthentication = null;
+        Ticket = null;
         HasError = true;
         ErrorDescription = errorDescription;
     }
@@ -26,15 +26,15 @@ public class UserAuthenticationResult
     public UserAuthenticationResult()
     {
         IsAuthenticated = false;
-        UserAuthentication = null;
+        Ticket = null;
         HasError = false;
         ErrorDescription = null;
     }
 
-    [MemberNotNullWhen(true, nameof(UserAuthentication))]
+    [MemberNotNullWhen(true, nameof(Ticket))]
     public bool IsAuthenticated { get; }
 
-    public UserAuthentication? UserAuthentication { get; }
+    public UserAuthenticationTicket? Ticket { get; }
 
     [MemberNotNullWhen(true, nameof(ErrorDescription))]
     public bool HasError { get; }

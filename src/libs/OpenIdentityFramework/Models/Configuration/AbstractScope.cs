@@ -1,4 +1,6 @@
-﻿namespace OpenIdentityFramework.Models.Configuration;
+﻿using System.Collections.Generic;
+
+namespace OpenIdentityFramework.Models.Configuration;
 
 public abstract class AbstractScope
 {
@@ -15,4 +17,6 @@ public abstract class AbstractScope
     public abstract string GetScopeTokenType();
 
     public abstract bool IsRequired();
+
+    public abstract IReadOnlySet<string> GetUserClaimTypes();
 }

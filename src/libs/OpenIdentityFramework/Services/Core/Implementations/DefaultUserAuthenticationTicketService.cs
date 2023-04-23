@@ -7,13 +7,13 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Configuration.Options;
-using OpenIdentityFramework.Services.Core.Models.UserAuthenticationService;
+using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultUserAuthenticationService : IUserAuthenticationService
+public class DefaultUserAuthenticationTicketService : IUserAuthenticationTicketService
 {
-    public DefaultUserAuthenticationService(OpenIdentityFrameworkOptions frameworkOptions, IAuthenticationSchemeProvider schemeProvider)
+    public DefaultUserAuthenticationTicketService(OpenIdentityFrameworkOptions frameworkOptions, IAuthenticationSchemeProvider schemeProvider)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
         ArgumentNullException.ThrowIfNull(schemeProvider);
@@ -54,7 +54,7 @@ public class DefaultUserAuthenticationService : IUserAuthenticationService
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (authenticateResult is null || !authenticateResult.Succeeded)
+        if (authenticateResult is null || !authenticateResult.Succeeded || authenticateResult.Ticket.Principal.Identity?.IsAuthenticated != true)
         {
             return Task.FromResult<UserAuthenticationResult>(new());
         }
@@ -74,7 +74,9 @@ public class DefaultUserAuthenticationService : IUserAuthenticationService
             return Task.FromResult<UserAuthenticationResult>(new($"Can't read \"{typeof(AuthenticationTicket).Namespace}.{nameof(AuthenticationTicket)}.{nameof(AuthenticationTicket.Properties)}.{nameof(AuthenticationProperties.IssuedUtc)}\" authentication property"));
         }
 
-        return Task.FromResult<UserAuthenticationResult>(new(new UserAuthentication(subjectId, sessionId, authenticatedAt.Value, authenticateResult.Ticket)));
+        var userAuthentication = new UserAuthentication(subjectId, sessionId, authenticatedAt.Value);
+        var resultTicket = new UserAuthenticationTicket(userAuthentication, authenticateResult.Ticket);
+        return Task.FromResult<UserAuthenticationResult>(new(resultTicket));
     }
 
     protected virtual bool TryGetSingleClaimValue(ClaimsPrincipal principal, string claimType, [NotNullWhen(true)] out string? value)

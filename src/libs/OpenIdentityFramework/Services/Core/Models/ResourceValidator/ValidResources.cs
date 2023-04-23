@@ -12,22 +12,35 @@ public class ValidResources<TScope, TResource, TResourceSecret>
 {
     private readonly IReadOnlySet<string> _requiredScopes;
 
-    public ValidResources(IReadOnlySet<TScope> scopes, IReadOnlySet<TResource> resources, bool hasOfflineAccess)
+
+    public ValidResources(IReadOnlySet<TScope> allScopes, IReadOnlySet<TResource> resources, bool hasOfflineAccess)
     {
-        ArgumentNullException.ThrowIfNull(scopes);
+        ArgumentNullException.ThrowIfNull(allScopes);
         ArgumentNullException.ThrowIfNull(resources);
-        Scopes = scopes;
         Resources = resources;
         HasOfflineAccess = hasOfflineAccess;
-        var rawScopes = new HashSet<string>(scopes.Count + 1, StringComparer.Ordinal);
-        var requiredScopes = new HashSet<string>(scopes.Count + 1, StringComparer.Ordinal);
-        foreach (var scope in scopes)
+        var scopesCapacity = allScopes.Count + 1;
+        var rawScopes = new HashSet<string>(scopesCapacity, StringComparer.Ordinal);
+        var requiredScopes = new HashSet<string>(scopesCapacity, StringComparer.Ordinal);
+        var idTokenScopes = new HashSet<TScope>();
+        var accessTokenScopes = new HashSet<TScope>();
+        foreach (var scope in allScopes)
         {
             var scopeName = scope.GetProtocolName();
+            var scopeTokenType = scope.GetScopeTokenType();
             rawScopes.Add(scopeName);
             if (scope.IsRequired())
             {
                 requiredScopes.Add(scopeName);
+            }
+
+            if (scopeTokenType == DefaultTokenTypes.IdToken)
+            {
+                idTokenScopes.Add(scope);
+            }
+            else if (scopeTokenType == DefaultTokenTypes.AccessToken)
+            {
+                accessTokenScopes.Add(scope);
             }
         }
 
@@ -36,24 +49,27 @@ public class ValidResources<TScope, TResource, TResourceSecret>
             rawScopes.Add(DefaultScopes.OfflineAccess);
         }
 
-        Raw = rawScopes;
+        RawScopes = rawScopes;
         _requiredScopes = requiredScopes;
+        IdTokenScopes = idTokenScopes;
+        AccessTokenScopes = accessTokenScopes;
     }
 
-    public IReadOnlySet<TScope> Scopes { get; }
+    public IReadOnlySet<TScope> IdTokenScopes { get; }
+    public IReadOnlySet<TScope> AccessTokenScopes { get; }
+    public IReadOnlySet<string> RawScopes { get; }
     public IReadOnlySet<TResource> Resources { get; }
     public bool HasOfflineAccess { get; }
-    public IReadOnlySet<string> Raw { get; }
 
     public bool HasAnyScope()
     {
-        return Raw.Count > 0;
+        return RawScopes.Count > 0;
     }
 
     public bool IsFullyCoveredBy(IReadOnlySet<string> providedScopes)
     {
         ArgumentNullException.ThrowIfNull(providedScopes);
-        return providedScopes.IsSupersetOf(Raw);
+        return providedScopes.IsSupersetOf(RawScopes);
     }
 
     public bool IsRequiredScopesCoveredBy(IReadOnlySet<string> providedScopes)
@@ -65,10 +81,21 @@ public class ValidResources<TScope, TResource, TResourceSecret>
     public ValidResources<TScope, TResource, TResourceSecret> FilterGrantedScopes(IReadOnlySet<string> grantedScopes)
     {
         ArgumentNullException.ThrowIfNull(grantedScopes);
-        var scopes = new HashSet<TScope>(Scopes.Count);
-        var scopesNames = new HashSet<string>(Scopes.Count);
+        var scopesCapacity = IdTokenScopes.Count + AccessTokenScopes.Count;
+        var scopes = new HashSet<TScope>(scopesCapacity);
+        var scopesNames = new HashSet<string>(scopesCapacity);
         var resources = new HashSet<TResource>(Resources.Count);
-        foreach (var scope in Scopes)
+        foreach (var scope in IdTokenScopes)
+        {
+            var protocolName = scope.GetProtocolName();
+            if (grantedScopes.Contains(protocolName))
+            {
+                scopes.Add(scope);
+                scopesNames.Add(protocolName);
+            }
+        }
+
+        foreach (var scope in AccessTokenScopes)
         {
             var protocolName = scope.GetProtocolName();
             if (grantedScopes.Contains(protocolName))

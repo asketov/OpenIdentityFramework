@@ -79,26 +79,26 @@ public class DefaultGrantedConsentService<TRequestContext, TClient, TClientSecre
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(grantedScopes);
         cancellationToken.ThrowIfCancellationRequested();
-        if (client.CanRememberConsent())
+        if (!client.CanRememberConsent())
         {
-            if (grantedScopes.Count > 0)
-            {
-                var consentLifetime = client.GetConsentLifetime();
-                DateTimeOffset? expiresAt = null;
-                if (consentLifetime.HasValue)
-                {
-                    var currentDate = SystemClock.UtcNow;
-                    expiresAt = currentDate.Add(consentLifetime.Value);
-                }
-
-                await Storage.UpsertAsync(requestContext, subjectId, client.GetClientId(), grantedScopes, expiresAt, cancellationToken);
-            }
-            else
-            {
-                await Storage.DeleteAsync(requestContext, subjectId, client.GetClientId(), cancellationToken);
-            }
+            return;
         }
 
-        throw new NotImplementedException();
+        if (grantedScopes.Count > 0)
+        {
+            var consentLifetime = client.GetConsentLifetime();
+            DateTimeOffset? expiresAt = null;
+            if (consentLifetime.HasValue)
+            {
+                var currentDate = SystemClock.UtcNow;
+                expiresAt = currentDate.Add(consentLifetime.Value);
+            }
+
+            await Storage.UpsertAsync(requestContext, subjectId, client.GetClientId(), grantedScopes, expiresAt, cancellationToken);
+        }
+        else
+        {
+            await Storage.DeleteAsync(requestContext, subjectId, client.GetClientId(), cancellationToken);
+        }
     }
 }

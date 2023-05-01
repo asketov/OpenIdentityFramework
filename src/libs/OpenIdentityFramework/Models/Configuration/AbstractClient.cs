@@ -25,6 +25,9 @@ public abstract class AbstractClient<TClientSecret>
     public abstract string GetAccessTokenFormat();
     public abstract bool ShouldIncludeJwtIdIntoAccessToken();
     public abstract TimeSpan GetAccessTokenLifetime();
+    public abstract TimeSpan GetRefreshTokenAbsoluteLifetime();
+    public abstract TimeSpan GetRefreshTokenSlidingLifetime();
+    public abstract string GetRefreshTokenExpirationType();
 
     public bool IsConfidential()
     {

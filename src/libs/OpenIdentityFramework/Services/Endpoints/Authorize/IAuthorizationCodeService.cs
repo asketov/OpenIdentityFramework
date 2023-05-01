@@ -15,7 +15,7 @@ public interface IAuthorizationCodeService<TRequestContext, TClient, TClientSecr
 {
     Task<string> CreateAsync(
         TRequestContext requestContext,
-        AuthorizationCodeRequest<TClient, TClientSecret> codeRequest,
+        CreateAuthorizationCodeRequest<TClient, TClientSecret> createRequest,
         CancellationToken cancellationToken);
 
     Task<TAuthorizationCode?> FindAsync(

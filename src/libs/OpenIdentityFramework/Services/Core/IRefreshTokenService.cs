@@ -18,17 +18,17 @@ public interface IRefreshTokenService<TRequestContext, TClient, TClientSecret, T
 {
     Task<RefreshTokenCreationResult> CreateAsync(
         TRequestContext requestContext,
-        CreateRefreshTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> createRefreshTokenRequest,
+        CreateRefreshTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken> createRequest,
         CancellationToken cancellationToken);
 
     Task<TRefreshToken?> FindAsync(
         TRequestContext requestContext,
+        TClient client,
         string issuer,
-        string refreshToken,
-        string clientId,
+        string refreshTokenHandle,
         CancellationToken cancellationToken);
 
-    Task<RefreshTokenCreationResult> DeleteAsync(
+    Task DeleteAsync(
         TRequestContext requestContext,
         string refreshTokenHandle,
         CancellationToken cancellationToken);

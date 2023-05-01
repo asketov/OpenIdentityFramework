@@ -716,7 +716,7 @@ public class DefaultTokenRequestValidator<TRequestContext, TClient, TClientSecre
             return RefreshTokenValidationResult.RefreshTokenIsTooLong;
         }
 
-        var refreshToken = await RefreshTokens.FindAsync(requestContext, issuer, refreshTokenHandle, client.GetClientId(), cancellationToken);
+        var refreshToken = await RefreshTokens.FindAsync(requestContext, client, issuer, refreshTokenHandle, cancellationToken);
         if (refreshToken is not null)
         {
             return new(refreshTokenHandle, refreshToken);

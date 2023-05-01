@@ -145,18 +145,11 @@ public class DefaultTokenResponseGenerator<TRequestContext, TClient, TClientSecr
         string? refreshToken = null;
         if (allowedResources.HasOfflineAccess)
         {
-            string? referenceAccessTokenHandle = null;
-            if (accessTokenResult.AccessToken.AccessTokenFormat == DefaultAccessTokenFormat.Reference)
-            {
-                referenceAccessTokenHandle = accessTokenResult.AccessToken.Handle;
-            }
-
-            var refreshTokenRequest = new CreateRefreshTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
+            var refreshTokenRequest = new CreateRefreshTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken>(
                 client,
-                referenceAccessTokenHandle,
+                accessTokenResult.AccessToken,
+                null,
                 issuer,
-                allowedResources,
-                userAuthentication,
                 issuedAt);
             var refreshTokenResult = await RefreshTokens.CreateAsync(requestContext, refreshTokenRequest, cancellationToken);
             if (refreshTokenResult.HasError)
@@ -275,18 +268,11 @@ public class DefaultTokenResponseGenerator<TRequestContext, TClient, TClientSecr
         string? newRefreshTokenHandle = null;
         if (allowedResources.HasOfflineAccess)
         {
-            string? newRefreshTokenReferenceAccessTokenHandle = null;
-            if (accessTokenResult.AccessToken.AccessTokenFormat == DefaultAccessTokenFormat.Reference)
-            {
-                newRefreshTokenReferenceAccessTokenHandle = accessTokenResult.AccessToken.Handle;
-            }
-
-            var refreshTokenRequest = new CreateRefreshTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
+            var refreshTokenRequest = new CreateRefreshTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken>(
                 client,
-                newRefreshTokenReferenceAccessTokenHandle,
+                accessTokenResult.AccessToken,
+                refreshToken,
                 issuer,
-                allowedResources,
-                userAuthentication,
                 issuedAt);
             var refreshTokenResult = await RefreshTokens.CreateAsync(requestContext, refreshTokenRequest, cancellationToken);
             if (refreshTokenResult.HasError)

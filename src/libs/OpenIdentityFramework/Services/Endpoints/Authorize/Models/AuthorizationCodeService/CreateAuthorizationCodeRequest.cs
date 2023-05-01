@@ -5,11 +5,11 @@ using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizationCodeService;
 
-public class AuthorizationCodeRequest<TClient, TClientSecret>
+public class CreateAuthorizationCodeRequest<TClient, TClientSecret>
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {
-    public AuthorizationCodeRequest(
+    public CreateAuthorizationCodeRequest(
         UserAuthentication userAuthentication,
         TClient client,
         string? originalRedirectUri,

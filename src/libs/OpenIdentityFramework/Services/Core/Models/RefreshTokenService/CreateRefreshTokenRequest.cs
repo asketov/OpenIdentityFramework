@@ -1,42 +1,37 @@
 ﻿using System;
 using OpenIdentityFramework.Models.Configuration;
-using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
-using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
+using OpenIdentityFramework.Models.Operation;
+using OpenIdentityFramework.Services.Core.Models.AccessTokenService;
 
 namespace OpenIdentityFramework.Services.Core.Models.RefreshTokenService;
 
-public class CreateRefreshTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>
+public class CreateRefreshTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken>
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
+    where TRefreshToken : AbstractRefreshToken
 {
     public CreateRefreshTokenRequest(
         TClient client,
-        string? referenceAccessTokenHandle,
+        CreatedAccessToken<TClient, TClientSecret, TScope, TResource, TResourceSecret> accessToken,
+        TRefreshToken? previousRefreshToken,
         string issuer,
-        ValidResources<TScope, TResource, TResourceSecret> allowedResources,
-        UserAuthentication? userAuthentication,
         DateTimeOffset issuedAt)
     {
         Client = client;
-        ReferenceAccessTokenHandle = referenceAccessTokenHandle;
+        AccessToken = accessToken;
+        PreviousRefreshToken = previousRefreshToken;
         Issuer = issuer;
-        AllowedResources = allowedResources;
-        UserAuthentication = userAuthentication;
         IssuedAt = issuedAt;
     }
 
     public TClient Client { get; }
+    public CreatedAccessToken<TClient, TClientSecret, TScope, TResource, TResourceSecret> AccessToken { get; }
 
-    public string? ReferenceAccessTokenHandle { get; }
-
+    public TRefreshToken? PreviousRefreshToken { get; }
     public string Issuer { get; }
-
-    public ValidResources<TScope, TResource, TResourceSecret> AllowedResources { get; }
-
-    public UserAuthentication? UserAuthentication { get; }
 
     public DateTimeOffset IssuedAt { get; }
 }

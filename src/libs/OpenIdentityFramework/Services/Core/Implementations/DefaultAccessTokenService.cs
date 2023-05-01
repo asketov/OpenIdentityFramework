@@ -100,11 +100,12 @@ public class DefaultAccessTokenService<TRequestContext, TClient, TClientSecret, 
             accessToken));
     }
 
-    public Task DeleteAsync(
+    public virtual async Task DeleteAsync(
         TRequestContext requestContext,
         string accessTokenHandle,
         CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        cancellationToken.ThrowIfCancellationRequested();
+        await AccessTokenStorage.DeleteAsync(requestContext, accessTokenHandle, cancellationToken);
     }
 }

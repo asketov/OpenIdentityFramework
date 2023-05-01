@@ -11,6 +11,7 @@ public class DefaultIssuerUrlProvider<TRequestContext>
 {
     public Task<string> GetIssuerAsync(TRequestContext requestContext, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(requestContext);
         var result = requestContext.HttpContext.Request.Scheme + Uri.SchemeDelimiter + requestContext.HttpContext.Request.Host + requestContext.HttpContext.Request.PathBase;
         return Task.FromResult(result);

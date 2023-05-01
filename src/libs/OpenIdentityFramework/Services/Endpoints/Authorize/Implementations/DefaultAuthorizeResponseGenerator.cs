@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using OpenIdentityFramework.Constants;
-using OpenIdentityFramework.Constants.Request.Authorize;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
@@ -50,7 +49,7 @@ public class DefaultAuthorizeResponseGenerator<TRequestContext, TClient, TClient
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
         var issuedAt = DateTimeOffset.FromUnixTimeSeconds(SystemClock.UtcNow.ToUnixTimeSeconds());
-        var codeRequest = new AuthorizationCodeRequest<TClient, TClientSecret>(
+        var codeRequest = new CreateAuthorizationCodeRequest<TClient, TClientSecret>(
             request.Ticket.UserAuthentication,
             request.AuthorizeRequest.Client,
             request.AuthorizeRequest.OriginalRedirectUri,
@@ -64,7 +63,6 @@ public class DefaultAuthorizeResponseGenerator<TRequestContext, TClient, TClient
         var authorizationCode = await AuthorizationCodeService.CreateAsync(requestContext, codeRequest, cancellationToken);
         string? idToken = null;
         if (request.AuthorizeRequest.AuthorizationFlow == DefaultAuthorizationFlows.Hybrid
-            && request.AuthorizeRequest.ResponseType == ResponseType.CodeIdToken
             && request.GrantedResources.HasOpenId)
         {
             var idTokenRequest = new CreateIdTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>(

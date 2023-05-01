@@ -30,24 +30,24 @@ public class DefaultAuthorizationCodeService<TRequestContext, TClient, TClientSe
 
     public virtual async Task<string> CreateAsync(
         TRequestContext requestContext,
-        AuthorizationCodeRequest<TClient, TClientSecret> codeRequest,
+        CreateAuthorizationCodeRequest<TClient, TClientSecret> createRequest,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(codeRequest);
+        ArgumentNullException.ThrowIfNull(createRequest);
         cancellationToken.ThrowIfCancellationRequested();
-        var expiresAt = codeRequest.IssuedAt.Add(codeRequest.Client.GetAuthorizationCodeLifetime());
+        var expiresAt = createRequest.IssuedAt.Add(createRequest.Client.GetAuthorizationCodeLifetime());
         return await Storage.CreateAsync(
             requestContext,
-            codeRequest.UserAuthentication,
-            codeRequest.Client.GetClientId(),
-            codeRequest.OriginalRedirectUri,
-            codeRequest.GrantedScopes,
-            codeRequest.CodeChallenge,
-            codeRequest.CodeChallengeMethod,
-            codeRequest.Nonce,
-            codeRequest.State,
-            codeRequest.Issuer,
-            codeRequest.IssuedAt,
+            createRequest.UserAuthentication,
+            createRequest.Client.GetClientId(),
+            createRequest.OriginalRedirectUri,
+            createRequest.GrantedScopes,
+            createRequest.CodeChallenge,
+            createRequest.CodeChallengeMethod,
+            createRequest.Nonce,
+            createRequest.State,
+            createRequest.Issuer,
+            createRequest.IssuedAt,
             expiresAt,
             cancellationToken);
     }

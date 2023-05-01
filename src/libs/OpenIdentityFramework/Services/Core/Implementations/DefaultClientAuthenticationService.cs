@@ -71,7 +71,18 @@ public class DefaultClientAuthenticationService<TRequestContext, TClient, TClien
             return basicResult;
         }
 
-        throw new NotImplementedException();
+        var noneOrPostResult = await ClientSecretPostOrNoneAsync(requestContext, form, cancellationToken);
+        if (noneOrPostResult.IsAuthenticated)
+        {
+            return new(noneOrPostResult.Client, noneOrPostResult.ClientAuthenticationMethod);
+        }
+
+        if (noneOrPostResult.HasError)
+        {
+            return noneOrPostResult;
+        }
+
+        return new();
     }
 
     protected virtual async Task<ClientAuthenticationResult<TClient, TClientSecret>> AuthenticateUsingHttpBasicSchemeAsync(

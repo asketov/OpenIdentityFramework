@@ -8,9 +8,9 @@ using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService
 
 namespace OpenIdentityFramework.Storages.Operation;
 
-public interface IAccessTokenStorage<TRequestContext, TAccessToken>
+public interface IRefreshTokenStorage<TRequestContext, TRefreshToken>
     where TRequestContext : AbstractRequestContext
-    where TAccessToken : AbstractAccessToken
+    where TRefreshToken : AbstractRefreshToken
 {
     Task<string> CreateAsync(
         TRequestContext requestContext,
@@ -19,12 +19,21 @@ public interface IAccessTokenStorage<TRequestContext, TAccessToken>
         UserAuthentication? userAuthentication,
         IReadOnlySet<string> grantedScopes,
         IReadOnlySet<LightweightClaim> claims,
+        string? accessTokenHandle,
         DateTimeOffset issuedAt,
         DateTimeOffset expiresAt,
+        DateTimeOffset? absoluteExpirationDate,
+        CancellationToken cancellationToken);
+
+    Task<TRefreshToken?> FindAsync(
+        TRequestContext requestContext,
+        string refreshTokenHandle,
+        string issuer,
+        string clientId,
         CancellationToken cancellationToken);
 
     Task DeleteAsync(
         TRequestContext requestContext,
-        string accessTokenHandle,
+        string refreshTokenHandle,
         CancellationToken cancellationToken);
 }

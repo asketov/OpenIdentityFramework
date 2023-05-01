@@ -1,8 +1,8 @@
 ﻿namespace OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeResponseGenerator;
 
-public class AuthorizeResponse
+public class SuccessfulAuthorizeResponse
 {
-    public AuthorizeResponse(string code, string? state, string issuer, string? idToken)
+    public SuccessfulAuthorizeResponse(string code, string? state, string issuer, string? idToken)
     {
         Code = code;
         State = state;

@@ -66,4 +66,9 @@ public class InputLengthRestrictionsOptions
     ///     Max length for "code".
     /// </summary>
     public int Code { get; set; } = 300;
+
+    /// <summary>
+    ///     Max length for "refresh_token".
+    /// </summary>
+    public int RefreshToken { get; set; } = 300;
 }

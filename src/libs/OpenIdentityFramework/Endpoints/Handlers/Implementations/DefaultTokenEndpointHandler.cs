@@ -15,7 +15,7 @@ using OpenIdentityFramework.Services.Endpoints.Token;
 
 namespace OpenIdentityFramework.Endpoints.Handlers.Implementations;
 
-public class DefaultTokenEndpointHandler<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode>
+public class DefaultTokenEndpointHandler<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken>
     : ITokenEndpointHandler
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
@@ -23,13 +23,14 @@ public class DefaultTokenEndpointHandler<TClient, TClientSecret, TScope, TResour
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
     where TAuthorizationCode : AbstractAuthorizationCode
+    where TRefreshToken : AbstractRefreshToken
 {
     public DefaultTokenEndpointHandler(
         OpenIdentityFrameworkOptions frameworkOptions,
         IClientAuthenticationService<TClient, TClientSecret> clientAuthentication,
         IIssuerUrlProvider issuerUrlProvider,
-        ITokenRequestValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode> requestValidator,
-        ITokenResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode> responseGenerator)
+        ITokenRequestValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken> requestValidator,
+        ITokenResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken> responseGenerator)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
         ArgumentNullException.ThrowIfNull(clientAuthentication);
@@ -46,8 +47,8 @@ public class DefaultTokenEndpointHandler<TClient, TClientSecret, TScope, TResour
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
     protected IClientAuthenticationService<TClient, TClientSecret> ClientAuthentication { get; }
     protected IIssuerUrlProvider IssuerUrlProvider { get; }
-    protected ITokenRequestValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode> RequestValidator { get; }
-    protected ITokenResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode> ResponseGenerator { get; }
+    protected ITokenRequestValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken> RequestValidator { get; }
+    protected ITokenResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken> ResponseGenerator { get; }
 
     public virtual async Task<IEndpointHandlerResult> HandleAsync(HttpContext httpContext, CancellationToken cancellationToken)
     {
@@ -88,7 +89,7 @@ public class DefaultTokenEndpointHandler<TClient, TClientSecret, TScope, TResour
                 issuer);
         }
 
-        var validationResult = await RequestValidator.ValidateAsync(httpContext, form, authenticationResult.Client, issuer, cancellationToken);
+        var validationResult = await RequestValidator.ValidateAsync(httpContext, form, authenticationResult.Client, authenticationResult.ClientAuthenticationMethod, issuer, cancellationToken);
         if (validationResult.HasError)
         {
             return new DefaultTokenErrorResult(
@@ -97,7 +98,15 @@ public class DefaultTokenEndpointHandler<TClient, TClientSecret, TScope, TResour
                 issuer);
         }
 
-        var response = await ResponseGenerator.CreateResponseAsync(httpContext, validationResult.ValidRequest, cancellationToken);
-        return new DefaultTokenSuccessfulResult(FrameworkOptions, response);
+        var responseGenerationResult = await ResponseGenerator.CreateResponseAsync(httpContext, validationResult.ValidRequest, cancellationToken);
+        if (responseGenerationResult.HasError)
+        {
+            return new DefaultTokenErrorResult(
+                FrameworkOptions,
+                new(Errors.InvalidRequest, responseGenerationResult.ErrorDescription),
+                issuer);
+        }
+
+        return new DefaultTokenSuccessfulResult(FrameworkOptions, responseGenerationResult.TokenResponse);
     }
 }

@@ -147,8 +147,13 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
             return await HandlerErrorAsync(httpContext, new(Errors.ServerError, "Incorrect interaction state"), validationResult.ValidRequest, cancellationToken);
         }
 
-        var response = await ResponseGenerator.CreateResponseAsync(httpContext, interactionResult.ValidRequest, cancellationToken);
-        var successfulResponseParameters = BuildSuccessfulResponseParameters(response);
+        var responseResult = await ResponseGenerator.CreateResponseAsync(httpContext, interactionResult.ValidRequest, cancellationToken);
+        if (responseResult.HasError)
+        {
+            return await HandlerErrorAsync(httpContext, new(Errors.ServerError, responseResult.ErrorDescription), validationResult.ValidRequest, cancellationToken);
+        }
+
+        var successfulResponseParameters = BuildSuccessfulResponseParameters(responseResult.AuthorizeResponse);
         return new DefaultDirectAuthorizeResult(
             FrameworkOptions,
             HtmlEncoder,
@@ -246,21 +251,21 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
         yield return new(ResponseParameters.Issuer, issuer);
     }
 
-    protected virtual IEnumerable<KeyValuePair<string, string?>> BuildSuccessfulResponseParameters(AuthorizeResponse authorizeResponse)
+    protected virtual IEnumerable<KeyValuePair<string, string?>> BuildSuccessfulResponseParameters(SuccessfulAuthorizeResponse successfulAuthorizeResponse)
     {
-        ArgumentNullException.ThrowIfNull(authorizeResponse);
-        yield return new(ResponseParameters.Code, authorizeResponse.Code);
-        if (authorizeResponse.State != null)
+        ArgumentNullException.ThrowIfNull(successfulAuthorizeResponse);
+        yield return new(ResponseParameters.Code, successfulAuthorizeResponse.Code);
+        if (successfulAuthorizeResponse.State != null)
         {
-            yield return new(ResponseParameters.State, authorizeResponse.State);
+            yield return new(ResponseParameters.State, successfulAuthorizeResponse.State);
         }
 
-        if (authorizeResponse.IdToken != null)
+        if (successfulAuthorizeResponse.IdToken != null)
         {
-            yield return new(ResponseParameters.IdToken, authorizeResponse.IdToken);
+            yield return new(ResponseParameters.IdToken, successfulAuthorizeResponse.IdToken);
         }
 
-        yield return new(ResponseParameters.Issuer, authorizeResponse.Issuer);
+        yield return new(ResponseParameters.Issuer, successfulAuthorizeResponse.Issuer);
     }
 
     protected virtual bool IsSafeError(ProtocolError protocolError)

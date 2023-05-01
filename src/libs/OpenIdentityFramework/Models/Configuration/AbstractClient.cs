@@ -22,7 +22,7 @@ public abstract class AbstractClient<TClientSecret>
     public abstract TimeSpan GetIdTokenLifetime();
     public abstract string GetAuthenticationMethod();
     public abstract IReadOnlyCollection<TClientSecret> GetSecrets();
-    public abstract string GetAccessTokenType();
+    public abstract string GetAccessTokenFormat();
     public abstract bool ShouldIncludeJwtIdIntoAccessToken();
     public abstract TimeSpan GetAccessTokenLifetime();
 

@@ -7,37 +7,57 @@ using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core;
+using OpenIdentityFramework.Services.Core.Models.AccessTokenService;
+using OpenIdentityFramework.Services.Core.Models.IdTokenService;
+using OpenIdentityFramework.Services.Core.Models.RefreshTokenService;
 using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
-using OpenIdentityFramework.Services.Core.Models.TokenService;
 using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
+using OpenIdentityFramework.Services.Endpoints.Authorize;
 using OpenIdentityFramework.Services.Endpoints.Token.Models.TokenRequestValidator;
 using OpenIdentityFramework.Services.Endpoints.Token.Models.TokenResponseGenerator;
 
 namespace OpenIdentityFramework.Services.Endpoints.Token.Implementations;
 
-public class DefaultTokenResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode>
-    : ITokenResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode>
+public class DefaultTokenResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TAccessToken, TRefreshToken>
+    : ITokenResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken>
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
     where TAuthorizationCode : AbstractAuthorizationCode
+    where TAccessToken : AbstractAccessToken
+    where TRefreshToken : AbstractRefreshToken
 {
-    public DefaultTokenResponseGenerator(ISystemClock systemClock, ITokenService<TClient, TClientSecret, TScope, TResource, TResourceSecret> tokens)
+    public DefaultTokenResponseGenerator(
+        ISystemClock systemClock,
+        IAuthorizationCodeService<TClient, TClientSecret, TAuthorizationCode> authorizationCodes,
+        IIdTokenService<TClient, TClientSecret, TScope, TResource, TResourceSecret> idTokens,
+        IAccessTokenService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAccessToken> accessTokens,
+        IRefreshTokenService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken> refreshTokens)
     {
         ArgumentNullException.ThrowIfNull(systemClock);
-        ArgumentNullException.ThrowIfNull(tokens);
+        ArgumentNullException.ThrowIfNull(authorizationCodes);
+        ArgumentNullException.ThrowIfNull(idTokens);
+        ArgumentNullException.ThrowIfNull(accessTokens);
+        ArgumentNullException.ThrowIfNull(refreshTokens);
         SystemClock = systemClock;
-        Tokens = tokens;
+        AuthorizationCodes = authorizationCodes;
+        IdTokens = idTokens;
+        AccessTokens = accessTokens;
+        RefreshTokens = refreshTokens;
     }
 
     protected ISystemClock SystemClock { get; }
-    protected ITokenService<TClient, TClientSecret, TScope, TResource, TResourceSecret> Tokens { get; }
+    protected IAuthorizationCodeService<TClient, TClientSecret, TAuthorizationCode> AuthorizationCodes { get; }
+    protected IIdTokenService<TClient, TClientSecret, TScope, TResource, TResourceSecret> IdTokens { get; }
+    protected IAccessTokenService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAccessToken> AccessTokens { get; }
+    protected IRefreshTokenService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken> RefreshTokens { get; }
 
-    public virtual async Task<TokenResponse> CreateResponseAsync(
+
+    public virtual async Task<TokenResponseGenerationResult> CreateResponseAsync(
         HttpContext httpContext,
-        ValidTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode> request,
+        ValidTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken> request,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -45,16 +65,16 @@ public class DefaultTokenResponseGenerator<TClient, TClientSecret, TScope, TReso
 
         if (request.GrantType == DefaultGrantTypes.AuthorizationCode)
         {
-            if (!request.IsAuthorizationCodeGrant)
+            if (request.AuthorizationCode is null || request.AuthorizationCodeHandle is null)
             {
-                throw new ArgumentException("Invalid request state!", nameof(request));
+                return new("Invalid request state");
             }
 
             return await CreateAuthorizationCodeResponseAsync(
                 httpContext,
                 request.AuthorizationCodeHandle,
                 request.Client,
-                request.RequestedResources,
+                request.AllowedResources,
                 request.AuthorizationCode.GetUserAuthentication(),
                 request.AuthorizationCode.GetNonce(),
                 request.AuthorizationCode.GetState(),
@@ -62,14 +82,41 @@ public class DefaultTokenResponseGenerator<TClient, TClientSecret, TScope, TReso
                 cancellationToken);
         }
 
-        throw new InvalidOperationException("Unsupported grant type!");
+        if (request.GrantType == DefaultGrantTypes.ClientCredentials)
+        {
+            return await CreateClientCredentialsResponseAsync(
+                httpContext,
+                request.Client,
+                request.AllowedResources,
+                request.Issuer,
+                cancellationToken);
+        }
+
+        if (request.GrantType == DefaultGrantTypes.ClientCredentials)
+        {
+            if (request.RefreshTokenHandle is null || request.RefreshToken is null)
+            {
+                return new("Invalid request state");
+            }
+
+            return await CreateRefreshTokenResponseAsync(
+                httpContext,
+                request.Client,
+                request.AllowedResources,
+                request.RefreshTokenHandle,
+                request.RefreshToken,
+                request.Issuer,
+                cancellationToken);
+        }
+
+        return new("Unsupported grant type");
     }
 
-    protected virtual async Task<TokenResponse> CreateAuthorizationCodeResponseAsync(
+    protected virtual async Task<TokenResponseGenerationResult> CreateAuthorizationCodeResponseAsync(
         HttpContext httpContext,
-        string authorizationCode,
+        string authorizationCodeHandle,
         TClient client,
-        ValidResources<TScope, TResource, TResourceSecret> requestedResources,
+        ValidResources<TScope, TResource, TResourceSecret> allowedResources,
         UserAuthentication? userAuthentication,
         string? nonce,
         string? state,
@@ -77,68 +124,217 @@ public class DefaultTokenResponseGenerator<TClient, TClientSecret, TScope, TReso
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(client);
-        ArgumentNullException.ThrowIfNull(requestedResources);
-        ArgumentNullException.ThrowIfNull(authorizationCode);
+        ArgumentNullException.ThrowIfNull(allowedResources);
+        ArgumentNullException.ThrowIfNull(authorizationCodeHandle);
         cancellationToken.ThrowIfCancellationRequested();
         var issuedAt = SystemClock.UtcNow;
-        var accessTokenRequest = new AccessTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
+        var accessTokenRequest = new CreateAccessTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
             DefaultGrantTypes.AuthorizationCode,
             client,
             issuer,
-            requestedResources,
+            allowedResources,
             userAuthentication,
             issuedAt);
-        var accessTokenResult = await Tokens.CreateAccessTokenAsync(httpContext, accessTokenRequest, cancellationToken);
+        var accessTokenResult = await AccessTokens.CreateAccessTokenAsync(httpContext, accessTokenRequest, cancellationToken);
+        if (accessTokenResult.HasError)
+        {
+            return new(accessTokenResult.ErrorDescription);
+        }
+
         string? refreshToken = null;
-        if (requestedResources.HasOfflineAccess)
+        if (allowedResources.HasOfflineAccess)
         {
             string? referenceAccessTokenHandle = null;
-            if (accessTokenResult.AccessTokenType == DefaultAccessTokenType.Reference)
+            if (accessTokenResult.AccessToken.AccessTokenFormat == DefaultAccessTokenFormat.Reference)
             {
-                referenceAccessTokenHandle = accessTokenResult.Handle;
+                referenceAccessTokenHandle = accessTokenResult.AccessToken.Handle;
             }
 
-            var refreshTokenRequest = new RefreshTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
+            var refreshTokenRequest = new CreateRefreshTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
                 client,
                 referenceAccessTokenHandle,
                 issuer,
-                requestedResources,
+                allowedResources,
                 userAuthentication,
                 issuedAt);
-            refreshToken = await Tokens.CreateRefreshTokenAsync(httpContext, refreshTokenRequest, cancellationToken);
+            var refreshTokenResult = await RefreshTokens.CreateAsync(httpContext, refreshTokenRequest, cancellationToken);
+            if (refreshTokenResult.HasError)
+            {
+                return new(refreshTokenResult.ErrorDescription);
+            }
+
+            refreshToken = refreshTokenResult.RefreshToken.Handle;
         }
 
         string? idToken = null;
-        if (requestedResources.HasOpenId)
+        if (allowedResources.HasOpenId)
         {
             if (userAuthentication == null)
             {
-                throw new ArgumentNullException(nameof(userAuthentication), "User authentication can't be null when id_token requested via \"openid\" scope value");
+                return new("User authentication can't be null when id_token requested via \"openid\" scope value");
             }
 
-            var idTokenRequest = new IdTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
+            var idTokenRequest = new CreateIdTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
                 userAuthentication,
                 client,
-                requestedResources,
+                allowedResources,
                 nonce,
                 state,
                 issuer,
                 issuedAt,
-                accessTokenResult.Handle,
-                authorizationCode,
+                accessTokenResult.AccessToken.Handle,
+                authorizationCodeHandle,
                 client.ShouldAlwaysIncludeUserClaimsInIdToken());
-            idToken = await Tokens.CreateIdTokenAsync(httpContext, idTokenRequest, cancellationToken);
+            var idTokenResult = await IdTokens.CreateIdTokenAsync(httpContext, idTokenRequest, cancellationToken);
+            if (idTokenResult.HasError)
+            {
+                return new(idTokenResult.ErrorDescription);
+            }
+
+            idToken = idTokenResult.IdToken.Handle;
         }
 
-        var resultScope = requestedResources.HasAnyScope() ? string.Join(' ', requestedResources.RawScopes) : null;
-
-        return new(
-            accessTokenResult.Handle,
-            DefaultIssuedTokenType.Bearer,
+        var resultScope = allowedResources.HasAnyScope() ? string.Join(' ', allowedResources.RawScopes) : null;
+        await AuthorizationCodes.DeleteAsync(httpContext, authorizationCodeHandle, cancellationToken);
+        var result = new SuccessfulTokenResponse(
+            accessTokenResult.AccessToken.Handle,
+            DefaultAccessTokenType.Bearer,
             refreshToken,
-            accessTokenResult.LifetimeInSeconds,
+            accessTokenResult.AccessToken.LifetimeInSeconds,
             idToken,
             resultScope,
             issuer);
+        return new(result);
+    }
+
+    protected virtual async Task<TokenResponseGenerationResult> CreateClientCredentialsResponseAsync(
+        HttpContext httpContext,
+        TClient client,
+        ValidResources<TScope, TResource, TResourceSecret> allowedResources,
+        string issuer,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        ArgumentNullException.ThrowIfNull(allowedResources);
+        cancellationToken.ThrowIfCancellationRequested();
+        var issuedAt = SystemClock.UtcNow;
+        var accessTokenRequest = new CreateAccessTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
+            DefaultGrantTypes.ClientCredentials,
+            client,
+            issuer,
+            allowedResources,
+            null,
+            issuedAt);
+        var accessTokenResult = await AccessTokens.CreateAccessTokenAsync(httpContext, accessTokenRequest, cancellationToken);
+        if (accessTokenResult.HasError)
+        {
+            return new(accessTokenResult.ErrorDescription);
+        }
+
+        var resultScope = allowedResources.HasAnyScope() ? string.Join(' ', allowedResources.RawScopes) : null;
+        var result = new SuccessfulTokenResponse(
+            accessTokenResult.AccessToken.Handle,
+            DefaultAccessTokenType.Bearer,
+            null,
+            accessTokenResult.AccessToken.LifetimeInSeconds,
+            null,
+            resultScope,
+            issuer);
+        return new(result);
+    }
+
+    protected virtual async Task<TokenResponseGenerationResult> CreateRefreshTokenResponseAsync(
+        HttpContext httpContext,
+        TClient client,
+        ValidResources<TScope, TResource, TResourceSecret> allowedResources,
+        string refreshTokenHandle,
+        TRefreshToken refreshToken,
+        string issuer,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        ArgumentNullException.ThrowIfNull(allowedResources);
+        ArgumentNullException.ThrowIfNull(refreshToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        var issuedAt = SystemClock.UtcNow;
+        var userAuthentication = refreshToken.GetUserAuthentication();
+        var accessTokenRequest = new CreateAccessTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
+            DefaultGrantTypes.RefreshToken,
+            client,
+            issuer,
+            allowedResources,
+            userAuthentication,
+            issuedAt);
+        var accessTokenResult = await AccessTokens.CreateAccessTokenAsync(httpContext, accessTokenRequest, cancellationToken);
+        if (accessTokenResult.HasError)
+        {
+            return new(accessTokenResult.ErrorDescription);
+        }
+
+        string? newRefreshTokenHandle = null;
+        if (allowedResources.HasOfflineAccess)
+        {
+            string? newRefreshTokenReferenceAccessTokenHandle = null;
+            if (accessTokenResult.AccessToken.AccessTokenFormat == DefaultAccessTokenFormat.Reference)
+            {
+                newRefreshTokenReferenceAccessTokenHandle = accessTokenResult.AccessToken.Handle;
+            }
+
+            var refreshTokenRequest = new CreateRefreshTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
+                client,
+                newRefreshTokenReferenceAccessTokenHandle,
+                issuer,
+                allowedResources,
+                userAuthentication,
+                issuedAt);
+            var refreshTokenResult = await RefreshTokens.CreateAsync(httpContext, refreshTokenRequest, cancellationToken);
+            if (refreshTokenResult.HasError)
+            {
+                return new(refreshTokenResult.ErrorDescription);
+            }
+
+            newRefreshTokenHandle = refreshTokenResult.RefreshToken.Handle;
+        }
+
+        string? idToken = null;
+        if (allowedResources.HasOpenId)
+        {
+            var idTokenRequest = new CreateIdTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
+                userAuthentication,
+                client,
+                allowedResources,
+                null,
+                null,
+                issuer,
+                issuedAt,
+                accessTokenResult.AccessToken.Handle,
+                null,
+                client.ShouldAlwaysIncludeUserClaimsInIdToken());
+            var idTokenResult = await IdTokens.CreateIdTokenAsync(httpContext, idTokenRequest, cancellationToken);
+            if (idTokenResult.HasError)
+            {
+                return new(idTokenResult.ErrorDescription);
+            }
+
+            idToken = idTokenResult.IdToken.Handle;
+        }
+
+        var resultScope = allowedResources.HasAnyScope() ? string.Join(' ', allowedResources.RawScopes) : null;
+        await RefreshTokens.DeleteAsync(httpContext, refreshTokenHandle, cancellationToken);
+        var previousAccessTokenHandle = refreshToken.GetReferenceAccessTokenHandle();
+        if (previousAccessTokenHandle is not null)
+        {
+            await AccessTokens.DeleteAsync(httpContext, previousAccessTokenHandle, cancellationToken);
+        }
+
+        var result = new SuccessfulTokenResponse(
+            accessTokenResult.AccessToken.Handle,
+            DefaultAccessTokenType.Bearer,
+            newRefreshTokenHandle,
+            accessTokenResult.AccessToken.LifetimeInSeconds,
+            idToken,
+            resultScope,
+            issuer);
+        return new(result);
     }
 }

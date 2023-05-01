@@ -7,4 +7,5 @@ public static class RequestParameters
     public const string RedirectUri = "redirect_uri";
     public const string CodeVerifier = "code_verifier";
     public const string Scope = "scope";
+    public const string RefreshToken = "refresh_token";
 }

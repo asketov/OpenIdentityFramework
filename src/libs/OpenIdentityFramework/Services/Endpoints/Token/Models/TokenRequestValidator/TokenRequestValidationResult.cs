@@ -6,15 +6,16 @@ using OpenIdentityFramework.Models.Operation;
 
 namespace OpenIdentityFramework.Services.Endpoints.Token.Models.TokenRequestValidator;
 
-public class TokenRequestValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode>
+public class TokenRequestValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken>
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
     where TAuthorizationCode : AbstractAuthorizationCode
+    where TRefreshToken : AbstractRefreshToken
 {
-    public TokenRequestValidationResult(ValidTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode> validRequest)
+    public TokenRequestValidationResult(ValidTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken> validRequest)
     {
         ArgumentNullException.ThrowIfNull(validRequest);
         ValidRequest = validRequest;
@@ -27,7 +28,7 @@ public class TokenRequestValidationResult<TClient, TClientSecret, TScope, TResou
         HasError = true;
     }
 
-    public ValidTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode>? ValidRequest { get; }
+    public ValidTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken>? ValidRequest { get; }
 
     public ProtocolError? ProtocolError { get; }
 

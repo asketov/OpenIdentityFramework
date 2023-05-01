@@ -3,19 +3,19 @@ using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
 using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
 
-namespace OpenIdentityFramework.Services.Core.Models.TokenService;
+namespace OpenIdentityFramework.Services.Core.Models.IdTokenService;
 
-public class IdTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>
+public class CreateIdTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
 {
-    public IdTokenRequest(
+    public CreateIdTokenRequest(
         UserAuthentication userAuthentication,
         TClient client,
-        ValidResources<TScope, TResource, TResourceSecret> grantedResources,
+        ValidResources<TScope, TResource, TResourceSecret> allowedResources,
         string? nonce,
         string? state,
         string issuer,
@@ -26,7 +26,7 @@ public class IdTokenRequest<TClient, TClientSecret, TScope, TResource, TResource
     {
         UserAuthentication = userAuthentication;
         Client = client;
-        GrantedResources = grantedResources;
+        AllowedResources = allowedResources;
         Nonce = nonce;
         State = state;
         Issuer = issuer;
@@ -40,7 +40,7 @@ public class IdTokenRequest<TClient, TClientSecret, TScope, TResource, TResource
 
     public TClient Client { get; }
 
-    public ValidResources<TScope, TResource, TResourceSecret> GrantedResources { get; }
+    public ValidResources<TScope, TResource, TResourceSecret> AllowedResources { get; }
 
     public string? Nonce { get; }
 

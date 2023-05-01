@@ -5,19 +5,18 @@ using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
 using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
 
-namespace OpenIdentityFramework.Services.Core.Models.TokenService;
+namespace OpenIdentityFramework.Services.Core.Models.AccessTokenService;
 
-public class AccessTokenResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>
+public class CreatedAccessToken<TClient, TClientSecret, TScope, TResource, TResourceSecret>
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
 {
-    public AccessTokenResult(
-        string accessTokenType,
+    public CreatedAccessToken(
+        string accessTokenFormat,
         string issuer,
-        string grantType,
         TClient client,
         UserAuthentication? userAuthentication,
         ValidResources<TScope, TResource, TResourceSecret> requestedResources,
@@ -27,9 +26,8 @@ public class AccessTokenResult<TClient, TClientSecret, TScope, TResource, TResou
         long lifetimeInSeconds,
         string handle)
     {
-        AccessTokenType = accessTokenType;
+        AccessTokenFormat = accessTokenFormat;
         Issuer = issuer;
-        GrantType = grantType;
         Client = client;
         UserAuthentication = userAuthentication;
         RequestedResources = requestedResources;
@@ -40,9 +38,8 @@ public class AccessTokenResult<TClient, TClientSecret, TScope, TResource, TResou
         Handle = handle;
     }
 
-    public string AccessTokenType { get; }
+    public string AccessTokenFormat { get; }
     public string Issuer { get; }
-    public string GrantType { get; }
     public TClient Client { get; }
     public UserAuthentication? UserAuthentication { get; }
     public ValidResources<TScope, TResource, TResourceSecret> RequestedResources { get; }

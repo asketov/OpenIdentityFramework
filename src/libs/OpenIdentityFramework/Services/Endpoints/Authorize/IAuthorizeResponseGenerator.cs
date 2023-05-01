@@ -14,7 +14,7 @@ public interface IAuthorizeResponseGenerator<TClient, TClientSecret, TScope, TRe
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
 {
-    Task<AuthorizeResponse> CreateResponseAsync(
+    Task<AuthorizeResponseGenerationResult> CreateResponseAsync(
         HttpContext httpContext,
         ValidAuthorizeRequestInteraction<TClient, TClientSecret, TScope, TResource, TResourceSecret> request,
         CancellationToken cancellationToken);

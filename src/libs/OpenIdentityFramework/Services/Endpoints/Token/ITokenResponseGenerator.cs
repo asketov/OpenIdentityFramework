@@ -8,16 +8,17 @@ using OpenIdentityFramework.Services.Endpoints.Token.Models.TokenResponseGenerat
 
 namespace OpenIdentityFramework.Services.Endpoints.Token;
 
-public interface ITokenResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode>
+public interface ITokenResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken>
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
     where TAuthorizationCode : AbstractAuthorizationCode
+    where TRefreshToken : AbstractRefreshToken
 {
-    Task<TokenResponse> CreateResponseAsync(
+    Task<TokenResponseGenerationResult> CreateResponseAsync(
         HttpContext httpContext,
-        ValidTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode> request,
+        ValidTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken> request,
         CancellationToken cancellationToken);
 }

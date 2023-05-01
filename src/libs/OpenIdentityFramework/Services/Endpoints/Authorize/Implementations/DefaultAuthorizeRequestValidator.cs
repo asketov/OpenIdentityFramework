@@ -268,7 +268,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
         // Request and response parameters defined by this specification MUST NOT be included more than once.
-        if (scopeValues.Count != 1)
+        if (scopeValues.Count > 1)
         {
             return Task.FromResult(false);
         }
@@ -745,7 +745,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
         // Request and response parameters defined by this specification MUST NOT be included more than once.
-        if (scopeValues.Count != 1)
+        if (scopeValues.Count > 1)
         {
             return ScopeValidationResult.MultipleScope;
         }

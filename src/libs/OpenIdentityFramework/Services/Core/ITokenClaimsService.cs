@@ -5,7 +5,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
-using OpenIdentityFramework.Services.Core.Models.TokenService;
+using OpenIdentityFramework.Services.Core.Models.AccessTokenService;
+using OpenIdentityFramework.Services.Core.Models.IdTokenService;
 
 namespace OpenIdentityFramework.Services.Core;
 
@@ -18,12 +19,12 @@ public interface ITokenClaimsService<TClient, TClientSecret, TScope, TResource, 
 {
     Task<HashSet<LightweightClaim>> GetIdentityTokenClaimsAsync(
         HttpContext httpContext,
-        IdTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> idTokenRequest,
+        CreateIdTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> createIdTokenRequest,
         SigningCredentials signingCredentials,
         CancellationToken cancellationToken);
 
     Task<HashSet<LightweightClaim>> GetAccessTokenClaimsAsync(
         HttpContext httpContext,
-        AccessTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> accessTokenRequest,
+        CreateAccessTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> createAccessTokenRequest,
         CancellationToken cancellationToken);
 }

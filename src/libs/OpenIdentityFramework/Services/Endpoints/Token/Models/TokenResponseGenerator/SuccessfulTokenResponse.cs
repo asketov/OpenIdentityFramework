@@ -1,8 +1,8 @@
 ﻿namespace OpenIdentityFramework.Services.Endpoints.Token.Models.TokenResponseGenerator;
 
-public class TokenResponse
+public class SuccessfulTokenResponse
 {
-    public TokenResponse(
+    public SuccessfulTokenResponse(
         string accessToken,
         string issuedTokenType,
         string? refreshToken,

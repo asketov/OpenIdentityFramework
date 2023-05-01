@@ -12,29 +12,29 @@ namespace OpenIdentityFramework.Endpoints.Results.Implementations;
 
 public class DefaultTokenSuccessfulResult : IEndpointHandlerResult
 {
-    public DefaultTokenSuccessfulResult(OpenIdentityFrameworkOptions frameworkOptions, TokenResponse tokenResponse)
+    public DefaultTokenSuccessfulResult(OpenIdentityFrameworkOptions frameworkOptions, SuccessfulTokenResponse successfulTokenResponse)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
-        ArgumentNullException.ThrowIfNull(tokenResponse);
+        ArgumentNullException.ThrowIfNull(successfulTokenResponse);
         FrameworkOptions = frameworkOptions;
-        TokenResponse = tokenResponse;
+        SuccessfulTokenResponse = successfulTokenResponse;
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
-    protected TokenResponse TokenResponse { get; }
+    protected SuccessfulTokenResponse SuccessfulTokenResponse { get; }
 
     public virtual async Task ExecuteAsync(HttpContext httpContext, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
         cancellationToken.ThrowIfCancellationRequested();
         var response = new ResponseDto(
-            TokenResponse.AccessToken,
-            TokenResponse.IssuedTokenType,
-            TokenResponse.RefreshToken,
-            TokenResponse.ExpiresIn,
-            TokenResponse.IdToken,
-            TokenResponse.Scope,
-            TokenResponse.Issuer);
+            SuccessfulTokenResponse.AccessToken,
+            SuccessfulTokenResponse.IssuedTokenType,
+            SuccessfulTokenResponse.RefreshToken,
+            SuccessfulTokenResponse.ExpiresIn,
+            SuccessfulTokenResponse.IdToken,
+            SuccessfulTokenResponse.Scope,
+            SuccessfulTokenResponse.Issuer);
         httpContext.Response.StatusCode = 200;
         httpContext.Response.SetNoCache();
         await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);

@@ -1,52 +1,44 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
-using OpenIdentityFramework.Constants;
-using OpenIdentityFramework.Models.Configuration;
+﻿using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
 
 namespace OpenIdentityFramework.Services.Endpoints.Token.Models.TokenRequestValidator;
 
-public class ValidTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode>
+public class ValidTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken>
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
     where TAuthorizationCode : AbstractAuthorizationCode
+    where TRefreshToken : AbstractRefreshToken
 {
     public ValidTokenRequest(
+        string grantType,
         TClient client,
-        ValidResources<TScope, TResource, TResourceSecret> requestedResources,
-        string authorizationCodeHandle,
-        TAuthorizationCode authorizationCode,
-        string issuer)
+        string issuer,
+        ValidResources<TScope, TResource, TResourceSecret> allowedResources,
+        TAuthorizationCode? authorizationCode,
+        TRefreshToken? refreshToken,
+        string? authorizationCodeHandle,
+        string? refreshTokenHandle)
     {
-        ArgumentNullException.ThrowIfNull(client);
-        ArgumentNullException.ThrowIfNull(requestedResources);
-        ArgumentNullException.ThrowIfNull(authorizationCodeHandle);
-        ArgumentNullException.ThrowIfNull(authorizationCode);
-        ArgumentNullException.ThrowIfNull(issuer);
-        GrantType = DefaultGrantTypes.AuthorizationCode;
+        GrantType = grantType;
         Client = client;
-        RequestedResources = requestedResources;
-        AuthorizationCodeHandle = authorizationCodeHandle;
-        AuthorizationCode = authorizationCode;
         Issuer = issuer;
-        IsAuthorizationCodeGrant = true;
+        AllowedResources = allowedResources;
+        AuthorizationCode = authorizationCode;
+        RefreshToken = refreshToken;
+        AuthorizationCodeHandle = authorizationCodeHandle;
+        RefreshTokenHandle = refreshTokenHandle;
     }
 
     public string GrantType { get; }
-
     public TClient Client { get; }
-
     public string Issuer { get; }
-
-    public ValidResources<TScope, TResource, TResourceSecret> RequestedResources { get; }
+    public ValidResources<TScope, TResource, TResourceSecret> AllowedResources { get; }
     public TAuthorizationCode? AuthorizationCode { get; }
+    public TRefreshToken? RefreshToken { get; }
     public string? AuthorizationCodeHandle { get; }
-
-    [MemberNotNullWhen(true, nameof(AuthorizationCode))]
-    [MemberNotNullWhen(true, nameof(AuthorizationCodeHandle))]
-    public bool IsAuthorizationCodeGrant { get; }
+    public string? RefreshTokenHandle { get; }
 }

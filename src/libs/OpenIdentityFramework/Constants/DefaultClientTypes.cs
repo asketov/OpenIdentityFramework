@@ -2,6 +2,6 @@
 
 public static class DefaultClientTypes
 {
-    public static readonly string Confidential = "confidential";
-    public static readonly string Public = "public";
+    public const string Confidential = "confidential";
+    public const string Public = "public";
 }

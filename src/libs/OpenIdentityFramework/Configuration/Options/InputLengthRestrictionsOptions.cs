@@ -8,6 +8,11 @@ public class InputLengthRestrictionsOptions
     public int ClientId { get; set; } = 100;
 
     /// <summary>
+    ///     Max length for "client_secret".
+    /// </summary>
+    public int ClientSecret { get; set; } = 300;
+
+    /// <summary>
     ///     Max overall length for "scope".
     /// </summary>
     public int Scope { get; set; } = 500;
@@ -46,4 +51,19 @@ public class InputLengthRestrictionsOptions
     ///     Max length for "ui_locales".
     /// </summary>
     public int UiLocales { get; set; } = 100;
+
+    /// <summary>
+    ///     Min length for "code_verifier". https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.17
+    /// </summary>
+    public int CodeVerifierMinLength { get; set; } = 43;
+
+    /// <summary>
+    ///     Max length for "code_verifier". https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.17
+    /// </summary>
+    public int CodeVerifierMaxLength { get; set; } = 128;
+
+    /// <summary>
+    ///     Max length for "code".
+    /// </summary>
+    public int Code { get; set; } = 300;
 }

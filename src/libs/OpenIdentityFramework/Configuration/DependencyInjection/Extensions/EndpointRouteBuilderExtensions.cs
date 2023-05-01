@@ -39,6 +39,18 @@ public static class EndpointRouteBuilderExtensions
                 }));
         }
 
+        if (frameworkOptions.Endpoints.Token.Enable)
+        {
+            builder.AddEndpoint<ITokenEndpointHandler>(
+                frameworkOptions.Endpoints.Token.Path,
+                new(new[]
+                {
+                    // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.2
+                    // The client MUST use the HTTP POST method when making access token requests.
+                    HttpMethods.Post
+                }));
+        }
+
         return builder;
     }
 

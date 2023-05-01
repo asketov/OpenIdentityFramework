@@ -12,7 +12,7 @@ public class AuthorizationCodeRequest<TClient, TClientSecret>
     public AuthorizationCodeRequest(
         UserAuthentication userAuthentication,
         TClient client,
-        string redirectUri,
+        string? originalRedirectUri,
         IReadOnlySet<string> grantedScopes,
         string codeChallenge,
         string codeChallengeMethod,
@@ -23,7 +23,7 @@ public class AuthorizationCodeRequest<TClient, TClientSecret>
     {
         UserAuthentication = userAuthentication;
         Client = client;
-        RedirectUri = redirectUri;
+        OriginalRedirectUri = originalRedirectUri;
         GrantedScopes = grantedScopes;
         CodeChallenge = codeChallenge;
         CodeChallengeMethod = codeChallengeMethod;
@@ -37,7 +37,7 @@ public class AuthorizationCodeRequest<TClient, TClientSecret>
 
     public TClient Client { get; }
 
-    public string RedirectUri { get; }
+    public string? OriginalRedirectUri { get; }
 
     public IReadOnlySet<string> GrantedScopes { get; }
 

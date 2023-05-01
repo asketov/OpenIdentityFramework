@@ -18,4 +18,7 @@ public class OpenIdentityFrameworkOptions
     public AuthenticationOptions Authentication { get; set; } = new();
 
     public bool EmitScopesAsSpaceDelimitedStringInJwt { get; set; }
+
+    public bool EmitStaticAudienceClaim { get; set; }
+    public string AccessTokenJwtType { get; set; } = "at+jwt";
 }

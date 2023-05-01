@@ -9,8 +9,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Constants;
-using OpenIdentityFramework.Constants.Requests.Authorize;
-using OpenIdentityFramework.Constants.Responses.Authorize;
+using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Constants.Response.Authorize;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core;
@@ -83,7 +83,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
             return coreParameters.BuildError(codeChallengeMethodValidation.Error);
         }
 
-        var codeChallengeValidation = await ValidateCodeChallengeAsync(httpContext, parameters, coreParameters.Client, cancellationToken);
+        var codeChallengeValidation = await ValidateCodeChallengeAsync(httpContext, parameters, coreParameters.Client, codeChallengeMethodValidation.CodeChallengeMethod, cancellationToken);
         if (codeChallengeValidation.HasError)
         {
             return coreParameters.BuildError(codeChallengeValidation.Error);
@@ -95,18 +95,19 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
                 initialRequestDate,
                 issuer,
                 coreParameters.Client,
-                coreParameters.RedirectUri,
+                coreParameters.ActualRedirectUri,
+                coreParameters.OriginalRedirectUri,
                 scopeValidation.ValidResources,
                 codeChallengeValidation.CodeChallenge,
                 codeChallengeMethodValidation.CodeChallengeMethod,
                 coreParameters.ResponseType,
-                coreParameters.GrantType,
+                coreParameters.AuthorizationFlow,
                 coreParameters.State,
                 coreParameters.ResponseMode,
                 parameters));
         }
 
-        var nonceValidation = await ValidateNonceAsync(httpContext, parameters, coreParameters.GrantType, cancellationToken);
+        var nonceValidation = await ValidateNonceAsync(httpContext, parameters, coreParameters.AuthorizationFlow, cancellationToken);
         if (nonceValidation.HasError)
         {
             return coreParameters.BuildError(nonceValidation.Error);
@@ -170,12 +171,13 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
             initialRequestDate,
             issuer,
             coreParameters.Client,
-            coreParameters.RedirectUri,
+            coreParameters.ActualRedirectUri,
+            coreParameters.OriginalRedirectUri,
             scopeValidation.ValidResources,
             codeChallengeValidation.CodeChallenge,
             codeChallengeMethodValidation.CodeChallengeMethod,
             coreParameters.ResponseType,
-            coreParameters.GrantType,
+            coreParameters.AuthorizationFlow,
             coreParameters.State,
             coreParameters.ResponseMode,
             nonceValidation.Nonce,
@@ -232,10 +234,11 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
             issuer,
             clientValidation.Client,
             responseTypeValidation.ResponseType,
-            responseTypeValidation.GrantType,
+            responseTypeValidation.AuthorizationFlow,
             stateValidation.State,
             responseModeValidation.ResponseMode,
-            redirectUriValidation.RedirectUri));
+            redirectUriValidation.ActualRedirectUri,
+            redirectUriValidation.OriginalRedirectUri));
     }
 
     protected virtual Task<bool> IsOpenIdConnectRequestAsync(
@@ -382,7 +385,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
             return Task.FromResult(ResponseTypeValidationResult.ResponseTypeIsMissing);
         }
 
-        var allowedGrantTypes = client.GetAllowedGrantTypes();
+        var allowedAuthorizationFlows = client.GetAllowedAuthorizationFlows();
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-4.1.1
         // This specification defines the value "code", which must be used to signal that the client wants to use the authorization code flow.
@@ -403,7 +406,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
                 return Task.FromResult(ResponseTypeValidationResult.UnsupportedResponseType);
             }
 
-            if (allowedGrantTypes.Contains(DefaultGrantTypes.Hybrid))
+            if (allowedAuthorizationFlows.Contains(DefaultAuthorizationFlows.Hybrid))
             {
                 return Task.FromResult(ResponseTypeValidationResult.CodeIdToken);
             }
@@ -412,7 +415,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
         }
 
         // Both OAuth 2.1 and OpenID Connect 1.0
-        if (responseType == ResponseType.Code && allowedGrantTypes.Contains(DefaultGrantTypes.AuthorizationCode))
+        if (responseType == ResponseType.Code && allowedAuthorizationFlows.Contains(DefaultAuthorizationFlows.AuthorizationCode))
         {
             return Task.FromResult(ResponseTypeValidationResult.Code);
         }
@@ -575,20 +578,20 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
-        var redirectUriString = redirectUriValues.ToString();
-        if (string.IsNullOrEmpty(redirectUriString))
+        var originalRedirectUri = redirectUriValues.ToString();
+        if (string.IsNullOrEmpty(originalRedirectUri))
         {
             return Task.FromResult(InferRedirectUri(isOpenIdRequest, preRegisteredRedirectUris));
         }
 
         // length check
-        if (redirectUriString.Length > FrameworkOptions.InputLengthRestrictions.RedirectUri)
+        if (originalRedirectUri.Length > FrameworkOptions.InputLengthRestrictions.RedirectUri)
         {
             return Task.FromResult(RedirectUriValidationResult.RedirectUriIsTooLong);
         }
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-2.3
-        if (!ClientRedirectUriSyntaxValidator.IsValid(redirectUriString, out var redirectUri))
+        if (!ClientRedirectUriSyntaxValidator.IsValid(originalRedirectUri, out var typedRedirectUri))
         {
             return Task.FromResult(RedirectUriValidationResult.InvalidRedirectUriSyntax);
         }
@@ -605,15 +608,15 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
         if (isOpenIdRequest)
         {
             // Exact match for OIDC
-            if (preRegisteredRedirectUris.Contains(redirectUriString, StringComparer.Ordinal))
+            if (preRegisteredRedirectUris.Contains(originalRedirectUri, StringComparer.Ordinal))
             {
                 // http scheme only for confidential clients
-                if (redirectUri.Scheme == Uri.UriSchemeHttp && !client.IsConfidential())
+                if (typedRedirectUri.Scheme == Uri.UriSchemeHttp && !client.IsConfidential())
                 {
                     return Task.FromResult(RedirectUriValidationResult.InvalidRedirectUri);
                 }
 
-                return Task.FromResult(new RedirectUriValidationResult(redirectUriString));
+                return Task.FromResult(new RedirectUriValidationResult(originalRedirectUri, originalRedirectUri));
             }
 
             return Task.FromResult(RedirectUriValidationResult.InvalidRedirectUri);
@@ -640,7 +643,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-8.4.3
         // To perform an authorization request with a private-use URI scheme redirect, the native app launches the browser with a standard authorization request,
         // but one where the redirect URI utilizes a private-use URI scheme it registered with the operating system.
-        if (redirectUri.IsLoopback)
+        if (typedRedirectUri.IsLoopback)
         {
             foreach (var preRegisteredRedirectUri in preRegisteredRedirectUris)
             {
@@ -648,13 +651,13 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
                 if (ClientRedirectUriSyntaxValidator.IsValid(preRegisteredRedirectUri, out var clientRedirectUri)
                     && clientRedirectUri.IsLoopback
                     && clientRedirectUri.IsWellFormedOriginalString()
-                    && clientRedirectUri.Scheme == redirectUri.Scheme
-                    && clientRedirectUri.Host == redirectUri.Host
-                    && clientRedirectUri.PathAndQuery == redirectUri.PathAndQuery
+                    && clientRedirectUri.Scheme == typedRedirectUri.Scheme
+                    && clientRedirectUri.Host == typedRedirectUri.Host
+                    && clientRedirectUri.PathAndQuery == typedRedirectUri.PathAndQuery
                     && string.IsNullOrEmpty(clientRedirectUri.Fragment)
-                    && string.IsNullOrEmpty(redirectUri.Fragment))
+                    && string.IsNullOrEmpty(typedRedirectUri.Fragment))
                 {
-                    return Task.FromResult(new RedirectUriValidationResult(redirectUriString));
+                    return Task.FromResult(new RedirectUriValidationResult(originalRedirectUri, originalRedirectUri));
                 }
             }
 
@@ -662,11 +665,11 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
         }
 
         // OAuth 2.1 non-loopback didn't allow http
-        if (!redirectUri.IsLoopback
-            && redirectUri.Scheme != Uri.UriSchemeHttp
-            && preRegisteredRedirectUris.Contains(redirectUriString, StringComparer.Ordinal))
+        if (!typedRedirectUri.IsLoopback
+            && typedRedirectUri.Scheme != Uri.UriSchemeHttp
+            && preRegisteredRedirectUris.Contains(originalRedirectUri, StringComparer.Ordinal))
         {
-            return Task.FromResult(new RedirectUriValidationResult(redirectUriString));
+            return Task.FromResult(new RedirectUriValidationResult(originalRedirectUri, originalRedirectUri));
         }
 
         return Task.FromResult(RedirectUriValidationResult.InvalidRedirectUri);
@@ -678,7 +681,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
             {
                 if (clientRedirectUris.Count == 1)
                 {
-                    return new(clientRedirectUris.Single());
+                    return new(clientRedirectUris.Single(), null);
                 }
 
                 // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-2.3.2
@@ -857,6 +860,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
         HttpContext httpContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         TClient client,
+        string codeChallengeMethod,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(parameters);
@@ -907,13 +911,18 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
             return Task.FromResult(CodeChallengeValidationResult.InvalidCodeChallengeSyntax);
         }
 
+        if (codeChallengeMethod == CodeChallengeMethod.S256 && !HexValidator.IsValid(codeChallenge))
+        {
+            return Task.FromResult(CodeChallengeValidationResult.InvalidCodeChallengeSyntax);
+        }
+
         return Task.FromResult(new CodeChallengeValidationResult(codeChallenge));
     }
 
     protected virtual Task<NonceValidationResult> ValidateNonceAsync(
         HttpContext httpContext,
         IReadOnlyDictionary<string, StringValues> parameters,
-        string grantType,
+        string authorizationFlow,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -926,7 +935,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
         // nonce - Use of the "nonce" Claim is REQUIRED for this flow (hybrid).
         if (!parameters.TryGetValue(RequestParameters.Nonce, out var nonceValues) || nonceValues.Count == 0)
         {
-            return Task.FromResult(InferDefaultResult(grantType));
+            return Task.FromResult(InferDefaultResult(authorizationFlow));
         }
 
         // Inherit from OAuth 2.1 (because OpenID Connect 1.0 doesn't define behaviour).
@@ -942,7 +951,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
         var nonce = nonceValues.ToString();
         if (string.IsNullOrEmpty(nonce))
         {
-            return Task.FromResult(InferDefaultResult(grantType));
+            return Task.FromResult(InferDefaultResult(authorizationFlow));
         }
 
         // length check
@@ -953,9 +962,9 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
 
         return Task.FromResult(new NonceValidationResult(nonce));
 
-        static NonceValidationResult InferDefaultResult(string grantType)
+        static NonceValidationResult InferDefaultResult(string authorizationFlow)
         {
-            if (grantType == DefaultGrantTypes.Hybrid)
+            if (authorizationFlow == DefaultAuthorizationFlows.Hybrid)
             {
                 return NonceValidationResult.NonceIsMissing;
             }
@@ -1350,25 +1359,27 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
             string issuer,
             TClient client,
             string responseType,
-            string grantType,
+            string authorizationFlow,
             string? state,
             string responseMode,
-            string redirectUri)
+            string actualRedirectUri,
+            string? originalRedirectUri)
         {
             ArgumentNullException.ThrowIfNull(issuer);
             ArgumentNullException.ThrowIfNull(client);
             ArgumentNullException.ThrowIfNull(responseType);
-            ArgumentNullException.ThrowIfNull(grantType);
+            ArgumentNullException.ThrowIfNull(authorizationFlow);
             ArgumentNullException.ThrowIfNull(responseMode);
-            ArgumentNullException.ThrowIfNull(redirectUri);
+            ArgumentNullException.ThrowIfNull(actualRedirectUri);
             RequestDate = requestDate;
             Issuer = issuer;
             Client = client;
             ResponseType = responseType;
-            GrantType = grantType;
+            AuthorizationFlow = authorizationFlow;
             State = state;
             ResponseMode = responseMode;
-            RedirectUri = redirectUri;
+            ActualRedirectUri = actualRedirectUri;
+            OriginalRedirectUri = originalRedirectUri;
         }
 
         public DateTimeOffset RequestDate { get; }
@@ -1379,18 +1390,19 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
 
         public string ResponseType { get; }
 
-        public string GrantType { get; }
+        public string AuthorizationFlow { get; }
 
         public string? State { get; }
 
         public string ResponseMode { get; }
 
-        public string RedirectUri { get; }
+        public string ActualRedirectUri { get; }
+        public string? OriginalRedirectUri { get; }
 
         [SuppressMessage("ReSharper", "VirtualMemberNeverOverridden.Global")]
         public virtual AuthorizeRequestValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret> BuildError(ProtocolError error)
         {
-            return new(new AuthorizeRequestValidationError<TClient, TClientSecret>(RequestDate, Issuer, error, Client, RedirectUri, ResponseMode, State));
+            return new(new AuthorizeRequestValidationError<TClient, TClientSecret>(RequestDate, Issuer, error, Client, ActualRedirectUri, ResponseMode, State));
         }
     }
 
@@ -1465,12 +1477,12 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     protected class ResponseTypeValidationResult
     {
         public static readonly ResponseTypeValidationResult Code = new(
-            Constants.Requests.Authorize.ResponseType.Code,
-            DefaultGrantTypes.AuthorizationCode);
+            Constants.Request.Authorize.ResponseType.Code,
+            DefaultAuthorizationFlows.AuthorizationCode);
 
         public static readonly ResponseTypeValidationResult CodeIdToken = new(
-            Constants.Requests.Authorize.ResponseType.CodeIdToken,
-            DefaultGrantTypes.Hybrid);
+            Constants.Request.Authorize.ResponseType.CodeIdToken,
+            DefaultAuthorizationFlows.Hybrid);
 
         public static readonly ResponseTypeValidationResult ResponseTypeIsMissing = new(new(
             Errors.InvalidRequest,
@@ -1491,23 +1503,23 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
             HasError = true;
         }
 
-        public ResponseTypeValidationResult(string responseType, string grantType)
+        public ResponseTypeValidationResult(string responseType, string authorizationFlow)
         {
             ArgumentNullException.ThrowIfNull(responseType);
-            ArgumentNullException.ThrowIfNull(grantType);
+            ArgumentNullException.ThrowIfNull(authorizationFlow);
             ResponseType = responseType;
-            GrantType = grantType;
+            AuthorizationFlow = authorizationFlow;
         }
 
         public string? ResponseType { get; }
 
-        public string? GrantType { get; }
+        public string? AuthorizationFlow { get; }
 
         public ProtocolError? Error { get; }
 
         [MemberNotNullWhen(true, nameof(Error))]
         [MemberNotNullWhen(false, nameof(ResponseType))]
-        [MemberNotNullWhen(false, nameof(GrantType))]
+        [MemberNotNullWhen(false, nameof(AuthorizationFlow))]
         public bool HasError { get; }
     }
 
@@ -1549,9 +1561,9 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
 
     protected class ResponseModeValidationResult
     {
-        public static readonly ResponseModeValidationResult Query = new(Constants.Requests.Authorize.ResponseMode.Query);
-        public static readonly ResponseModeValidationResult Fragment = new(Constants.Requests.Authorize.ResponseMode.Fragment);
-        public static readonly ResponseModeValidationResult FormPost = new(Constants.Requests.Authorize.ResponseMode.FormPost);
+        public static readonly ResponseModeValidationResult Query = new(Constants.Request.Authorize.ResponseMode.Query);
+        public static readonly ResponseModeValidationResult Fragment = new(Constants.Request.Authorize.ResponseMode.Fragment);
+        public static readonly ResponseModeValidationResult FormPost = new(Constants.Request.Authorize.ResponseMode.FormPost);
 
         public static readonly ResponseModeValidationResult MultipleResponseModeValuesNotAllowed = new(new ProtocolError(
             Errors.InvalidRequest,
@@ -1589,34 +1601,35 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
 
     protected class RedirectUriValidationResult
     {
-        public static readonly RedirectUriValidationResult RedirectUriIsMissing = new(new ProtocolError(
+        public static readonly RedirectUriValidationResult RedirectUriIsMissing = new(new(
             Errors.InvalidRequest,
             "\"redirect_uri\" is missing"));
 
-        public static readonly RedirectUriValidationResult MultipleRedirectUriValuesNotAllowed = new(new ProtocolError(
+        public static readonly RedirectUriValidationResult MultipleRedirectUriValuesNotAllowed = new(new(
             Errors.InvalidRequest,
             "Multiple \"redirect_uri\" values are present, but only one is allowed"));
 
-        public static readonly RedirectUriValidationResult RedirectUriIsTooLong = new(new ProtocolError(
+        public static readonly RedirectUriValidationResult RedirectUriIsTooLong = new(new(
             Errors.InvalidRequest,
             "\"redirect_uri\" is too long"));
 
-        public static readonly RedirectUriValidationResult InvalidRedirectUriSyntax = new(new ProtocolError(
+        public static readonly RedirectUriValidationResult InvalidRedirectUriSyntax = new(new(
             Errors.InvalidRequest,
             "Invalid \"redirect_uri\" syntax"));
 
-        public static readonly RedirectUriValidationResult InvalidRedirectUri = new(new ProtocolError(
+        public static readonly RedirectUriValidationResult InvalidRedirectUri = new(new(
             Errors.InvalidRequest,
             "Invalid \"redirect_uri\""));
 
-        public static readonly RedirectUriValidationResult NoPreRegisteredRedirectUrisInClientConfiguration = new(new ProtocolError(
+        public static readonly RedirectUriValidationResult NoPreRegisteredRedirectUrisInClientConfiguration = new(new(
             Errors.ServerError,
             "The client configuration does not contain any pre-registered \"redirect_uri\""));
 
-        public RedirectUriValidationResult(string redirectUri)
+        public RedirectUriValidationResult(string actualRedirectUri, string? originalRedirectUri)
         {
-            ArgumentNullException.ThrowIfNull(redirectUri);
-            RedirectUri = redirectUri;
+            ArgumentNullException.ThrowIfNull(actualRedirectUri);
+            ActualRedirectUri = actualRedirectUri;
+            OriginalRedirectUri = originalRedirectUri;
         }
 
         public RedirectUriValidationResult(ProtocolError error)
@@ -1626,12 +1639,13 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
             HasError = true;
         }
 
-        public string? RedirectUri { get; }
+        public string? ActualRedirectUri { get; }
+        public string? OriginalRedirectUri { get; }
 
         public ProtocolError? Error { get; }
 
         [MemberNotNullWhen(true, nameof(Error))]
-        [MemberNotNullWhen(false, nameof(RedirectUri))]
+        [MemberNotNullWhen(false, nameof(ActualRedirectUri))]
         public bool HasError { get; }
     }
 
@@ -1695,9 +1709,9 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
             Errors.InvalidRequest,
             "Unknown \"code_challenge_method\""));
 
-        public static readonly CodeChallengeMethodValidationResult Plain = new(Constants.Requests.Authorize.CodeChallengeMethod.Plain);
+        public static readonly CodeChallengeMethodValidationResult Plain = new(Constants.Request.Authorize.CodeChallengeMethod.Plain);
 
-        public static readonly CodeChallengeMethodValidationResult S256 = new(Constants.Requests.Authorize.CodeChallengeMethod.S256);
+        public static readonly CodeChallengeMethodValidationResult S256 = new(Constants.Request.Authorize.CodeChallengeMethod.S256);
 
         public CodeChallengeMethodValidationResult(ProtocolError error)
         {
@@ -1922,13 +1936,13 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     {
         public static readonly DisplayValidationResult Null = new((string?) null);
 
-        public static readonly DisplayValidationResult Page = new(Constants.Requests.Authorize.Display.Page);
+        public static readonly DisplayValidationResult Page = new(Constants.Request.Authorize.Display.Page);
 
-        public static readonly DisplayValidationResult Popup = new(Constants.Requests.Authorize.Display.Popup);
+        public static readonly DisplayValidationResult Popup = new(Constants.Request.Authorize.Display.Popup);
 
-        public static readonly DisplayValidationResult Touch = new(Constants.Requests.Authorize.Display.Touch);
+        public static readonly DisplayValidationResult Touch = new(Constants.Request.Authorize.Display.Touch);
 
-        public static readonly DisplayValidationResult Wap = new(Constants.Requests.Authorize.Display.Wap);
+        public static readonly DisplayValidationResult Wap = new(Constants.Request.Authorize.Display.Wap);
 
         public static readonly DisplayValidationResult MultipleDisplayValues = new(new ProtocolError(
             Errors.InvalidRequest,

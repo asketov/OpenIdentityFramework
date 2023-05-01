@@ -17,4 +17,14 @@ public interface ITokenService<TClient, TClientSecret, TScope, TResource, TResou
         HttpContext httpContext,
         IdTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> idTokenRequest,
         CancellationToken cancellationToken);
+
+    Task<AccessTokenResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>> CreateAccessTokenAsync(
+        HttpContext httpContext,
+        AccessTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> accessTokenRequest,
+        CancellationToken cancellationToken);
+
+    Task<string> CreateRefreshTokenAsync(
+        HttpContext httpContext,
+        RefreshTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> refreshTokenRequest,
+        CancellationToken cancellationToken);
 }

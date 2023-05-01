@@ -13,9 +13,8 @@ public class IdTokenRequest<TClient, TClientSecret, TScope, TResource, TResource
     where TResourceSecret : AbstractSecret
 {
     public IdTokenRequest(
-        UserAuthenticationTicket ticket,
+        UserAuthentication userAuthentication,
         TClient client,
-        string redirectUri,
         ValidResources<TScope, TResource, TResourceSecret> grantedResources,
         string? nonce,
         string? state,
@@ -25,9 +24,8 @@ public class IdTokenRequest<TClient, TClientSecret, TScope, TResource, TResource
         string? authorizationCode,
         bool forceIncludeUserClaimsInIdToken)
     {
-        Ticket = ticket;
+        UserAuthentication = userAuthentication;
         Client = client;
-        RedirectUri = redirectUri;
         GrantedResources = grantedResources;
         Nonce = nonce;
         State = state;
@@ -38,11 +36,9 @@ public class IdTokenRequest<TClient, TClientSecret, TScope, TResource, TResource
         ForceIncludeUserClaimsInIdToken = forceIncludeUserClaimsInIdToken;
     }
 
-    public UserAuthenticationTicket Ticket { get; }
+    public UserAuthentication UserAuthentication { get; }
 
     public TClient Client { get; }
-
-    public string RedirectUri { get; }
 
     public ValidResources<TScope, TResource, TResourceSecret> GrantedResources { get; }
 

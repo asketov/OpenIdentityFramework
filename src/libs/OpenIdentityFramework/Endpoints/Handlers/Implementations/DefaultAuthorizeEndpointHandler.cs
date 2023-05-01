@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Constants;
-using OpenIdentityFramework.Constants.Responses.Authorize;
+using OpenIdentityFramework.Constants.Response.Authorize;
 using OpenIdentityFramework.Endpoints.Results;
 using OpenIdentityFramework.Endpoints.Results.Implementations;
 using OpenIdentityFramework.Extensions;
@@ -33,7 +33,6 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
     where TResourceSecret : AbstractSecret
     where TRequestConsent : AbstractAuthorizeRequestConsent
     where TAuthorizeRequestParameters : AbstractAuthorizeRequestParameters
-
 {
     public DefaultAuthorizeEndpointHandler(
         OpenIdentityFrameworkOptions frameworkOptions,
@@ -154,7 +153,7 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
             FrameworkOptions,
             HtmlEncoder,
             successfulResponseParameters,
-            interactionResult.ValidRequest.AuthorizeRequest.RedirectUri,
+            interactionResult.ValidRequest.AuthorizeRequest.ActualRedirectUri,
             interactionResult.ValidRequest.AuthorizeRequest.ResponseMode);
     }
 
@@ -218,11 +217,11 @@ public class DefaultAuthorizeEndpointHandler<TClient, TClientSecret, TScope, TRe
                 FrameworkOptions,
                 HtmlEncoder,
                 errorParameters,
-                authorizeRequest.RedirectUri,
+                authorizeRequest.ActualRedirectUri,
                 authorizeRequest.ResponseMode);
         }
 
-        var errorToSave = new Error(protocolError, authorizeRequest.Client.GetClientId(), authorizeRequest.RedirectUri, authorizeRequest.ResponseMode, authorizeRequest.Issuer);
+        var errorToSave = new Error(protocolError, authorizeRequest.Client.GetClientId(), authorizeRequest.ActualRedirectUri, authorizeRequest.ResponseMode, authorizeRequest.Issuer);
         var errorId = await ErrorService.SaveAsync(httpContext, errorToSave, cancellationToken);
         return new DefaultErrorPageResult(FrameworkOptions, errorId);
     }

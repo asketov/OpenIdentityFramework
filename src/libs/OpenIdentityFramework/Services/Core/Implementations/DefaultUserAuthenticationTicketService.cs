@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Security.Claims;
@@ -7,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Configuration.Options;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
@@ -48,7 +50,7 @@ public class DefaultUserAuthenticationTicketService : IUserAuthenticationTicketS
         return await HandleAuthenticateResultAsync(httpContext, authenticationResult, cancellationToken);
     }
 
-    protected virtual Task<UserAuthenticationResult> HandleAuthenticateResultAsync(
+    protected virtual async Task<UserAuthenticationResult> HandleAuthenticateResultAsync(
         HttpContext httpContext,
         AuthenticateResult? authenticateResult,
         CancellationToken cancellationToken)
@@ -56,27 +58,28 @@ public class DefaultUserAuthenticationTicketService : IUserAuthenticationTicketS
         cancellationToken.ThrowIfCancellationRequested();
         if (authenticateResult is null || !authenticateResult.Succeeded || authenticateResult.Ticket.Principal.Identity?.IsAuthenticated != true)
         {
-            return Task.FromResult<UserAuthenticationResult>(new());
+            return new();
         }
 
         if (!TryGetSingleClaimValue(authenticateResult.Ticket.Principal, FrameworkOptions.Authentication.SubjectIdClaimType, out var subjectId))
         {
-            return Task.FromResult<UserAuthenticationResult>(new($"Can't read \"{FrameworkOptions.Authentication.SubjectIdClaimType}\" claim"));
+            return new($"Can't read \"{FrameworkOptions.Authentication.SubjectIdClaimType}\" claim");
         }
 
         if (!TryGetSingleClaimValue(authenticateResult.Ticket.Principal, FrameworkOptions.Authentication.SessionIdClaimType, out var sessionId))
         {
-            return Task.FromResult<UserAuthenticationResult>(new($"Can't read \"{FrameworkOptions.Authentication.SessionIdClaimType}\" claim"));
+            return new($"Can't read \"{FrameworkOptions.Authentication.SessionIdClaimType}\" claim");
         }
 
         if (!TryGetAuthenticationDate(authenticateResult.Ticket, out var authenticatedAt))
         {
-            return Task.FromResult<UserAuthenticationResult>(new($"Can't read \"{typeof(AuthenticationTicket).Namespace}.{nameof(AuthenticationTicket)}.{nameof(AuthenticationTicket.Properties)}.{nameof(AuthenticationProperties.IssuedUtc)}\" authentication property"));
+            return new($"Can't read \"{typeof(AuthenticationTicket).Namespace}.{nameof(AuthenticationTicket)}.{nameof(AuthenticationTicket.Properties)}.{nameof(AuthenticationProperties.IssuedUtc)}\" authentication property");
         }
 
-        var userAuthentication = new UserAuthentication(subjectId, sessionId, authenticatedAt.Value);
+        var customClaims = await GetCustomClaimsAsync(httpContext, authenticateResult.Ticket, cancellationToken);
+        var userAuthentication = new UserAuthentication(subjectId, sessionId, authenticatedAt.Value, customClaims);
         var resultTicket = new UserAuthenticationTicket(userAuthentication, authenticateResult.Ticket);
-        return Task.FromResult<UserAuthenticationResult>(new(resultTicket));
+        return new(resultTicket);
     }
 
     protected virtual bool TryGetSingleClaimValue(ClaimsPrincipal principal, string claimType, [NotNullWhen(true)] out string? value)
@@ -104,5 +107,15 @@ public class DefaultUserAuthenticationTicketService : IUserAuthenticationTicketS
 
         value = null;
         return false;
+    }
+
+    protected virtual Task<IReadOnlySet<LightweightClaim>> GetCustomClaimsAsync(
+        HttpContext httpContext,
+        AuthenticationTicket authenticationTicket,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        IReadOnlySet<LightweightClaim> result = new HashSet<LightweightClaim>(LightweightClaim.EqualityComparer);
+        return Task.FromResult(result);
     }
 }

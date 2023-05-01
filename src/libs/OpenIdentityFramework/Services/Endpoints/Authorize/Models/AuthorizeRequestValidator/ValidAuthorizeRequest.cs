@@ -17,12 +17,13 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
         DateTimeOffset initialRequestDate,
         string issuer,
         TClient client,
-        string redirectUri,
+        string actualRedirectUri,
+        string? originalRedirectUri,
         ValidResources<TScope, TResource, TResourceSecret> requestedResources,
         string codeChallenge,
         string codeChallengeMethod,
         string responseType,
-        string grantType,
+        string authorizationFlow,
         string? state,
         string responseMode,
         IReadOnlyDictionary<string, StringValues> raw)
@@ -34,9 +35,9 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
 
         ArgumentNullException.ThrowIfNull(client);
 
-        if (string.IsNullOrWhiteSpace(redirectUri))
+        if (string.IsNullOrWhiteSpace(actualRedirectUri))
         {
-            throw new ArgumentException("Value cannot be null or whitespace.", nameof(redirectUri));
+            throw new ArgumentException("Value cannot be null or whitespace.", nameof(actualRedirectUri));
         }
 
         ArgumentNullException.ThrowIfNull(requestedResources);
@@ -56,9 +57,9 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(responseType));
         }
 
-        if (string.IsNullOrWhiteSpace(grantType))
+        if (string.IsNullOrWhiteSpace(authorizationFlow))
         {
-            throw new ArgumentException("Value cannot be null or whitespace.", nameof(grantType));
+            throw new ArgumentException("Value cannot be null or whitespace.", nameof(authorizationFlow));
         }
 
         if (string.IsNullOrWhiteSpace(responseMode))
@@ -69,12 +70,13 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
         InitialRequestDate = initialRequestDate;
         Issuer = issuer;
         Client = client;
-        RedirectUri = redirectUri;
+        ActualRedirectUri = actualRedirectUri;
+        OriginalRedirectUri = originalRedirectUri;
         RequestedResources = requestedResources;
         CodeChallenge = codeChallenge;
         CodeChallengeMethod = codeChallengeMethod;
         ResponseType = responseType;
-        GrantType = grantType;
+        AuthorizationFlow = authorizationFlow;
         State = state;
         ResponseMode = responseMode;
         Raw = raw;
@@ -85,12 +87,13 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
         DateTimeOffset initialRequestDate,
         string issuer,
         TClient client,
-        string redirectUri,
+        string actualRedirectUri,
+        string? originalRedirectUri,
         ValidResources<TScope, TResource, TResourceSecret> requestedResources,
         string codeChallenge,
         string codeChallengeMethod,
         string responseType,
-        string grantType,
+        string authorizationFlow,
         string? state,
         string responseMode,
         string? nonce,
@@ -109,9 +112,9 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
 
         ArgumentNullException.ThrowIfNull(client);
 
-        if (string.IsNullOrWhiteSpace(redirectUri))
+        if (string.IsNullOrWhiteSpace(actualRedirectUri))
         {
-            throw new ArgumentException("Value cannot be null or whitespace.", nameof(redirectUri));
+            throw new ArgumentException("Value cannot be null or whitespace.", nameof(actualRedirectUri));
         }
 
         ArgumentNullException.ThrowIfNull(requestedResources);
@@ -131,9 +134,9 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(responseType));
         }
 
-        if (string.IsNullOrWhiteSpace(grantType))
+        if (string.IsNullOrWhiteSpace(authorizationFlow))
         {
-            throw new ArgumentException("Value cannot be null or whitespace.", nameof(grantType));
+            throw new ArgumentException("Value cannot be null or whitespace.", nameof(authorizationFlow));
         }
 
         if (string.IsNullOrWhiteSpace(responseMode))
@@ -144,12 +147,13 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
         InitialRequestDate = initialRequestDate;
         Issuer = issuer;
         Client = client;
-        RedirectUri = redirectUri;
+        ActualRedirectUri = actualRedirectUri;
+        OriginalRedirectUri = originalRedirectUri;
         RequestedResources = requestedResources;
         CodeChallenge = codeChallenge;
         CodeChallengeMethod = codeChallengeMethod;
         ResponseType = responseType;
-        GrantType = grantType;
+        AuthorizationFlow = authorizationFlow;
         State = state;
         ResponseMode = responseMode;
         Nonce = nonce;
@@ -169,7 +173,9 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
 
     public TClient Client { get; }
 
-    public string RedirectUri { get; }
+    public string ActualRedirectUri { get; }
+
+    public string? OriginalRedirectUri { get; }
 
     public ValidResources<TScope, TResource, TResourceSecret> RequestedResources { get; }
 
@@ -183,7 +189,7 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
 
     public string ResponseMode { get; }
 
-    public string GrantType { get; }
+    public string AuthorizationFlow { get; }
 
     public bool IsOpenIdRequest { get; }
 

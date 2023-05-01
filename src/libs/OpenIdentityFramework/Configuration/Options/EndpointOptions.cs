@@ -7,4 +7,5 @@ namespace OpenIdentityFramework.Configuration.Options;
 public class EndpointOptions
 {
     public AuthorizeEndpointOptions Authorize { get; set; } = new();
+    public TokenEndpointOptions Token { get; set; } = new();
 }

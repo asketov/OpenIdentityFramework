@@ -8,7 +8,7 @@ namespace OpenIdentityFramework.Storages.Configuration;
 
 public interface IKeyMaterialStorage
 {
-    Task<IReadOnlyCollection<SigningCredentials>> GetSigningCredentialsAsync(
+    Task<IReadOnlyCollection<SigningCredentials>> FindAsync(
         HttpContext httpContext,
         string issuer,
         IReadOnlySet<string>? allowedSigningAlgorithms,

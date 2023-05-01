@@ -2,6 +2,6 @@
 
 public static class DefaultInteractionResult
 {
-    public static readonly string Login = "login";
-    public static readonly string Consent = "consent";
+    public const string Login = "login";
+    public const string Consent = "consent";
 }

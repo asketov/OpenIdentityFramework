@@ -72,7 +72,7 @@ public class DefaultResourceValidator<TClient, TClientSecret, TScope, TResource,
         // process offline access
         if (requestedScopes.Contains(DefaultScopes.OfflineAccess))
         {
-            if (client.GetAllowedGrantTypes().Contains(DefaultGrantTypes.RefreshToken))
+            if (client.GetAllowedAuthorizationFlows().Contains(DefaultAuthorizationFlows.RefreshToken))
             {
                 hasOfflineAccess = true;
                 processedScopes.Add(DefaultScopes.OfflineAccess);

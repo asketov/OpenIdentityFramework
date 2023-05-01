@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Constants;
-using OpenIdentityFramework.Constants.Requests.Authorize;
-using OpenIdentityFramework.Constants.Responses.Authorize;
+using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Constants.Response.Authorize;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
@@ -86,7 +86,7 @@ public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, T
         ArgumentNullException.ThrowIfNull(authorizeRequest);
         ArgumentNullException.ThrowIfNull(ticket);
         cancellationToken.ThrowIfCancellationRequested();
-        var userIsActive = await UserProfile.IsActiveAsync(httpContext, ticket, cancellationToken);
+        var userIsActive = await UserProfile.IsActiveAsync(httpContext, ticket.UserAuthentication, cancellationToken);
         if (!userIsActive)
         {
             return LoginErrorOrInteractionRequired(isPromptNone);

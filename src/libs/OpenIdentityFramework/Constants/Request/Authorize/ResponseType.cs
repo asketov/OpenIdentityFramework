@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace OpenIdentityFramework.Constants.Requests.Authorize;
+namespace OpenIdentityFramework.Constants.Request.Authorize;
 
 public static class ResponseType
 {
-    public static readonly string Code = "code";
-    public static readonly string CodeIdToken = "code id_token";
+    public const string Code = "code";
+    public const string CodeIdToken = "code id_token";
 
     public static readonly IReadOnlySet<string> HybridFlow = CodeIdToken.Split(' ').ToHashSet(StringComparer.Ordinal);
 

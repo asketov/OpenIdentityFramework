@@ -13,10 +13,16 @@ public interface IJwtService
     Task<string> CreateIdTokenAsync(
         HttpContext httpContext,
         SigningCredentials signingCredentials,
-        string issuer,
-        IReadOnlySet<string> audiences,
-        DateTimeOffset createdAt,
-        TimeSpan lifetime,
+        DateTimeOffset issuedAt,
+        DateTimeOffset expiresAt,
+        IReadOnlySet<LightweightClaim> claims,
+        CancellationToken cancellationToken);
+
+    Task<string> CreateAccessTokenAsync(
+        HttpContext httpContext,
+        SigningCredentials signingCredentials,
+        DateTimeOffset issuedAt,
+        DateTimeOffset expiresAt,
         IReadOnlySet<LightweightClaim> claims,
         CancellationToken cancellationToken);
 }

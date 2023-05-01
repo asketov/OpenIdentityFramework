@@ -51,7 +51,7 @@ public class DefaultAuthorizeRequestParametersService<TAuthorizeRequestParameter
     public virtual async Task<TAuthorizeRequestParameters?> ReadAsync(HttpContext httpContext, string authorizeRequestId, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var parameters = await Storage.ReadAsync(httpContext, authorizeRequestId, cancellationToken);
+        var parameters = await Storage.FindAsync(httpContext, authorizeRequestId, cancellationToken);
         if (parameters != null)
         {
             var currentDate = SystemClock.UtcNow;

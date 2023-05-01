@@ -11,8 +11,7 @@ public abstract class AbstractClient<TClientSecret>
     public abstract IReadOnlySet<string> GetPreRegisteredRedirectUris();
     public abstract string GetClientType();
     public abstract IReadOnlySet<string> GetAllowedScopes();
-    public abstract IReadOnlyCollection<TClientSecret> GetSecrets();
-    public abstract IReadOnlySet<string> GetAllowedGrantTypes();
+    public abstract IReadOnlySet<string> GetAllowedAuthorizationFlows();
     public abstract IReadOnlySet<string> GetAllowedCodeChallengeMethods();
     public abstract bool IsConsentRequired();
     public abstract bool CanRememberConsent();
@@ -21,7 +20,11 @@ public abstract class AbstractClient<TClientSecret>
     public abstract bool ShouldAlwaysIncludeUserClaimsInIdToken();
     public abstract IReadOnlySet<string> GetAllowedIdTokenSigningAlgorithms();
     public abstract TimeSpan GetIdTokenLifetime();
-
+    public abstract string GetAuthenticationMethod();
+    public abstract IReadOnlyCollection<TClientSecret> GetSecrets();
+    public abstract string GetAccessTokenType();
+    public abstract bool ShouldIncludeJwtIdIntoAccessToken();
+    public abstract TimeSpan GetAccessTokenLifetime();
 
     public bool IsConfidential()
     {

@@ -42,6 +42,11 @@ public class ValidResources<TScope, TResource, TResourceSecret>
             {
                 accessTokenScopes.Add(scope);
             }
+
+            if (scopeName == DefaultScopes.OpenId)
+            {
+                HasOpenId = true;
+            }
         }
 
         if (hasOfflineAccess)
@@ -60,6 +65,7 @@ public class ValidResources<TScope, TResource, TResourceSecret>
     public IReadOnlySet<string> RawScopes { get; }
     public IReadOnlySet<TResource> Resources { get; }
     public bool HasOfflineAccess { get; }
+    public bool HasOpenId { get; }
 
     public bool HasAnyScope()
     {

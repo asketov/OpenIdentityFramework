@@ -43,18 +43,18 @@ public class DefaultDirectAuthorizeResult : IEndpointHandlerResult
     {
         ArgumentNullException.ThrowIfNull(httpContext);
         cancellationToken.ThrowIfCancellationRequested();
-        if (ResponseMode == Constants.Requests.Authorize.ResponseMode.Query)
+        if (ResponseMode == Constants.Request.Authorize.ResponseMode.Query)
         {
             HandleQueryResponse(httpContext, cancellationToken);
         }
-        else if (ResponseMode == Constants.Requests.Authorize.ResponseMode.FormPost)
+        else if (ResponseMode == Constants.Request.Authorize.ResponseMode.FormPost)
         {
             await HandlePostResponseAsync(httpContext, cancellationToken);
         }
         else
         {
             throw new InvalidOperationException(
-                $"Unexpected response mode. Expected values are: {Constants.Requests.Authorize.ResponseMode.Query}, {Constants.Requests.Authorize.ResponseMode.FormPost}, but actual was: {ResponseMode}");
+                $"Unexpected response mode. Expected values are: {Constants.Request.Authorize.ResponseMode.Query}, {Constants.Request.Authorize.ResponseMode.FormPost}, but actual was: {ResponseMode}");
         }
     }
 

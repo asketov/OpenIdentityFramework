@@ -26,7 +26,7 @@ public class DefaultKeyMaterialService : IKeyMaterialService
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var credentials = await Storage.GetSigningCredentialsAsync(httpContext, issuer, allowedSigningAlgorithms, cancellationToken);
+        var credentials = await Storage.FindAsync(httpContext, issuer, allowedSigningAlgorithms, cancellationToken);
         return GetSigningCredentials(credentials, allowedSigningAlgorithms);
     }
 

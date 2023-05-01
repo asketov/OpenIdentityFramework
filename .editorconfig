@@ -398,6 +398,10 @@ csharp_place_field_attribute_on_same_line = false
 # A type declares a method with a string parameter whose name contains "uri", "Uri", "urn", "Urn", "url", or "Url", and the type does not declare a corresponding overload that takes a System.Uri parameter.
 dotnet_diagnostic.CA1054.severity = suggestion
 
+# CA1055: URI return values should not be strings
+# The name of a method contains "uri", "Uri", "urn", "Urn", "url", or "Url", and the method returns a string.
+dotnet_diagnostic.CA1055.severity = suggestion
+
 # CA1056: URI properties should not be strings
 # A type declares a string property whose name contains "uri", "Uri", "urn", "Urn", "url", or "Url".
 dotnet_diagnostic.CA1056.severity = suggestion

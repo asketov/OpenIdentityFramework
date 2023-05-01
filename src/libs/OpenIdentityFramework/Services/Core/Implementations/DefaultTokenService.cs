@@ -1,12 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core.Models.TokenService;
 using OpenIdentityFramework.Services.Cryptography;
+using OpenIdentityFramework.Storages.Operation;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
@@ -19,25 +20,33 @@ public class DefaultTokenService<TClient, TClientSecret, TScope, TResource, TRes
     where TResourceSecret : AbstractSecret
 {
     public DefaultTokenService(
+        OpenIdentityFrameworkOptions frameworkOptions,
         ITokenClaimsService<TClient, TClientSecret, TScope, TResource, TResourceSecret> tokenClaims,
         IKeyMaterialService keyMaterial,
         IIdTokenLeftMostHasher idTokenLeftMostHasher,
-        IJwtService jwtService)
+        IJwtService jwtService,
+        IAccessTokenStorage accessTokenStorage)
     {
+        ArgumentNullException.ThrowIfNull(frameworkOptions);
         ArgumentNullException.ThrowIfNull(tokenClaims);
         ArgumentNullException.ThrowIfNull(keyMaterial);
         ArgumentNullException.ThrowIfNull(idTokenLeftMostHasher);
         ArgumentNullException.ThrowIfNull(jwtService);
+        ArgumentNullException.ThrowIfNull(accessTokenStorage);
+        FrameworkOptions = frameworkOptions;
         TokenClaims = tokenClaims;
         KeyMaterial = keyMaterial;
         IdTokenLeftMostHasher = idTokenLeftMostHasher;
         JwtService = jwtService;
+        AccessTokenStorage = accessTokenStorage;
     }
 
+    protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
     protected ITokenClaimsService<TClient, TClientSecret, TScope, TResource, TResourceSecret> TokenClaims { get; }
     protected IKeyMaterialService KeyMaterial { get; }
     protected IIdTokenLeftMostHasher IdTokenLeftMostHasher { get; }
     protected IJwtService JwtService { get; }
+    protected IAccessTokenStorage AccessTokenStorage { get; }
 
     public virtual async Task<string> CreateIdTokenAsync(
         HttpContext httpContext,
@@ -46,48 +55,84 @@ public class DefaultTokenService<TClient, TClientSecret, TScope, TResource, TRes
     {
         ArgumentNullException.ThrowIfNull(idTokenRequest);
         cancellationToken.ThrowIfCancellationRequested();
-        var claims = await TokenClaims.GetIdentityTokenClaimsAsync(httpContext, idTokenRequest, cancellationToken);
-        var audiences = new HashSet<string>(1)
-        {
-            idTokenRequest.Client.GetClientId()
-        };
-        if (idTokenRequest.Nonce != null)
-        {
-            claims.Add(new(DefaultJwtClaimTypes.Nonce, idTokenRequest.Nonce));
-        }
-
         var signingCredentials = await KeyMaterial.GetSigningCredentialsAsync(httpContext, idTokenRequest.Issuer, idTokenRequest.Client.GetAllowedIdTokenSigningAlgorithms(), cancellationToken);
-        if (!string.IsNullOrEmpty(idTokenRequest.AccessToken))
-        {
-            // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.3.2.11
-            // at_hash - Access Token hash value. Its value is the base64url encoding of the left-most half of the hash of the octets of the ASCII representation of the access_token value,
-            // where the hash algorithm used is the hash algorithm used in the alg Header Parameter of the ID Token's JOSE Header.
-            // For instance, if the alg is RS256, hash the access_token value with SHA-256, then take the left-most 128 bits and base64url encode them. The at_hash value is a case sensitive string.
-            // If the ID Token is issued from the Authorization Endpoint with an access_token value, which is the case for the response_type value code id_token token, this is REQUIRED;
-            // otherwise, its inclusion is OPTIONAL.
-            var accessTokenHash = IdTokenLeftMostHasher.ComputeHash(idTokenRequest.AccessToken, signingCredentials.Algorithm);
-            claims.Add(new(DefaultJwtClaimTypes.AccessTokenHash, accessTokenHash));
-        }
-
-        if (!string.IsNullOrEmpty(idTokenRequest.AuthorizationCode))
-        {
-            // c_hash - Code hash value. Its value is the base64url encoding of the left-most half of the hash of the octets of the ASCII representation of the code value,
-            // where the hash algorithm used is the hash algorithm used in the alg Header Parameter of the ID Token's JOSE Header.
-            // For instance, if the alg is HS512, hash the code value with SHA-512, then take the left-most 256 bits and base64url encode them.
-            // The c_hash value is a case sensitive string. If the ID Token is issued from the Authorization Endpoint with a code,
-            // which is the case for the response_type values code id_token and code id_token token, this is REQUIRED; otherwise, its inclusion is OPTIONAL.
-            var authorizationCodeHash = IdTokenLeftMostHasher.ComputeHash(idTokenRequest.AuthorizationCode, signingCredentials.Algorithm);
-            claims.Add(new(DefaultJwtClaimTypes.AuthorizationCodeHash, authorizationCodeHash));
-        }
-
+        var claims = await TokenClaims.GetIdentityTokenClaimsAsync(httpContext, idTokenRequest, signingCredentials, cancellationToken);
+        var issuedAt = DateTimeOffset.FromUnixTimeSeconds(idTokenRequest.IssuedAt.ToUnixTimeSeconds());
+        var expiresAt = issuedAt.Add(idTokenRequest.Client.GetIdTokenLifetime());
         return await JwtService.CreateIdTokenAsync(
             httpContext,
             signingCredentials,
-            idTokenRequest.Issuer,
-            audiences,
-            idTokenRequest.IssuedAt,
-            idTokenRequest.Client.GetIdTokenLifetime(),
+            issuedAt,
+            expiresAt,
             claims,
             cancellationToken);
+    }
+
+    public virtual async Task<AccessTokenResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>> CreateAccessTokenAsync(
+        HttpContext httpContext,
+        AccessTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> accessTokenRequest,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accessTokenRequest);
+        cancellationToken.ThrowIfCancellationRequested();
+        var claims = await TokenClaims.GetAccessTokenClaimsAsync(
+            httpContext,
+            accessTokenRequest,
+            cancellationToken);
+        var accessTokenType = accessTokenRequest.Client.GetAccessTokenType();
+        var accessTokenLifetime = accessTokenRequest.Client.GetAccessTokenLifetime();
+        var issuedAt = DateTimeOffset.FromUnixTimeSeconds(accessTokenRequest.IssuedAt.ToUnixTimeSeconds());
+        var expiresAt = issuedAt.Add(accessTokenLifetime);
+        string accessToken;
+        if (accessTokenType == DefaultAccessTokenType.Jwt)
+        {
+            var signingCredentials = await KeyMaterial.GetSigningCredentialsAsync(httpContext, accessTokenRequest.Issuer, accessTokenRequest.Client.GetAllowedIdTokenSigningAlgorithms(), cancellationToken);
+            accessToken = await JwtService.CreateAccessTokenAsync(
+                httpContext,
+                signingCredentials,
+                issuedAt,
+                expiresAt,
+                claims,
+                cancellationToken);
+        }
+        else if (accessTokenType == DefaultAccessTokenType.Reference)
+        {
+            accessToken = await AccessTokenStorage.CreateAsync(
+                httpContext,
+                accessTokenRequest.Issuer,
+                accessTokenRequest.Client.GetClientId(),
+                accessTokenRequest.UserAuthentication,
+                accessTokenRequest.RequestedResources.RawScopes,
+                claims,
+                issuedAt,
+                expiresAt,
+                cancellationToken);
+        }
+        else
+        {
+            throw new InvalidOperationException("Unsupported access token type!");
+        }
+
+        var lifetime = Convert.ToInt64(expiresAt.Subtract(issuedAt).TotalSeconds);
+        return new(
+            accessTokenType,
+            accessTokenRequest.Issuer,
+            accessTokenRequest.GrantType,
+            accessTokenRequest.Client,
+            accessTokenRequest.UserAuthentication,
+            accessTokenRequest.RequestedResources,
+            claims,
+            issuedAt,
+            expiresAt,
+            lifetime,
+            accessToken);
+    }
+
+    public Task<string> CreateRefreshTokenAsync(
+        HttpContext httpContext,
+        RefreshTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> refreshTokenRequest,
+        CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
     }
 }

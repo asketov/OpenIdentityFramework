@@ -18,7 +18,7 @@ public interface IAuthorizeRequestParametersStorage<TAuthorizeRequestParameters>
         DateTimeOffset? expiresAt,
         CancellationToken cancellationToken);
 
-    Task<TAuthorizeRequestParameters?> ReadAsync(
+    Task<TAuthorizeRequestParameters?> FindAsync(
         HttpContext httpContext,
         string authorizeRequestId,
         CancellationToken cancellationToken);

@@ -1,17 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.IdentityModel.Tokens;
+using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
 using OpenIdentityFramework.Services.Core.Models.TokenService;
 using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
+using OpenIdentityFramework.Services.Cryptography;
 using OpenIdentityFramework.Services.Operation;
+using OpenIdentityFramework.Services.Static.Cryptography;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
@@ -23,38 +28,101 @@ public class DefaultTokenClaimsService<TClient, TClientSecret, TScope, TResource
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
 {
-    public DefaultTokenClaimsService(IUserProfileService userProfile)
+    public DefaultTokenClaimsService(
+        OpenIdentityFrameworkOptions frameworkOptions,
+        IUserProfileService userProfile,
+        IIdTokenLeftMostHasher idTokenLeftMostHasher)
     {
+        ArgumentNullException.ThrowIfNull(frameworkOptions);
         ArgumentNullException.ThrowIfNull(userProfile);
+        ArgumentNullException.ThrowIfNull(idTokenLeftMostHasher);
+        FrameworkOptions = frameworkOptions;
         UserProfile = userProfile;
+        IdTokenLeftMostHasher = idTokenLeftMostHasher;
     }
 
+    protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
     protected IUserProfileService UserProfile { get; }
+    protected IIdTokenLeftMostHasher IdTokenLeftMostHasher { get; }
 
     public virtual async Task<HashSet<LightweightClaim>> GetIdentityTokenClaimsAsync(
         HttpContext httpContext,
         IdTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> idTokenRequest,
+        SigningCredentials signingCredentials,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(idTokenRequest);
+        ArgumentNullException.ThrowIfNull(signingCredentials);
         cancellationToken.ThrowIfCancellationRequested();
-        var result = new HashSet<LightweightClaim>(256, LightweightClaim.EqualityComparer);
-        var allowedClaimTypes = GetAllowedIdTokenClaimTypes(idTokenRequest.GrantedResources);
-        foreach (var subjectClaim in GetSubjectClaims(idTokenRequest.Ticket.UserAuthentication))
+        var result = new HashSet<LightweightClaim>(256, LightweightClaim.EqualityComparer)
+        {
+            // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.2
+            // iss - REQUIRED. Issuer Identifier for the Issuer of the response.
+            // The iss value is a case sensitive URL using the https scheme that contains scheme, host, and optionally, port number and path components and no query or fragment components.
+            new(DefaultJwtClaimTypes.Issuer, idTokenRequest.Issuer)
+        };
+        // aud - REQUIRED. Audience(s) that this ID Token is intended for. It MUST contain the OAuth 2.0 client_id of the Relying Party as an audience value.
+        // It MAY also contain identifiers for other audiences. In the general case, the aud value is an array of case sensitive strings.
+        // In the common special case when there is one audience, the aud value MAY be a single case sensitive string.
+        var audiences = await GetIdTokenAudiencesAsync(httpContext, idTokenRequest, cancellationToken);
+        foreach (var audience in audiences)
+        {
+            result.Add(audience);
+        }
+
+        // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.2
+        // nonce - String value used to associate a Client session with an ID Token, and to mitigate replay attacks.
+        // The value is passed through unmodified from the Authentication Request to the ID Token.
+        // If present in the ID Token, Clients MUST verify that the nonce Claim Value is equal to the value of the nonce parameter sent in the Authentication Request.
+        // If present in the Authentication Request, Authorization Servers MUST include a nonce Claim in the ID Token with the Claim Value being the nonce value sent in the Authentication Request.
+        // Authorization Servers SHOULD perform no other processing on nonce values used. The nonce value is a case sensitive string.
+        if (idTokenRequest.Nonce != null)
+        {
+            result.Add(new(DefaultJwtClaimTypes.Nonce, idTokenRequest.Nonce));
+        }
+
+        if (!string.IsNullOrEmpty(idTokenRequest.AccessToken))
+        {
+            // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.3.2.11
+            // at_hash - Access Token hash value. Its value is the base64url encoding of the left-most half of the hash of the octets of the ASCII representation of the access_token value,
+            // where the hash algorithm used is the hash algorithm used in the alg Header Parameter of the ID Token's JOSE Header.
+            // For instance, if the alg is RS256, hash the access_token value with SHA-256, then take the left-most 128 bits and base64url encode them. The at_hash value is a case sensitive string.
+            // If the ID Token is issued from the Authorization Endpoint with an access_token value, which is the case for the response_type value code id_token token, this is REQUIRED;
+            // otherwise, its inclusion is OPTIONAL.
+            var accessTokenHash = IdTokenLeftMostHasher.ComputeHash(idTokenRequest.AccessToken, signingCredentials.Algorithm);
+            result.Add(new(DefaultJwtClaimTypes.AccessTokenHash, accessTokenHash));
+        }
+
+        if (!string.IsNullOrEmpty(idTokenRequest.AuthorizationCode))
+        {
+            // c_hash - Code hash value. Its value is the base64url encoding of the left-most half of the hash of the octets of the ASCII representation of the code value,
+            // where the hash algorithm used is the hash algorithm used in the alg Header Parameter of the ID Token's JOSE Header.
+            // For instance, if the alg is HS512, hash the code value with SHA-512, then take the left-most 256 bits and base64url encode them.
+            // The c_hash value is a case sensitive string. If the ID Token is issued from the Authorization Endpoint with a code,
+            // which is the case for the response_type values code id_token and code id_token token, this is REQUIRED; otherwise, its inclusion is OPTIONAL.
+            var authorizationCodeHash = IdTokenLeftMostHasher.ComputeHash(idTokenRequest.AuthorizationCode, signingCredentials.Algorithm);
+            result.Add(new(DefaultJwtClaimTypes.AccessTokenHash, authorizationCodeHash));
+        }
+
+        foreach (var subjectClaim in GetSubjectClaims(idTokenRequest.UserAuthentication))
         {
             result.Add(subjectClaim);
         }
 
+        var scopeClaimTypes = await GetIdTokenClaimTypesAllowedByScopesAsync(
+            httpContext,
+            idTokenRequest.GrantedResources,
+            cancellationToken);
         if (idTokenRequest.Client.ShouldAlwaysIncludeUserClaimsInIdToken() || idTokenRequest.ForceIncludeUserClaimsInIdToken)
         {
             var profileClaims = await UserProfile.GetProfileClaimsAsync(
                 httpContext,
-                idTokenRequest.Ticket,
-                allowedClaimTypes,
+                idTokenRequest.UserAuthentication,
+                scopeClaimTypes,
                 cancellationToken);
             foreach (var profileClaim in profileClaims)
             {
-                if (allowedClaimTypes.Contains(profileClaim.Type))
+                if (scopeClaimTypes.Contains(profileClaim.Type) && !DefaultJwtClaimTypes.Restrictions.Contains(profileClaim.Type))
                 {
                     result.Add(profileClaim);
                 }
@@ -64,9 +132,117 @@ public class DefaultTokenClaimsService<TClient, TClientSecret, TScope, TResource
         return result;
     }
 
-    protected virtual IReadOnlySet<string> GetAllowedIdTokenClaimTypes(ValidResources<TScope, TResource, TResourceSecret> grantedResources)
+    public virtual async Task<HashSet<LightweightClaim>> GetAccessTokenClaimsAsync(
+        HttpContext httpContext,
+        AccessTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> accessTokenRequest,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accessTokenRequest);
+        cancellationToken.ThrowIfCancellationRequested();
+        var result = new HashSet<LightweightClaim>(256, LightweightClaim.EqualityComparer)
+        {
+            // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.2
+            // iss - REQUIRED. Issuer Identifier for the Issuer of the response.
+            // The iss value is a case sensitive URL using the https scheme that contains scheme, host, and optionally, port number and path components and no query or fragment components.
+            new(DefaultJwtClaimTypes.Issuer, accessTokenRequest.Issuer)
+        };
+        // aud - REQUIRED. Audience(s) that this ID Token is intended for. It MUST contain the OAuth 2.0 client_id of the Relying Party as an audience value.
+        // It MAY also contain identifiers for other audiences. In the general case, the aud value is an array of case sensitive strings.
+        // In the common special case when there is one audience, the aud value MAY be a single case sensitive string.
+        var audiences = await GetAccessTokenAudiencesAsync(httpContext, accessTokenRequest, cancellationToken);
+        foreach (var audience in audiences)
+        {
+            result.Add(audience);
+        }
+
+        if (accessTokenRequest.Client.ShouldIncludeJwtIdIntoAccessToken() && accessTokenRequest.Client.GetAccessTokenType() == DefaultAccessTokenType.Jwt)
+        {
+            var jwtId = CryptoRandom.Create(16);
+            result.Add(new(DefaultJwtClaimTypes.JwtId, jwtId));
+        }
+
+        if (accessTokenRequest.UserAuthentication != null)
+        {
+            foreach (var subjectClaim in GetSubjectClaims(accessTokenRequest.UserAuthentication))
+            {
+                result.Add(subjectClaim);
+            }
+
+            var scopeClaimTypes = await GetAccessTokenClaimTypesAllowedByScopesAsync(
+                httpContext,
+                accessTokenRequest.RequestedResources,
+                cancellationToken);
+            var profileClaims = await UserProfile.GetProfileClaimsAsync(
+                httpContext,
+                accessTokenRequest.UserAuthentication,
+                scopeClaimTypes,
+                cancellationToken);
+            foreach (var profileClaim in profileClaims)
+            {
+                if (scopeClaimTypes.Contains(profileClaim.Type) && !DefaultJwtClaimTypes.Restrictions.Contains(profileClaim.Type))
+                {
+                    result.Add(profileClaim);
+                }
+            }
+        }
+
+        foreach (var scopeClaim in GetScopeClaims(accessTokenRequest.RequestedResources, accessTokenRequest.GrantType))
+        {
+            result.Add(scopeClaim);
+        }
+
+        return result;
+    }
+
+    protected virtual Task<IReadOnlySet<LightweightClaim>> GetIdTokenAudiencesAsync(
+        HttpContext httpContext,
+        IdTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> idTokenRequest,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(idTokenRequest);
+        cancellationToken.ThrowIfCancellationRequested();
+        var audiences = new HashSet<LightweightClaim>(LightweightClaim.EqualityComparer)
+        {
+            new(DefaultJwtClaimTypes.Audience, idTokenRequest.Client.GetClientId())
+        };
+        IReadOnlySet<LightweightClaim> result = audiences;
+        return Task.FromResult(result);
+    }
+
+    protected virtual Task<IReadOnlySet<LightweightClaim>> GetAccessTokenAudiencesAsync(
+        HttpContext httpContext,
+        AccessTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> accessTokenRequest,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accessTokenRequest);
+        cancellationToken.ThrowIfCancellationRequested();
+        var audiences = new HashSet<LightweightClaim>(accessTokenRequest.RequestedResources.Resources.Count + 1, LightweightClaim.EqualityComparer)
+        {
+            new(DefaultJwtClaimTypes.Audience, accessTokenRequest.Client.GetClientId())
+        };
+        foreach (var resource in accessTokenRequest.RequestedResources.Resources)
+        {
+            audiences.Add(new(DefaultJwtClaimTypes.Audience, resource.GetProtocolName()));
+        }
+
+        if (FrameworkOptions.EmitStaticAudienceClaim)
+        {
+            var issuerAudience = new Uri(new(accessTokenRequest.Issuer, UriKind.Absolute), new Uri("resources", UriKind.Relative)).ToString();
+            audiences.Add(new(DefaultJwtClaimTypes.Audience, issuerAudience));
+        }
+
+        IReadOnlySet<LightweightClaim> result = audiences;
+        return Task.FromResult(result);
+    }
+
+    protected virtual Task<IReadOnlySet<string>> GetIdTokenClaimTypesAllowedByScopesAsync(
+        HttpContext httpContext,
+        ValidResources<TScope, TResource, TResourceSecret> grantedResources,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(grantedResources);
+        cancellationToken.ThrowIfCancellationRequested();
+
         var additionalClaimTypes = new HashSet<string>(256);
         foreach (var idTokenScope in grantedResources.IdTokenScopes)
         {
@@ -79,7 +255,50 @@ public class DefaultTokenClaimsService<TClient, TClientSecret, TScope, TResource
             }
         }
 
-        return additionalClaimTypes;
+        IReadOnlySet<string> result = additionalClaimTypes;
+        return Task.FromResult(result);
+    }
+
+    protected virtual Task<IReadOnlySet<string>> GetAccessTokenClaimTypesAllowedByScopesAsync(
+        HttpContext httpContext,
+        ValidResources<TScope, TResource, TResourceSecret> grantedResources,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(grantedResources);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var additionalClaimTypes = new HashSet<string>(256);
+        foreach (var accessTokenScope in grantedResources.AccessTokenScopes)
+        {
+            foreach (var accessTokenScopeClaimType in accessTokenScope.GetUserClaimTypes())
+            {
+                if (!DefaultJwtClaimTypes.Restrictions.Contains(accessTokenScopeClaimType))
+                {
+                    additionalClaimTypes.Add(accessTokenScopeClaimType);
+                }
+            }
+        }
+
+        IReadOnlySet<string> result = additionalClaimTypes;
+        return Task.FromResult(result);
+    }
+
+    protected virtual IEnumerable<LightweightClaim> GetScopeClaims(
+        ValidResources<TScope, TResource, TResourceSecret> grantedResources,
+        string grantType)
+    {
+        ArgumentNullException.ThrowIfNull(grantedResources);
+
+        IEnumerable<string> scopes = grantedResources.RawScopes;
+        if (grantType == DefaultGrantTypes.ClientCredentials && grantedResources.HasOfflineAccess)
+        {
+            scopes = grantedResources.RawScopes.Where(x => x != DefaultScopes.OfflineAccess);
+        }
+
+        foreach (var scope in scopes)
+        {
+            yield return new(DefaultJwtClaimTypes.Scope, scope);
+        }
     }
 
     protected virtual IEnumerable<LightweightClaim> GetSubjectClaims(UserAuthentication userAuthentication)

@@ -1,5 +1,4 @@
 ﻿using OpenIdentityFramework.Constants;
-using OpenIdentityFramework.Constants.Responses;
 
 namespace OpenIdentityFramework.Configuration.Options;
 

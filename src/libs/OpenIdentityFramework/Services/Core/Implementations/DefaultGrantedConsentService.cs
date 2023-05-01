@@ -8,7 +8,7 @@ using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Storages.Operation;
 
-namespace OpenIdentityFramework.Services.Operation.Implementations;
+namespace OpenIdentityFramework.Services.Core.Implementations;
 
 public class DefaultGrantedConsentService<TClient, TClientSecret, TGrantedConsent>
     : IGrantedConsentService<TClient, TClientSecret, TGrantedConsent>

@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 
-namespace OpenIdentityFramework.Services.Operation;
+namespace OpenIdentityFramework.Services.Core;
 
 public interface IGrantedConsentService<TClient, TClientSecret, TGrantedConsent>
     where TClient : AbstractClient<TClientSecret>

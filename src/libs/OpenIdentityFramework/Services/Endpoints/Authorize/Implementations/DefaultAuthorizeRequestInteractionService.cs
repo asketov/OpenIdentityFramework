@@ -10,6 +10,7 @@ using OpenIdentityFramework.Constants.Response.Authorize;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
+using OpenIdentityFramework.Services.Core;
 using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
 using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestInteractionService;

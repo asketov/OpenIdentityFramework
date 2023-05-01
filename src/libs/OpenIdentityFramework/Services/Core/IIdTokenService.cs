@@ -1,12 +1,13 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core.Models.IdTokenService;
 
 namespace OpenIdentityFramework.Services.Core;
 
-public interface IIdTokenService<TClient, TClientSecret, TScope, TResource, TResourceSecret>
+public interface IIdTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
@@ -14,7 +15,7 @@ public interface IIdTokenService<TClient, TClientSecret, TScope, TResource, TRes
     where TResourceSecret : AbstractSecret
 {
     Task<IdTokenCreationResult> CreateIdTokenAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         CreateIdTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> createIdTokenRequest,
         CancellationToken cancellationToken);
 }

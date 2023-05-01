@@ -1,29 +1,30 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizationCodeService;
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize;
 
-public interface IAuthorizationCodeService<TClient, TClientSecret, TAuthorizationCode>
+public interface IAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TAuthorizationCode : AbstractAuthorizationCode
 {
     Task<string> CreateAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         AuthorizationCodeRequest<TClient, TClientSecret> codeRequest,
         CancellationToken cancellationToken);
 
     Task<TAuthorizationCode?> FindAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         string authorizationCode,
         CancellationToken cancellationToken);
 
     Task DeleteAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         string authorizationCode,
         CancellationToken cancellationToken);
 }

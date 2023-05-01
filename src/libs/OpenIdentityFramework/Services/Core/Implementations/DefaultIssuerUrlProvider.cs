@@ -1,16 +1,18 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultIssuerUrlProvider : IIssuerUrlProvider
+public class DefaultIssuerUrlProvider<TRequestContext>
+    : IIssuerUrlProvider<TRequestContext>
+    where TRequestContext : AbstractRequestContext
 {
-    public virtual Task<string> GetIssuerAsync(HttpContext httpContext, CancellationToken cancellationToken)
+    public Task<string> GetIssuerAsync(TRequestContext requestContext, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(httpContext);
-        var result = httpContext.Request.Scheme + Uri.SchemeDelimiter + httpContext.Request.Host + httpContext.Request.PathBase;
+        ArgumentNullException.ThrowIfNull(requestContext);
+        var result = requestContext.HttpContext.Request.Scheme + Uri.SchemeDelimiter + requestContext.HttpContext.Request.Host + requestContext.HttpContext.Request.PathBase;
         return Task.FromResult(result);
     }
 }

@@ -2,17 +2,18 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Operation;
 
 namespace OpenIdentityFramework.Storages.Operation;
 
-public interface IGrantedConsentStorage<TGrantedConsent>
+public interface IGrantedConsentStorage<TRequestContext, TGrantedConsent>
+    where TRequestContext : AbstractRequestContext
     where TGrantedConsent : AbstractGrantedConsent
 {
-    Task<TGrantedConsent?> FindAsync(HttpContext httpContext, string subjectId, string clientId, CancellationToken cancellationToken);
+    Task<TGrantedConsent?> FindAsync(TRequestContext requestContext, string subjectId, string clientId, CancellationToken cancellationToken);
 
-    Task DeleteAsync(HttpContext httpContext, string subjectId, string clientId, CancellationToken cancellationToken);
+    Task DeleteAsync(TRequestContext requestContext, string subjectId, string clientId, CancellationToken cancellationToken);
 
-    Task UpsertAsync(HttpContext httpContext, string subjectId, string clientId, IReadOnlySet<string> grantedScopes, DateTimeOffset? expiresAt, CancellationToken cancellationToken);
+    Task UpsertAsync(TRequestContext requestContext, string subjectId, string clientId, IReadOnlySet<string> grantedScopes, DateTimeOffset? expiresAt, CancellationToken cancellationToken);
 }

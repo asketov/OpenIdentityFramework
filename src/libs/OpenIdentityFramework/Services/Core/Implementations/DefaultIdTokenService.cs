@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core.Models.IdTokenService;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultIdTokenService<TClient, TClientSecret, TScope, TResource, TResourceSecret>
-    : IIdTokenService<TClient, TClientSecret, TScope, TResource, TResourceSecret>
+public class DefaultIdTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
+    : IIdTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
@@ -16,9 +17,9 @@ public class DefaultIdTokenService<TClient, TClientSecret, TScope, TResource, TR
     where TResourceSecret : AbstractSecret
 {
     public DefaultIdTokenService(
-        ITokenClaimsService<TClient, TClientSecret, TScope, TResource, TResourceSecret> tokenClaims,
-        IKeyMaterialService keyMaterial,
-        IJwtService jwtService)
+        ITokenClaimsService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> tokenClaims,
+        IKeyMaterialService<TRequestContext> keyMaterial,
+        IJwtService<TRequestContext> jwtService)
     {
         ArgumentNullException.ThrowIfNull(tokenClaims);
         ArgumentNullException.ThrowIfNull(keyMaterial);
@@ -28,23 +29,27 @@ public class DefaultIdTokenService<TClient, TClientSecret, TScope, TResource, TR
         JwtService = jwtService;
     }
 
-    protected ITokenClaimsService<TClient, TClientSecret, TScope, TResource, TResourceSecret> TokenClaims { get; }
-    protected IKeyMaterialService KeyMaterial { get; }
-    protected IJwtService JwtService { get; }
+    protected ITokenClaimsService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> TokenClaims { get; }
+    protected IKeyMaterialService<TRequestContext> KeyMaterial { get; }
+    protected IJwtService<TRequestContext> JwtService { get; }
 
-    public async Task<IdTokenCreationResult> CreateIdTokenAsync(
-        HttpContext httpContext,
+    public virtual async Task<IdTokenCreationResult> CreateIdTokenAsync(
+        TRequestContext requestContext,
         CreateIdTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> createIdTokenRequest,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(createIdTokenRequest);
         cancellationToken.ThrowIfCancellationRequested();
-        var signingCredentials = await KeyMaterial.GetSigningCredentialsAsync(httpContext, createIdTokenRequest.Issuer, createIdTokenRequest.Client.GetAllowedIdTokenSigningAlgorithms(), cancellationToken);
-        var claims = await TokenClaims.GetIdentityTokenClaimsAsync(httpContext, createIdTokenRequest, signingCredentials, cancellationToken);
+        var signingCredentials = await KeyMaterial.GetSigningCredentialsAsync(
+            requestContext,
+            createIdTokenRequest.Issuer,
+            createIdTokenRequest.Client.GetAllowedIdTokenSigningAlgorithms(),
+            cancellationToken);
+        var claims = await TokenClaims.GetIdentityTokenClaimsAsync(requestContext, createIdTokenRequest, signingCredentials, cancellationToken);
         var issuedAt = DateTimeOffset.FromUnixTimeSeconds(createIdTokenRequest.IssuedAt.ToUnixTimeSeconds());
         var expiresAt = issuedAt.Add(createIdTokenRequest.Client.GetIdTokenLifetime());
         var idTokenHandle = await JwtService.CreateIdTokenAsync(
-            httpContext,
+            requestContext,
             signingCredentials,
             issuedAt,
             expiresAt,

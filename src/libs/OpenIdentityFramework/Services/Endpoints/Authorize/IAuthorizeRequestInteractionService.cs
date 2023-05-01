@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
@@ -9,7 +9,8 @@ using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequest
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize;
 
-public interface IAuthorizeRequestInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent>
+public interface IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
@@ -18,7 +19,7 @@ public interface IAuthorizeRequestInteractionService<TClient, TClientSecret, TSc
     where TRequestConsent : AbstractAuthorizeRequestConsent
 {
     Task<AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>> ProcessInteractionRequirementsAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
         UserAuthenticationTicket? ticket,
         TRequestConsent? authorizeRequestConsent,

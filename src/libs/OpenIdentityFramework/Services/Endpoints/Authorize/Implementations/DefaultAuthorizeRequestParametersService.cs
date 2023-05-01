@@ -3,21 +3,22 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using OpenIdentityFramework.Configuration.Options;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Storages.Operation;
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations;
 
-public class DefaultAuthorizeRequestParametersService<TAuthorizeRequestParameters>
-    : IAuthorizeRequestParametersService<TAuthorizeRequestParameters>
+public class DefaultAuthorizeRequestParametersService<TRequestContext, TAuthorizeRequestParameters>
+    : IAuthorizeRequestParametersService<TRequestContext, TAuthorizeRequestParameters>
+    where TRequestContext : AbstractRequestContext
     where TAuthorizeRequestParameters : AbstractAuthorizeRequestParameters
 {
     public DefaultAuthorizeRequestParametersService(
         OpenIdentityFrameworkOptions frameworkOptions,
-        IAuthorizeRequestParametersStorage<TAuthorizeRequestParameters> storage,
+        IAuthorizeRequestParametersStorage<TRequestContext, TAuthorizeRequestParameters> storage,
         ISystemClock systemClock)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
@@ -29,11 +30,12 @@ public class DefaultAuthorizeRequestParametersService<TAuthorizeRequestParameter
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
-    protected IAuthorizeRequestParametersStorage<TAuthorizeRequestParameters> Storage { get; }
+    protected IAuthorizeRequestParametersStorage<TRequestContext, TAuthorizeRequestParameters> Storage { get; }
     protected ISystemClock SystemClock { get; }
 
+
     public virtual async Task<string> SaveAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         DateTimeOffset initialRequestDate,
         IReadOnlyDictionary<string, StringValues> parameters,
         CancellationToken cancellationToken)
@@ -45,20 +47,23 @@ public class DefaultAuthorizeRequestParametersService<TAuthorizeRequestParameter
             expiresAt = initialRequestDate.Add(FrameworkOptions.Endpoints.Authorize.AuthorizeRequestLifetime.Value);
         }
 
-        return await Storage.SaveAsync(httpContext, initialRequestDate, parameters, expiresAt, cancellationToken);
+        return await Storage.SaveAsync(requestContext, initialRequestDate, parameters, expiresAt, cancellationToken);
     }
 
-    public virtual async Task<TAuthorizeRequestParameters?> ReadAsync(HttpContext httpContext, string authorizeRequestId, CancellationToken cancellationToken)
+    public virtual async Task<TAuthorizeRequestParameters?> ReadAsync(
+        TRequestContext requestContext,
+        string authorizeRequestId,
+        CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var parameters = await Storage.FindAsync(httpContext, authorizeRequestId, cancellationToken);
+        var parameters = await Storage.FindAsync(requestContext, authorizeRequestId, cancellationToken);
         if (parameters != null)
         {
             var currentDate = SystemClock.UtcNow;
             var expirationDate = parameters.GetExpirationDate();
             if (currentDate > expirationDate)
             {
-                await DeleteAsync(httpContext, authorizeRequestId, cancellationToken);
+                await DeleteAsync(requestContext, authorizeRequestId, cancellationToken);
                 return null;
             }
 
@@ -68,9 +73,12 @@ public class DefaultAuthorizeRequestParametersService<TAuthorizeRequestParameter
         return null;
     }
 
-    public virtual async Task DeleteAsync(HttpContext httpContext, string authorizeRequestId, CancellationToken cancellationToken)
+    public virtual async Task DeleteAsync(
+        TRequestContext requestContext,
+        string authorizeRequestId,
+        CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        await Storage.DeleteAsync(httpContext, authorizeRequestId, cancellationToken);
+        await Storage.DeleteAsync(requestContext, authorizeRequestId, cancellationToken);
     }
 }

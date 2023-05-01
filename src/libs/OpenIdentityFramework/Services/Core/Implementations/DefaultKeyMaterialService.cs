@@ -3,30 +3,31 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Storages.Configuration;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultKeyMaterialService : IKeyMaterialService
+public class DefaultKeyMaterialService<TRequestContext> : IKeyMaterialService<TRequestContext>
+    where TRequestContext : AbstractRequestContext
 {
-    public DefaultKeyMaterialService(IKeyMaterialStorage storage)
+    public DefaultKeyMaterialService(IKeyMaterialStorage<TRequestContext> storage)
     {
         ArgumentNullException.ThrowIfNull(storage);
         Storage = storage;
     }
 
-    protected IKeyMaterialStorage Storage { get; }
+    protected IKeyMaterialStorage<TRequestContext> Storage { get; }
 
     public virtual async Task<SigningCredentials> GetSigningCredentialsAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         string issuer,
         IReadOnlySet<string>? allowedSigningAlgorithms,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var credentials = await Storage.FindAsync(httpContext, issuer, allowedSigningAlgorithms, cancellationToken);
+        var credentials = await Storage.FindAsync(requestContext, issuer, allowedSigningAlgorithms, cancellationToken);
         return GetSigningCredentials(credentials, allowedSigningAlgorithms);
     }
 

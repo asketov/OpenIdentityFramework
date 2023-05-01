@@ -1,13 +1,14 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 
 namespace OpenIdentityFramework.Storages.Configuration;
 
-public interface IClientStorage<TClient, TClientSecret>
+public interface IClientStorage<TRequestContext, TClient, TClientSecret>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {
-    Task<TClient?> FindEnabledAsync(HttpContext httpContext, string clientId, CancellationToken cancellationToken);
+    Task<TClient?> FindEnabledAsync(TRequestContext requestContext, string clientId, CancellationToken cancellationToken);
 }

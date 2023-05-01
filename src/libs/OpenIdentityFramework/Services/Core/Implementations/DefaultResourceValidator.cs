@@ -3,32 +3,33 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Constants;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
 using OpenIdentityFramework.Storages.Configuration;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultResourceValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret>
-    : IResourceValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret>
+public class DefaultResourceValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
+    : IResourceValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
 {
-    public DefaultResourceValidator(IResourceStorage<TScope, TResource, TResourceSecret> storage)
+    public DefaultResourceValidator(IResourceStorage<TRequestContext, TScope, TResource, TResourceSecret> storage)
     {
         ArgumentNullException.ThrowIfNull(storage);
         Storage = storage;
     }
 
-    protected IResourceStorage<TScope, TResource, TResourceSecret> Storage { get; }
+    protected IResourceStorage<TRequestContext, TScope, TResource, TResourceSecret> Storage { get; }
 
-    public async Task<ResourcesValidationResult<TScope, TResource, TResourceSecret>> ValidateRequestedScopesAsync(
-        HttpContext httpContext,
+    public virtual async Task<ResourcesValidationResult<TScope, TResource, TResourceSecret>> ValidateRequestedScopesAsync(
+        TRequestContext requestContext,
         TClient client,
         IReadOnlySet<string> requestedScopes,
         IReadOnlySet<string> allowedTokenTypesForScopes,
@@ -84,7 +85,7 @@ public class DefaultResourceValidator<TClient, TClientSecret, TScope, TResource,
         }
 
         // get resources configuration
-        var foundScopesAndRelatedResources = await Storage.FindScopesAndRelatedResourcesAsync(httpContext, filteredScopes, cancellationToken);
+        var foundScopesAndRelatedResources = await Storage.FindScopesAndRelatedResourcesAsync(requestContext, filteredScopes, cancellationToken);
 
         // processing scopes
         foreach (var scope in foundScopesAndRelatedResources.Scopes)

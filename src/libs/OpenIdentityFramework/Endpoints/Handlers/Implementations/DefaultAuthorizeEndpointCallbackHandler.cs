@@ -23,8 +23,9 @@ using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRespons
 
 namespace OpenIdentityFramework.Endpoints.Handlers.Implementations;
 
-public class DefaultAuthorizeEndpointCallbackHandler<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent, TAuthorizeRequestParameters>
-    : IAuthorizeEndpointCallbackHandler
+public class DefaultAuthorizeEndpointCallbackHandler<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent, TAuthorizeRequestParameters>
+    : IAuthorizeEndpointCallbackHandler<TRequestContext>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
@@ -36,15 +37,15 @@ public class DefaultAuthorizeEndpointCallbackHandler<TClient, TClientSecret, TSc
     public DefaultAuthorizeEndpointCallbackHandler(
         OpenIdentityFrameworkOptions frameworkOptions,
         ISystemClock systemClock,
-        IIssuerUrlProvider issuerUrlProvider,
-        IAuthorizeRequestValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret> requestValidator,
+        IIssuerUrlProvider<TRequestContext> issuerUrlProvider,
+        IAuthorizeRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> requestValidator,
         HtmlEncoder htmlEncoder,
-        IErrorService errorService,
-        IUserAuthenticationTicketService userAuthentication,
-        IAuthorizeRequestConsentService<TRequestConsent> requestConsent,
-        IAuthorizeRequestInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent> interactionService,
-        IAuthorizeRequestParametersService<TAuthorizeRequestParameters> authorizeRequestParameters,
-        IAuthorizeResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret> responseGenerator)
+        IErrorService<TRequestContext> errorService,
+        IUserAuthenticationTicketService<TRequestContext> userAuthentication,
+        IAuthorizeRequestConsentService<TRequestContext, TRequestConsent> requestConsent,
+        IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent> interactionService,
+        IAuthorizeRequestParametersService<TRequestContext, TAuthorizeRequestParameters> authorizeRequestParameters,
+        IAuthorizeResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> responseGenerator)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
         ArgumentNullException.ThrowIfNull(systemClock);
@@ -72,89 +73,89 @@ public class DefaultAuthorizeEndpointCallbackHandler<TClient, TClientSecret, TSc
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
     protected ISystemClock SystemClock { get; }
-    protected IIssuerUrlProvider IssuerUrlProvider { get; }
-    protected IAuthorizeRequestValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret> RequestValidator { get; }
+    protected IIssuerUrlProvider<TRequestContext> IssuerUrlProvider { get; }
+    protected IAuthorizeRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> RequestValidator { get; }
     protected HtmlEncoder HtmlEncoder { get; }
-    protected IErrorService ErrorService { get; }
-    protected IUserAuthenticationTicketService UserAuthentication { get; }
-    protected IAuthorizeRequestConsentService<TRequestConsent> RequestConsent { get; }
-    protected IAuthorizeRequestInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent> InteractionService { get; }
-    protected IAuthorizeRequestParametersService<TAuthorizeRequestParameters> AuthorizeRequestParameters { get; }
-    protected IAuthorizeResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret> ResponseGenerator { get; }
+    protected IErrorService<TRequestContext> ErrorService { get; }
+    protected IUserAuthenticationTicketService<TRequestContext> UserAuthentication { get; }
+    protected IAuthorizeRequestConsentService<TRequestContext, TRequestConsent> RequestConsent { get; }
+    protected IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent> InteractionService { get; }
+    protected IAuthorizeRequestParametersService<TRequestContext, TAuthorizeRequestParameters> AuthorizeRequestParameters { get; }
+    protected IAuthorizeResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> ResponseGenerator { get; }
 
-    public virtual async Task<IEndpointHandlerResult> HandleAsync(HttpContext httpContext, CancellationToken cancellationToken)
+    public virtual async Task<IEndpointHandlerResult<TRequestContext>> HandleAsync(TRequestContext requestContext, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(httpContext);
+        ArgumentNullException.ThrowIfNull(requestContext);
         cancellationToken.ThrowIfCancellationRequested();
-        var issuer = await IssuerUrlProvider.GetIssuerAsync(httpContext, cancellationToken);
+        var issuer = await IssuerUrlProvider.GetIssuerAsync(requestContext, cancellationToken);
         IQueryCollection queryParameters;
-        if (HttpMethods.IsGet(httpContext.Request.Method))
+        if (HttpMethods.IsGet(requestContext.HttpContext.Request.Method))
         {
-            queryParameters = httpContext.Request.Query;
+            queryParameters = requestContext.HttpContext.Request.Query;
         }
         else
         {
-            return new DefaultStatusCodeResult(HttpStatusCode.MethodNotAllowed);
+            return new DefaultStatusCodeResult<TRequestContext>(HttpStatusCode.MethodNotAllowed);
         }
 
-        var parametersReadResult = await ReadParametersAsync(httpContext, queryParameters, cancellationToken);
+        var parametersReadResult = await ReadParametersAsync(requestContext, queryParameters, cancellationToken);
         if (parametersReadResult.HasError)
         {
-            return await HandleErrorWithoutRedirectAsync(httpContext, parametersReadResult.ProtocolError, issuer, cancellationToken);
+            return await HandleErrorWithoutRedirectAsync(requestContext, parametersReadResult.ProtocolError, issuer, cancellationToken);
         }
 
         var validationResult = await RequestValidator.ValidateAsync(
-            httpContext,
+            requestContext,
             parametersReadResult.AuthorizeRequestParameters.GetAuthorizeRequestParameters(),
             parametersReadResult.AuthorizeRequestParameters.GetInitialRequestDate(),
             issuer,
             cancellationToken);
         if (validationResult.HasError)
         {
-            return await HandleValidationErrorAsync(httpContext, validationResult.ValidationError, cancellationToken);
+            return await HandleValidationErrorAsync(requestContext, validationResult.ValidationError, cancellationToken);
         }
 
-        var authenticationResult = await UserAuthentication.AuthenticateAsync(httpContext, cancellationToken);
+        var authenticationResult = await UserAuthentication.AuthenticateAsync(requestContext, cancellationToken);
         if (authenticationResult.HasError)
         {
             var authenticationError = new ProtocolError(Errors.ServerError, authenticationResult.ErrorDescription);
-            return await HandlerErrorAsync(httpContext, authenticationError, validationResult.ValidRequest, cancellationToken);
+            return await HandlerErrorAsync(requestContext, authenticationError, validationResult.ValidRequest, cancellationToken);
         }
 
         var userConsent = authenticationResult.IsAuthenticated
-            ? await RequestConsent.ReadAsync(httpContext, parametersReadResult.AuthorizeRequestId, cancellationToken)
+            ? await RequestConsent.ReadAsync(requestContext, parametersReadResult.AuthorizeRequestId, cancellationToken)
             : null;
         var interactionResult = await InteractionService.ProcessInteractionRequirementsAsync(
-            httpContext,
+            requestContext,
             validationResult.ValidRequest,
             authenticationResult.Ticket,
             userConsent,
             cancellationToken);
         if (interactionResult.HasError)
         {
-            return await HandlerErrorAsync(httpContext, interactionResult.ProtocolError, validationResult.ValidRequest, cancellationToken);
+            return await HandlerErrorAsync(requestContext, interactionResult.ProtocolError, validationResult.ValidRequest, cancellationToken);
         }
 
         if (interactionResult.HasRequiredInteraction)
         {
-            return await HandleRequiredInteraction(httpContext, interactionResult.RequiredInteraction, validationResult.ValidRequest, cancellationToken);
+            return await HandleRequiredInteraction(requestContext, interactionResult.RequiredInteraction, validationResult.ValidRequest, cancellationToken);
         }
 
         if (!interactionResult.HasValidRequest)
         {
-            return await HandlerErrorAsync(httpContext, new(Errors.ServerError, "Incorrect interaction state"), validationResult.ValidRequest, cancellationToken);
+            return await HandlerErrorAsync(requestContext, new(Errors.ServerError, "Incorrect interaction state"), validationResult.ValidRequest, cancellationToken);
         }
 
-        var responseResult = await ResponseGenerator.CreateResponseAsync(httpContext, interactionResult.ValidRequest, cancellationToken);
+        var responseResult = await ResponseGenerator.CreateResponseAsync(requestContext, interactionResult.ValidRequest, cancellationToken);
         if (responseResult.HasError)
         {
-            return await HandlerErrorAsync(httpContext, new(Errors.ServerError, responseResult.ErrorDescription), validationResult.ValidRequest, cancellationToken);
+            return await HandlerErrorAsync(requestContext, new(Errors.ServerError, responseResult.ErrorDescription), validationResult.ValidRequest, cancellationToken);
         }
 
-        await AuthorizeRequestParameters.DeleteAsync(httpContext, parametersReadResult.AuthorizeRequestId, cancellationToken);
-        await RequestConsent.DeleteAsync(httpContext, parametersReadResult.AuthorizeRequestId, cancellationToken);
+        await AuthorizeRequestParameters.DeleteAsync(requestContext, parametersReadResult.AuthorizeRequestId, cancellationToken);
+        await RequestConsent.DeleteAsync(requestContext, parametersReadResult.AuthorizeRequestId, cancellationToken);
         var successfulResponseParameters = BuildSuccessfulResponseParameters(responseResult.AuthorizeResponse);
-        return new DefaultDirectAuthorizeResult(
+        return new DefaultDirectAuthorizeResult<TRequestContext>(
             FrameworkOptions,
             HtmlEncoder,
             successfulResponseParameters,
@@ -162,7 +163,10 @@ public class DefaultAuthorizeEndpointCallbackHandler<TClient, TClientSecret, TSc
             interactionResult.ValidRequest.AuthorizeRequest.ResponseMode);
     }
 
-    protected virtual async Task<ReadAuthorizeRequestParametersResult> ReadParametersAsync(HttpContext httpContext, IQueryCollection queryParameters, CancellationToken cancellationToken)
+    protected virtual async Task<ReadAuthorizeRequestParametersResult> ReadParametersAsync(
+        TRequestContext requestContext,
+        IQueryCollection queryParameters,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(queryParameters);
         cancellationToken.ThrowIfCancellationRequested();
@@ -171,7 +175,7 @@ public class DefaultAuthorizeEndpointCallbackHandler<TClient, TClientSecret, TSc
             && possibleAuthorizeRequestId.Count == 1
             && !string.IsNullOrWhiteSpace(authorizeRequestId = possibleAuthorizeRequestId.ToString()))
         {
-            var authorizeRequestParameters = await AuthorizeRequestParameters.ReadAsync(httpContext, authorizeRequestId, cancellationToken);
+            var authorizeRequestParameters = await AuthorizeRequestParameters.ReadAsync(requestContext, authorizeRequestId, cancellationToken);
             if (authorizeRequestParameters != null)
             {
                 return new(authorizeRequestId, authorizeRequestParameters);
@@ -181,8 +185,8 @@ public class DefaultAuthorizeEndpointCallbackHandler<TClient, TClientSecret, TSc
         return new(new(Errors.InvalidRequest, "Authorize request not found"));
     }
 
-    protected virtual async Task<IEndpointHandlerResult> HandleValidationErrorAsync(
-        HttpContext httpContext,
+    protected virtual async Task<IEndpointHandlerResult<TRequestContext>> HandleValidationErrorAsync(
+        TRequestContext requestContext,
         AuthorizeRequestValidationError<TClient, TClientSecret> validationError,
         CancellationToken cancellationToken)
     {
@@ -191,7 +195,7 @@ public class DefaultAuthorizeEndpointCallbackHandler<TClient, TClientSecret, TSc
         if (validationError.CanReturnErrorDirectly)
         {
             var errorParameters = BuildErrorResponseParameters(validationError.ProtocolError, validationError.State, validationError.Issuer);
-            return new DefaultDirectAuthorizeResult(
+            return new DefaultDirectAuthorizeResult<TRequestContext>(
                 FrameworkOptions,
                 HtmlEncoder,
                 errorParameters,
@@ -200,12 +204,12 @@ public class DefaultAuthorizeEndpointCallbackHandler<TClient, TClientSecret, TSc
         }
 
         var errorToSave = new Error(validationError.ProtocolError, validationError.Client?.GetClientId(), validationError.RedirectUri, validationError.ResponseMode, validationError.Issuer);
-        var errorId = await ErrorService.SaveAsync(httpContext, errorToSave, cancellationToken);
-        return new DefaultErrorPageResult(FrameworkOptions, errorId);
+        var errorId = await ErrorService.SaveAsync(requestContext, errorToSave, cancellationToken);
+        return new DefaultErrorPageResult<TRequestContext>(FrameworkOptions, errorId);
     }
 
-    protected virtual async Task<IEndpointHandlerResult> HandleRequiredInteraction(
-        HttpContext httpContext,
+    protected virtual async Task<IEndpointHandlerResult<TRequestContext>> HandleRequiredInteraction(
+        TRequestContext requestContext,
         string requiredInteraction,
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
         CancellationToken cancellationToken)
@@ -214,21 +218,21 @@ public class DefaultAuthorizeEndpointCallbackHandler<TClient, TClientSecret, TSc
         cancellationToken.ThrowIfCancellationRequested();
         if (requiredInteraction == DefaultInteractionResult.Login)
         {
-            var authorizeRequestId = await AuthorizeRequestParameters.SaveAsync(httpContext, authorizeRequest.InitialRequestDate, authorizeRequest.Raw, cancellationToken);
-            return new DefaultLoginUserPageResult(FrameworkOptions, authorizeRequestId);
+            var authorizeRequestId = await AuthorizeRequestParameters.SaveAsync(requestContext, authorizeRequest.InitialRequestDate, authorizeRequest.Raw, cancellationToken);
+            return new DefaultLoginUserPageResult<TRequestContext>(FrameworkOptions, authorizeRequestId);
         }
 
         if (requiredInteraction == DefaultInteractionResult.Consent)
         {
-            var authorizeRequestId = await AuthorizeRequestParameters.SaveAsync(httpContext, authorizeRequest.InitialRequestDate, authorizeRequest.Raw, cancellationToken);
-            return new DefaultConsentPageResult(FrameworkOptions, authorizeRequestId);
+            var authorizeRequestId = await AuthorizeRequestParameters.SaveAsync(requestContext, authorizeRequest.InitialRequestDate, authorizeRequest.Raw, cancellationToken);
+            return new DefaultConsentPageResult<TRequestContext>(FrameworkOptions, authorizeRequestId);
         }
 
-        return await HandlerErrorAsync(httpContext, new(Errors.ServerError, "Incorrect interaction state"), authorizeRequest, cancellationToken);
+        return await HandlerErrorAsync(requestContext, new(Errors.ServerError, "Incorrect interaction state"), authorizeRequest, cancellationToken);
     }
 
-    protected virtual async Task<IEndpointHandlerResult> HandleErrorWithoutRedirectAsync(
-        HttpContext httpContext,
+    protected virtual async Task<IEndpointHandlerResult<TRequestContext>> HandleErrorWithoutRedirectAsync(
+        TRequestContext requestContext,
         ProtocolError protocolError,
         string issuer,
         CancellationToken cancellationToken)
@@ -236,12 +240,12 @@ public class DefaultAuthorizeEndpointCallbackHandler<TClient, TClientSecret, TSc
         ArgumentNullException.ThrowIfNull(protocolError);
         cancellationToken.ThrowIfCancellationRequested();
         var errorToSave = new Error(protocolError, null, null, null, issuer);
-        var errorId = await ErrorService.SaveAsync(httpContext, errorToSave, cancellationToken);
-        return new DefaultErrorPageResult(FrameworkOptions, errorId);
+        var errorId = await ErrorService.SaveAsync(requestContext, errorToSave, cancellationToken);
+        return new DefaultErrorPageResult<TRequestContext>(FrameworkOptions, errorId);
     }
 
-    protected virtual async Task<IEndpointHandlerResult> HandlerErrorAsync(
-        HttpContext httpContext,
+    protected virtual async Task<IEndpointHandlerResult<TRequestContext>> HandlerErrorAsync(
+        TRequestContext requestContext,
         ProtocolError protocolError,
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
         CancellationToken cancellationToken)
@@ -250,7 +254,7 @@ public class DefaultAuthorizeEndpointCallbackHandler<TClient, TClientSecret, TSc
         if (IsSafeError(protocolError))
         {
             var errorParameters = BuildErrorResponseParameters(protocolError, authorizeRequest.State, authorizeRequest.Issuer);
-            return new DefaultDirectAuthorizeResult(
+            return new DefaultDirectAuthorizeResult<TRequestContext>(
                 FrameworkOptions,
                 HtmlEncoder,
                 errorParameters,
@@ -259,8 +263,8 @@ public class DefaultAuthorizeEndpointCallbackHandler<TClient, TClientSecret, TSc
         }
 
         var errorToSave = new Error(protocolError, authorizeRequest.Client.GetClientId(), authorizeRequest.ActualRedirectUri, authorizeRequest.ResponseMode, authorizeRequest.Issuer);
-        var errorId = await ErrorService.SaveAsync(httpContext, errorToSave, cancellationToken);
-        return new DefaultErrorPageResult(FrameworkOptions, errorId);
+        var errorId = await ErrorService.SaveAsync(requestContext, errorToSave, cancellationToken);
+        return new DefaultErrorPageResult<TRequestContext>(FrameworkOptions, errorId);
     }
 
     protected virtual IEnumerable<KeyValuePair<string, string?>> BuildErrorResponseParameters(

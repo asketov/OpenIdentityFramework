@@ -2,9 +2,9 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core;
@@ -15,8 +15,9 @@ using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRespons
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations;
 
-public class DefaultAuthorizeResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode>
-    : IAuthorizeResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret>
+public class DefaultAuthorizeResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode>
+    : IAuthorizeResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
@@ -26,8 +27,8 @@ public class DefaultAuthorizeResponseGenerator<TClient, TClientSecret, TScope, T
 {
     public DefaultAuthorizeResponseGenerator(
         ISystemClock systemClock,
-        IAuthorizationCodeService<TClient, TClientSecret, TAuthorizationCode> authorizationCodeService,
-        IIdTokenService<TClient, TClientSecret, TScope, TResource, TResourceSecret> idTokenService)
+        IAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode> authorizationCodeService,
+        IIdTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> idTokenService)
     {
         ArgumentNullException.ThrowIfNull(systemClock);
         ArgumentNullException.ThrowIfNull(authorizationCodeService);
@@ -38,11 +39,11 @@ public class DefaultAuthorizeResponseGenerator<TClient, TClientSecret, TScope, T
     }
 
     protected ISystemClock SystemClock { get; }
-    protected IAuthorizationCodeService<TClient, TClientSecret, TAuthorizationCode> AuthorizationCodeService { get; }
-    protected IIdTokenService<TClient, TClientSecret, TScope, TResource, TResourceSecret> IdTokenService { get; }
+    protected IAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode> AuthorizationCodeService { get; }
+    protected IIdTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> IdTokenService { get; }
 
     public virtual async Task<AuthorizeResponseGenerationResult> CreateResponseAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         ValidAuthorizeRequestInteraction<TClient, TClientSecret, TScope, TResource, TResourceSecret> request,
         CancellationToken cancellationToken)
     {
@@ -60,7 +61,7 @@ public class DefaultAuthorizeResponseGenerator<TClient, TClientSecret, TScope, T
             request.AuthorizeRequest.State,
             request.AuthorizeRequest.Issuer,
             issuedAt);
-        var authorizationCode = await AuthorizationCodeService.CreateAsync(httpContext, codeRequest, cancellationToken);
+        var authorizationCode = await AuthorizationCodeService.CreateAsync(requestContext, codeRequest, cancellationToken);
         string? idToken = null;
         if (request.AuthorizeRequest.AuthorizationFlow == DefaultAuthorizationFlows.Hybrid
             && request.AuthorizeRequest.ResponseType == ResponseType.CodeIdToken
@@ -77,7 +78,7 @@ public class DefaultAuthorizeResponseGenerator<TClient, TClientSecret, TScope, T
                 null,
                 authorizationCode,
                 request.AuthorizeRequest.Client.ShouldAlwaysIncludeUserClaimsInIdToken());
-            var idTokenResult = await IdTokenService.CreateIdTokenAsync(httpContext, idTokenRequest, cancellationToken);
+            var idTokenResult = await IdTokenService.CreateIdTokenAsync(requestContext, idTokenRequest, cancellationToken);
             if (idTokenResult.HasError)
             {
                 return new(idTokenResult.ErrorDescription);

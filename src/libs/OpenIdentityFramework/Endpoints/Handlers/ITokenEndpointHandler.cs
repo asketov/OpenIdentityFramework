@@ -1,5 +1,8 @@
-﻿namespace OpenIdentityFramework.Endpoints.Handlers;
+﻿using OpenIdentityFramework.Models;
 
-public interface ITokenEndpointHandler : IEndpointHandler
+namespace OpenIdentityFramework.Endpoints.Handlers;
+
+public interface ITokenEndpointHandler<TRequestContext> : IEndpointHandler<TRequestContext>
+    where TRequestContext : AbstractRequestContext
 {
 }

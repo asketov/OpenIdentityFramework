@@ -8,19 +8,23 @@ using Microsoft.Extensions.DependencyInjection;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Endpoints;
 using OpenIdentityFramework.Endpoints.Handlers;
+using OpenIdentityFramework.Endpoints.Results;
+using OpenIdentityFramework.Models;
+using OpenIdentityFramework.Services.Operation;
 
 namespace OpenIdentityFramework.Configuration.DependencyInjection.Extensions;
 
 [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
 public static class EndpointRouteBuilderExtensions
 {
-    public static IEndpointRouteBuilder MapOpenIdentityFrameworkEndpoints(this IEndpointRouteBuilder builder)
+    public static IEndpointRouteBuilder MapOpenIdentityFrameworkEndpoints<TRequestContext>(this IEndpointRouteBuilder builder)
+        where TRequestContext : AbstractRequestContext
     {
         ArgumentNullException.ThrowIfNull(builder);
         var frameworkOptions = builder.ServiceProvider.GetRequiredService<OpenIdentityFrameworkOptions>();
         if (frameworkOptions.Endpoints.Authorize.Enable)
         {
-            builder.AddEndpoint<IAuthorizeEndpointHandler>(
+            builder.AddEndpoint<TRequestContext, IAuthorizeEndpointHandler<TRequestContext>>(
                 frameworkOptions.Endpoints.Authorize.Path,
                 new(new[]
                 {
@@ -30,7 +34,7 @@ public static class EndpointRouteBuilderExtensions
                     HttpMethods.Get,
                     HttpMethods.Post
                 }));
-            builder.AddEndpoint<IAuthorizeEndpointCallbackHandler>(
+            builder.AddEndpoint<TRequestContext, IAuthorizeEndpointCallbackHandler<TRequestContext>>(
                 frameworkOptions.Endpoints.Authorize.CallbackPath,
                 new(new[]
                 {
@@ -41,7 +45,7 @@ public static class EndpointRouteBuilderExtensions
 
         if (frameworkOptions.Endpoints.Token.Enable)
         {
-            builder.AddEndpoint<ITokenEndpointHandler>(
+            builder.AddEndpoint<TRequestContext, ITokenEndpointHandler<TRequestContext>>(
                 frameworkOptions.Endpoints.Token.Path,
                 new(new[]
                 {
@@ -54,11 +58,12 @@ public static class EndpointRouteBuilderExtensions
         return builder;
     }
 
-    public static void AddEndpoint<THandler>(
+    public static void AddEndpoint<TRequestContext, THandler>(
         this IEndpointRouteBuilder builder,
         string path,
         HttpMethodMetadata metadata)
-        where THandler : class, IEndpointHandler
+        where TRequestContext : AbstractRequestContext
+        where THandler : class, IEndpointHandler<TRequestContext>
     {
         ArgumentNullException.ThrowIfNull(builder);
         ArgumentNullException.ThrowIfNull(path);
@@ -68,9 +73,22 @@ public static class EndpointRouteBuilderExtensions
             static async httpContext =>
             {
                 httpContext.RequestAborted.ThrowIfCancellationRequested();
-                var handler = httpContext.RequestServices.GetRequiredService<THandler>();
-                var result = await handler.HandleAsync(httpContext, httpContext.RequestAborted);
-                await result.ExecuteAsync(httpContext, httpContext.RequestAborted);
+                var contextFactory = httpContext.RequestServices.GetRequiredService<IRequestContextFactory<TRequestContext>>();
+                IEndpointHandlerResult<TRequestContext> result;
+                await using var requestContext = await contextFactory.CreateAsync(httpContext, httpContext.RequestAborted);
+                try
+                {
+                    var handler = httpContext.RequestServices.GetRequiredService<THandler>();
+                    result = await handler.HandleAsync(requestContext, httpContext.RequestAborted);
+                    await requestContext.CommitAsync(httpContext.RequestAborted);
+                }
+                catch
+                {
+                    await requestContext.RollbackAsync(httpContext.RequestAborted);
+                    throw;
+                }
+
+                await result.ExecuteAsync(requestContext, httpContext.RequestAborted);
             });
         endpointBuilder.WithMetadata(metadata);
         endpointBuilder.WithDisplayName($"{path} HTTP: {string.Join(", ", metadata.HttpMethods)}");

@@ -1,13 +1,14 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestInteractionService;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeResponseGenerator;
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize;
 
-public interface IAuthorizeResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret>
+public interface IAuthorizeResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
@@ -15,7 +16,7 @@ public interface IAuthorizeResponseGenerator<TClient, TClientSecret, TScope, TRe
     where TResourceSecret : AbstractSecret
 {
     Task<AuthorizeResponseGenerationResult> CreateResponseAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         ValidAuthorizeRequestInteraction<TClient, TClientSecret, TScope, TResource, TResourceSecret> request,
         CancellationToken cancellationToken);
 }

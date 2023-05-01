@@ -2,16 +2,16 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
 using OpenIdentityFramework.Models;
 
 namespace OpenIdentityFramework.Services.Core;
 
-public interface IJwtService
+public interface IJwtService<TRequestContext>
+    where TRequestContext : AbstractRequestContext
 {
     Task<string> CreateIdTokenAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         SigningCredentials signingCredentials,
         DateTimeOffset issuedAt,
         DateTimeOffset expiresAt,
@@ -19,7 +19,7 @@ public interface IJwtService
         CancellationToken cancellationToken);
 
     Task<string> CreateAccessTokenAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         SigningCredentials signingCredentials,
         DateTimeOffset issuedAt,
         DateTimeOffset expiresAt,

@@ -4,14 +4,18 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using OpenIdentityFramework.Configuration.Builder;
 using OpenIdentityFramework.Configuration.Options;
+using OpenIdentityFramework.Models;
 
 namespace OpenIdentityFramework.Configuration.DependencyInjection.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IOpenIdentityFrameworkBuilder AddOpenIdentityFrameworkBuilder(this IServiceCollection services, Action<OpenIdentityFrameworkOptions>? configure = null)
+    public static IOpenIdentityFrameworkBuilder<TRequestContext> AddOpenIdentityFrameworkBuilder<TRequestContext>(
+        this IServiceCollection services,
+        Action<OpenIdentityFrameworkOptions>? configure = null)
+        where TRequestContext : AbstractRequestContext
     {
-        IOpenIdentityFrameworkBuilder builder = new OpenIdentityFrameworkBuilder(services);
+        IOpenIdentityFrameworkBuilder<TRequestContext> builder = new OpenIdentityFrameworkBuilder<TRequestContext>(services);
         return builder
             .AddRequiredPlatformServices()
             .AddCoreServices(configure)

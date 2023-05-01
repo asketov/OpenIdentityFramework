@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Constants;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core.Models.AccessTokenService;
@@ -10,8 +10,9 @@ using OpenIdentityFramework.Storages.Operation;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultAccessTokenService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAccessToken>
-    : IAccessTokenService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAccessToken>
+public class DefaultAccessTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAccessToken>
+    : IAccessTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAccessToken>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
@@ -20,10 +21,10 @@ public class DefaultAccessTokenService<TClient, TClientSecret, TScope, TResource
     where TAccessToken : AbstractAccessToken
 {
     public DefaultAccessTokenService(
-        ITokenClaimsService<TClient, TClientSecret, TScope, TResource, TResourceSecret> tokenClaims,
-        IKeyMaterialService keyMaterial,
-        IJwtService jwtService,
-        IAccessTokenStorage accessTokenStorage)
+        ITokenClaimsService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> tokenClaims,
+        IKeyMaterialService<TRequestContext> keyMaterial,
+        IJwtService<TRequestContext> jwtService,
+        IAccessTokenStorage<TRequestContext, TAccessToken> accessTokenStorage)
     {
         ArgumentNullException.ThrowIfNull(tokenClaims);
         ArgumentNullException.ThrowIfNull(keyMaterial);
@@ -35,20 +36,20 @@ public class DefaultAccessTokenService<TClient, TClientSecret, TScope, TResource
         AccessTokenStorage = accessTokenStorage;
     }
 
-    protected ITokenClaimsService<TClient, TClientSecret, TScope, TResource, TResourceSecret> TokenClaims { get; }
-    protected IKeyMaterialService KeyMaterial { get; }
-    protected IJwtService JwtService { get; }
-    protected IAccessTokenStorage AccessTokenStorage { get; }
+    protected ITokenClaimsService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> TokenClaims { get; }
+    protected IKeyMaterialService<TRequestContext> KeyMaterial { get; }
+    protected IJwtService<TRequestContext> JwtService { get; }
+    protected IAccessTokenStorage<TRequestContext, TAccessToken> AccessTokenStorage { get; }
 
-    public async Task<AccessTokenCreationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>> CreateAccessTokenAsync(
-        HttpContext httpContext,
+    public virtual async Task<AccessTokenCreationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>> CreateAccessTokenAsync(
+        TRequestContext requestContext,
         CreateAccessTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> createAccessTokenRequest,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(createAccessTokenRequest);
         cancellationToken.ThrowIfCancellationRequested();
         var claims = await TokenClaims.GetAccessTokenClaimsAsync(
-            httpContext,
+            requestContext,
             createAccessTokenRequest,
             cancellationToken);
         var accessTokenFormat = createAccessTokenRequest.Client.GetAccessTokenFormat();
@@ -58,9 +59,9 @@ public class DefaultAccessTokenService<TClient, TClientSecret, TScope, TResource
         string accessToken;
         if (accessTokenFormat == DefaultAccessTokenFormat.Jwt)
         {
-            var signingCredentials = await KeyMaterial.GetSigningCredentialsAsync(httpContext, createAccessTokenRequest.Issuer, createAccessTokenRequest.Client.GetAllowedIdTokenSigningAlgorithms(), cancellationToken);
+            var signingCredentials = await KeyMaterial.GetSigningCredentialsAsync(requestContext, createAccessTokenRequest.Issuer, createAccessTokenRequest.Client.GetAllowedIdTokenSigningAlgorithms(), cancellationToken);
             accessToken = await JwtService.CreateAccessTokenAsync(
-                httpContext,
+                requestContext,
                 signingCredentials,
                 issuedAt,
                 expiresAt,
@@ -70,7 +71,7 @@ public class DefaultAccessTokenService<TClient, TClientSecret, TScope, TResource
         else if (accessTokenFormat == DefaultAccessTokenFormat.Reference)
         {
             accessToken = await AccessTokenStorage.CreateAsync(
-                httpContext,
+                requestContext,
                 createAccessTokenRequest.Issuer,
                 createAccessTokenRequest.Client.GetClientId(),
                 createAccessTokenRequest.UserAuthentication,
@@ -99,7 +100,10 @@ public class DefaultAccessTokenService<TClient, TClientSecret, TScope, TResource
             accessToken));
     }
 
-    public Task DeleteAsync(HttpContext httpContext, string accessTokenHandle, CancellationToken cancellationToken)
+    public Task DeleteAsync(
+        TRequestContext requestContext,
+        string accessTokenHandle,
+        CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }

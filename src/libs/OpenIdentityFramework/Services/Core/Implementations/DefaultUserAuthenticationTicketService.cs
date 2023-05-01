@@ -6,14 +6,15 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultUserAuthenticationTicketService : IUserAuthenticationTicketService
+public class DefaultUserAuthenticationTicketService<TRequestContext>
+    : IUserAuthenticationTicketService<TRequestContext>
+    where TRequestContext : AbstractRequestContext
 {
     public DefaultUserAuthenticationTicketService(OpenIdentityFrameworkOptions frameworkOptions, IAuthenticationSchemeProvider schemeProvider)
     {
@@ -26,9 +27,9 @@ public class DefaultUserAuthenticationTicketService : IUserAuthenticationTicketS
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
     protected IAuthenticationSchemeProvider SchemeProvider { get; }
 
-    public virtual async Task<UserAuthenticationResult> AuthenticateAsync(HttpContext httpContext, CancellationToken cancellationToken)
+    public virtual async Task<UserAuthenticationResult> AuthenticateAsync(TRequestContext requestContext, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(httpContext);
+        ArgumentNullException.ThrowIfNull(requestContext);
         cancellationToken.ThrowIfCancellationRequested();
         string runtimeScheme;
         if (FrameworkOptions.Authentication.AuthenticationScheme != null)
@@ -46,12 +47,13 @@ public class DefaultUserAuthenticationTicketService : IUserAuthenticationTicketS
             runtimeScheme = defaultAuthenticationScheme.Name;
         }
 
-        var authenticationResult = await httpContext.AuthenticateAsync(runtimeScheme);
-        return await HandleAuthenticateResultAsync(httpContext, authenticationResult, cancellationToken);
+        var authenticationResult = await requestContext.HttpContext.AuthenticateAsync(runtimeScheme);
+        return await HandleAuthenticateResultAsync(requestContext, authenticationResult, cancellationToken);
     }
 
+
     protected virtual async Task<UserAuthenticationResult> HandleAuthenticateResultAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         AuthenticateResult? authenticateResult,
         CancellationToken cancellationToken)
     {
@@ -76,7 +78,7 @@ public class DefaultUserAuthenticationTicketService : IUserAuthenticationTicketS
             return new($"Can't read \"{typeof(AuthenticationTicket).Namespace}.{nameof(AuthenticationTicket)}.{nameof(AuthenticationTicket.Properties)}.{nameof(AuthenticationProperties.IssuedUtc)}\" authentication property");
         }
 
-        var customClaims = await GetCustomClaimsAsync(httpContext, authenticateResult.Ticket, cancellationToken);
+        var customClaims = await GetCustomClaimsAsync(requestContext, authenticateResult.Ticket, cancellationToken);
         var userAuthentication = new UserAuthentication(subjectId, sessionId, authenticatedAt.Value, customClaims);
         var resultTicket = new UserAuthenticationTicket(userAuthentication, authenticateResult.Ticket);
         return new(resultTicket);
@@ -110,7 +112,7 @@ public class DefaultUserAuthenticationTicketService : IUserAuthenticationTicketS
     }
 
     protected virtual Task<IReadOnlySet<LightweightClaim>> GetCustomClaimsAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         AuthenticationTicket authenticationTicket,
         CancellationToken cancellationToken)
     {

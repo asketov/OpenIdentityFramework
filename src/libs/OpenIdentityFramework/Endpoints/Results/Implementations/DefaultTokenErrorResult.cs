@@ -10,7 +10,8 @@ using OpenIdentityFramework.Models;
 
 namespace OpenIdentityFramework.Endpoints.Results.Implementations;
 
-public class DefaultTokenErrorResult : IEndpointHandlerResult
+public class DefaultTokenErrorResult<TRequestContext> : IEndpointHandlerResult<TRequestContext>
+    where TRequestContext : AbstractRequestContext
 {
     public DefaultTokenErrorResult(OpenIdentityFrameworkOptions frameworkOptions, ProtocolError protocolError, string issuer)
     {
@@ -23,19 +24,19 @@ public class DefaultTokenErrorResult : IEndpointHandlerResult
     protected ProtocolError ProtocolError { get; }
     protected string Issuer { get; }
 
-    public virtual async Task ExecuteAsync(HttpContext httpContext, CancellationToken cancellationToken)
+    public virtual async Task ExecuteAsync(TRequestContext requestContext, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(httpContext);
+        ArgumentNullException.ThrowIfNull(requestContext);
         cancellationToken.ThrowIfCancellationRequested();
         var statusCode = GetStatusCode();
         var response = new ResponseDto(
             ProtocolError.Error,
             FrameworkOptions.ErrorHandling.HideErrorDescriptionsOnSafeAuthorizeErrorResponses ? null : ProtocolError.Description,
             Issuer);
-        httpContext.Response.StatusCode = statusCode;
-        httpContext.Response.SetNoCache();
-        await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);
-        await httpContext.Response.Body.FlushAsync(cancellationToken);
+        requestContext.HttpContext.Response.StatusCode = statusCode;
+        requestContext.HttpContext.Response.SetNoCache();
+        await requestContext.HttpContext.Response.WriteAsJsonAsync(response, cancellationToken);
+        await requestContext.HttpContext.Response.Body.FlushAsync(cancellationToken);
     }
 
     protected virtual int GetStatusCode()

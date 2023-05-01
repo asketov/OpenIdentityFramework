@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core.Models.RefreshTokenService;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultRefreshTokenService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken>
-    : IRefreshTokenService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken>
+public class DefaultRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken>
+    : IRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
@@ -18,7 +19,7 @@ public class DefaultRefreshTokenService<TClient, TClientSecret, TScope, TResourc
     where TRefreshToken : AbstractRefreshToken
 {
     public Task<RefreshTokenCreationResult> CreateAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         CreateRefreshTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> createRefreshTokenRequest,
         CancellationToken cancellationToken)
     {
@@ -26,7 +27,7 @@ public class DefaultRefreshTokenService<TClient, TClientSecret, TScope, TResourc
     }
 
     public Task<TRefreshToken?> FindAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         string issuer,
         string refreshToken,
         string clientId,
@@ -35,7 +36,10 @@ public class DefaultRefreshTokenService<TClient, TClientSecret, TScope, TResourc
         throw new NotImplementedException();
     }
 
-    public Task<RefreshTokenCreationResult> DeleteAsync(HttpContext httpContext, string refreshTokenHandle, CancellationToken cancellationToken)
+    public Task<RefreshTokenCreationResult> DeleteAsync(
+        TRequestContext requestContext,
+        string refreshTokenHandle,
+        CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }

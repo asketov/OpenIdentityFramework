@@ -1,10 +1,11 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 
 namespace OpenIdentityFramework.Services.Core;
 
-public interface IIssuerUrlProvider
+public interface IIssuerUrlProvider<TRequestContext>
+    where TRequestContext : AbstractRequestContext
 {
-    Task<string> GetIssuerAsync(HttpContext httpContext, CancellationToken cancellationToken);
+    Task<string> GetIssuerAsync(TRequestContext requestContext, CancellationToken cancellationToken);
 }

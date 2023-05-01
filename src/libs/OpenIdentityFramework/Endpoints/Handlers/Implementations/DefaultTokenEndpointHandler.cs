@@ -8,6 +8,7 @@ using OpenIdentityFramework.Constants.Response.Token;
 using OpenIdentityFramework.Endpoints.Results;
 using OpenIdentityFramework.Endpoints.Results.Implementations;
 using OpenIdentityFramework.Extensions;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core;
@@ -15,8 +16,9 @@ using OpenIdentityFramework.Services.Endpoints.Token;
 
 namespace OpenIdentityFramework.Endpoints.Handlers.Implementations;
 
-public class DefaultTokenEndpointHandler<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken>
-    : ITokenEndpointHandler
+public class DefaultTokenEndpointHandler<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken>
+    : ITokenEndpointHandler<TRequestContext>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
@@ -27,10 +29,10 @@ public class DefaultTokenEndpointHandler<TClient, TClientSecret, TScope, TResour
 {
     public DefaultTokenEndpointHandler(
         OpenIdentityFrameworkOptions frameworkOptions,
-        IClientAuthenticationService<TClient, TClientSecret> clientAuthentication,
-        IIssuerUrlProvider issuerUrlProvider,
-        ITokenRequestValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken> requestValidator,
-        ITokenResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken> responseGenerator)
+        IClientAuthenticationService<TRequestContext, TClient, TClientSecret> clientAuthentication,
+        IIssuerUrlProvider<TRequestContext> issuerUrlProvider,
+        ITokenRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken> requestValidator,
+        ITokenResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken> responseGenerator)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
         ArgumentNullException.ThrowIfNull(clientAuthentication);
@@ -45,14 +47,14 @@ public class DefaultTokenEndpointHandler<TClient, TClientSecret, TScope, TResour
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
-    protected IClientAuthenticationService<TClient, TClientSecret> ClientAuthentication { get; }
-    protected IIssuerUrlProvider IssuerUrlProvider { get; }
-    protected ITokenRequestValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken> RequestValidator { get; }
-    protected ITokenResponseGenerator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken> ResponseGenerator { get; }
+    protected IClientAuthenticationService<TRequestContext, TClient, TClientSecret> ClientAuthentication { get; }
+    protected IIssuerUrlProvider<TRequestContext> IssuerUrlProvider { get; }
+    protected ITokenRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken> RequestValidator { get; }
+    protected ITokenResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken> ResponseGenerator { get; }
 
-    public virtual async Task<IEndpointHandlerResult> HandleAsync(HttpContext httpContext, CancellationToken cancellationToken)
+    public virtual async Task<IEndpointHandlerResult<TRequestContext>> HandleAsync(TRequestContext requestContext, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(httpContext);
+        ArgumentNullException.ThrowIfNull(requestContext);
         cancellationToken.ThrowIfCancellationRequested();
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.2
         // The client MUST use the HTTP POST method when making access token requests.
@@ -60,22 +62,22 @@ public class DefaultTokenEndpointHandler<TClient, TClientSecret, TScope, TResour
         // To obtain an Access Token, an ID Token, and optionally a Refresh Token,
         // the RP (Client) sends a Token Request to the Token Endpoint to obtain a Token Response,
         // as described in Section 3.2 of OAuth 2.0 [RFC6749], when using the Authorization Code Flow.
-        if (!HttpMethods.IsPost(httpContext.Request.Method))
+        if (!HttpMethods.IsPost(requestContext.HttpContext.Request.Method))
         {
-            return new DefaultStatusCodeResult(HttpStatusCode.MethodNotAllowed);
+            return new DefaultStatusCodeResult<TRequestContext>(HttpStatusCode.MethodNotAllowed);
         }
 
-        if (!httpContext.Request.HasApplicationFormContentType())
+        if (!requestContext.HttpContext.Request.HasApplicationFormContentType())
         {
-            return new DefaultStatusCodeResult(HttpStatusCode.UnsupportedMediaType);
+            return new DefaultStatusCodeResult<TRequestContext>(HttpStatusCode.UnsupportedMediaType);
         }
 
-        var form = await httpContext.Request.ReadFormAsync(cancellationToken);
-        var authenticationResult = await ClientAuthentication.AuthenticateAsync(httpContext, form, cancellationToken);
-        var issuer = await IssuerUrlProvider.GetIssuerAsync(httpContext, cancellationToken);
+        var form = await requestContext.HttpContext.Request.ReadFormAsync(cancellationToken);
+        var authenticationResult = await ClientAuthentication.AuthenticateAsync(requestContext, form, cancellationToken);
+        var issuer = await IssuerUrlProvider.GetIssuerAsync(requestContext, cancellationToken);
         if (authenticationResult.HasError)
         {
-            return new DefaultTokenErrorResult(
+            return new DefaultTokenErrorResult<TRequestContext>(
                 FrameworkOptions,
                 new(Errors.InvalidRequest, FrameworkOptions.ErrorHandling.HideErrorDescriptionsOnSafeAuthorizeErrorResponses ? null : authenticationResult.ErrorDescription),
                 issuer);
@@ -83,30 +85,30 @@ public class DefaultTokenEndpointHandler<TClient, TClientSecret, TScope, TResour
 
         if (!authenticationResult.IsAuthenticated)
         {
-            return new DefaultTokenErrorResult(
+            return new DefaultTokenErrorResult<TRequestContext>(
                 FrameworkOptions,
                 new(Errors.InvalidClient, null),
                 issuer);
         }
 
-        var validationResult = await RequestValidator.ValidateAsync(httpContext, form, authenticationResult.Client, authenticationResult.ClientAuthenticationMethod, issuer, cancellationToken);
+        var validationResult = await RequestValidator.ValidateAsync(requestContext, form, authenticationResult.Client, authenticationResult.ClientAuthenticationMethod, issuer, cancellationToken);
         if (validationResult.HasError)
         {
-            return new DefaultTokenErrorResult(
+            return new DefaultTokenErrorResult<TRequestContext>(
                 FrameworkOptions,
                 validationResult.ProtocolError,
                 issuer);
         }
 
-        var responseGenerationResult = await ResponseGenerator.CreateResponseAsync(httpContext, validationResult.ValidRequest, cancellationToken);
+        var responseGenerationResult = await ResponseGenerator.CreateResponseAsync(requestContext, validationResult.ValidRequest, cancellationToken);
         if (responseGenerationResult.HasError)
         {
-            return new DefaultTokenErrorResult(
+            return new DefaultTokenErrorResult<TRequestContext>(
                 FrameworkOptions,
                 new(Errors.InvalidRequest, responseGenerationResult.ErrorDescription),
                 issuer);
         }
 
-        return new DefaultTokenSuccessfulResult(FrameworkOptions, responseGenerationResult.TokenResponse);
+        return new DefaultTokenSuccessfulResult<TRequestContext>(FrameworkOptions, responseGenerationResult.TokenResponse);
     }
 }

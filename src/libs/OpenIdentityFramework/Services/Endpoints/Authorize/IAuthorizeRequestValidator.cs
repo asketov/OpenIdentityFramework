@@ -2,14 +2,15 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestValidator;
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize;
 
-public interface IAuthorizeRequestValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret>
+public interface IAuthorizeRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
@@ -17,7 +18,7 @@ public interface IAuthorizeRequestValidator<TClient, TClientSecret, TScope, TRes
     where TResourceSecret : AbstractSecret
 {
     Task<AuthorizeRequestValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>> ValidateAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         DateTimeOffset initialRequestDate,
         string issuer,

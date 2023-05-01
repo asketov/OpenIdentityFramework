@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizationCodeService;
@@ -10,13 +10,14 @@ using OpenIdentityFramework.Storages.Operation;
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations;
 
-public class DefaultAuthorizationCodeService<TClient, TClientSecret, TAuthorizationCode>
-    : IAuthorizationCodeService<TClient, TClientSecret, TAuthorizationCode>
+public class DefaultAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode>
+    : IAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TAuthorizationCode : AbstractAuthorizationCode
 {
-    public DefaultAuthorizationCodeService(IAuthorizationCodeStorage<TAuthorizationCode> storage, ISystemClock systemClock)
+    public DefaultAuthorizationCodeService(IAuthorizationCodeStorage<TRequestContext, TAuthorizationCode> storage, ISystemClock systemClock)
     {
         ArgumentNullException.ThrowIfNull(storage);
         ArgumentNullException.ThrowIfNull(systemClock);
@@ -24,11 +25,11 @@ public class DefaultAuthorizationCodeService<TClient, TClientSecret, TAuthorizat
         SystemClock = systemClock;
     }
 
-    protected IAuthorizationCodeStorage<TAuthorizationCode> Storage { get; }
+    protected IAuthorizationCodeStorage<TRequestContext, TAuthorizationCode> Storage { get; }
     protected ISystemClock SystemClock { get; }
 
     public virtual async Task<string> CreateAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         AuthorizationCodeRequest<TClient, TClientSecret> codeRequest,
         CancellationToken cancellationToken)
     {
@@ -36,7 +37,7 @@ public class DefaultAuthorizationCodeService<TClient, TClientSecret, TAuthorizat
         cancellationToken.ThrowIfCancellationRequested();
         var expiresAt = codeRequest.IssuedAt.Add(codeRequest.Client.GetAuthorizationCodeLifetime());
         return await Storage.CreateAsync(
-            httpContext,
+            requestContext,
             codeRequest.UserAuthentication,
             codeRequest.Client.GetClientId(),
             codeRequest.OriginalRedirectUri,
@@ -51,10 +52,10 @@ public class DefaultAuthorizationCodeService<TClient, TClientSecret, TAuthorizat
             cancellationToken);
     }
 
-    public virtual async Task<TAuthorizationCode?> FindAsync(HttpContext httpContext, string authorizationCode, CancellationToken cancellationToken)
+    public virtual async Task<TAuthorizationCode?> FindAsync(TRequestContext requestContext, string authorizationCode, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var code = await Storage.FindAsync(httpContext, authorizationCode, cancellationToken);
+        var code = await Storage.FindAsync(requestContext, authorizationCode, cancellationToken);
         if (code != null)
         {
             var expiresAt = code.GetExpirationDate();
@@ -63,15 +64,15 @@ public class DefaultAuthorizationCodeService<TClient, TClientSecret, TAuthorizat
                 return code;
             }
 
-            await Storage.DeleteAsync(httpContext, authorizationCode, cancellationToken);
+            await Storage.DeleteAsync(requestContext, authorizationCode, cancellationToken);
         }
 
         return null;
     }
 
-    public virtual async Task DeleteAsync(HttpContext httpContext, string authorizationCode, CancellationToken cancellationToken)
+    public virtual async Task DeleteAsync(TRequestContext requestContext, string authorizationCode, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        await Storage.DeleteAsync(httpContext, authorizationCode, cancellationToken);
+        await Storage.DeleteAsync(requestContext, authorizationCode, cancellationToken);
     }
 }

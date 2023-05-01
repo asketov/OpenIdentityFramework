@@ -5,7 +5,6 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Constants;
@@ -21,8 +20,9 @@ using OpenIdentityFramework.Services.Static.SyntaxValidation;
 namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations;
 
 [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret>
-    : IAuthorizeRequestValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret>
+public class DefaultAuthorizeRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
+    : IAuthorizeRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
@@ -31,8 +31,8 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
 {
     public DefaultAuthorizeRequestValidator(
         OpenIdentityFrameworkOptions frameworkOptions,
-        IClientService<TClient, TClientSecret> clients,
-        IResourceValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret> resourceValidator)
+        IClientService<TRequestContext, TClient, TClientSecret> clients,
+        IResourceValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> resourceValidator)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
         ArgumentNullException.ThrowIfNull(clients);
@@ -43,20 +43,20 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
-    protected IClientService<TClient, TClientSecret> Clients { get; }
-    protected IResourceValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret> ResourceValidator { get; }
+    protected IClientService<TRequestContext, TClient, TClientSecret> Clients { get; }
+    protected IResourceValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> ResourceValidator { get; }
 
     public virtual async Task<AuthorizeRequestValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>> ValidateAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         DateTimeOffset initialRequestDate,
         string issuer,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var isOpenIdRequest = await IsOpenIdConnectRequestAsync(httpContext, parameters, cancellationToken);
+        var isOpenIdRequest = await IsOpenIdConnectRequestAsync(requestContext, parameters, cancellationToken);
         var coreParametersValidation = await ValidateCoreParametersAsync(
-            httpContext,
+            requestContext,
             parameters,
             initialRequestDate,
             issuer,
@@ -71,19 +71,19 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
         }
 
         var coreParameters = coreParametersValidation.Value;
-        var scopeValidation = await ValidateScopeAsync(httpContext, parameters, coreParametersValidation.Value.Client, isOpenIdRequest, cancellationToken);
+        var scopeValidation = await ValidateScopeAsync(requestContext, parameters, coreParametersValidation.Value.Client, isOpenIdRequest, cancellationToken);
         if (scopeValidation.HasError)
         {
             return coreParameters.BuildError(scopeValidation.Error);
         }
 
-        var codeChallengeMethodValidation = await ValidateCodeChallengeMethodAsync(httpContext, parameters, coreParameters.Client, cancellationToken);
+        var codeChallengeMethodValidation = await ValidateCodeChallengeMethodAsync(requestContext, parameters, coreParameters.Client, cancellationToken);
         if (codeChallengeMethodValidation.HasError)
         {
             return coreParameters.BuildError(codeChallengeMethodValidation.Error);
         }
 
-        var codeChallengeValidation = await ValidateCodeChallengeAsync(httpContext, parameters, coreParameters.Client, codeChallengeMethodValidation.CodeChallengeMethod, cancellationToken);
+        var codeChallengeValidation = await ValidateCodeChallengeAsync(requestContext, parameters, coreParameters.Client, codeChallengeMethodValidation.CodeChallengeMethod, cancellationToken);
         if (codeChallengeValidation.HasError)
         {
             return coreParameters.BuildError(codeChallengeValidation.Error);
@@ -107,43 +107,43 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
                 parameters));
         }
 
-        var nonceValidation = await ValidateNonceAsync(httpContext, parameters, coreParameters.AuthorizationFlow, cancellationToken);
+        var nonceValidation = await ValidateNonceAsync(requestContext, parameters, coreParameters.AuthorizationFlow, cancellationToken);
         if (nonceValidation.HasError)
         {
             return coreParameters.BuildError(nonceValidation.Error);
         }
 
-        var promptValidation = await ValidatePromptAsync(httpContext, parameters, cancellationToken);
+        var promptValidation = await ValidatePromptAsync(requestContext, parameters, cancellationToken);
         if (promptValidation.HasError)
         {
             return coreParameters.BuildError(promptValidation.Error);
         }
 
-        var maxAgeValidation = await ValidateMaxAgeAsync(httpContext, parameters, cancellationToken);
+        var maxAgeValidation = await ValidateMaxAgeAsync(requestContext, parameters, cancellationToken);
         if (maxAgeValidation.HasError)
         {
             return coreParameters.BuildError(maxAgeValidation.Error);
         }
 
-        var loginHintValidation = await ValidateLoginHintAsync(httpContext, parameters, cancellationToken);
+        var loginHintValidation = await ValidateLoginHintAsync(requestContext, parameters, cancellationToken);
         if (loginHintValidation.HasError)
         {
             return coreParameters.BuildError(loginHintValidation.Error);
         }
 
-        var acrValuesValidation = await ValidateAcrValuesAsync(httpContext, parameters, cancellationToken);
+        var acrValuesValidation = await ValidateAcrValuesAsync(requestContext, parameters, cancellationToken);
         if (acrValuesValidation.HasError)
         {
             return coreParameters.BuildError(acrValuesValidation.Error);
         }
 
-        var displayValidation = await ValidateDisplayAsync(httpContext, parameters, cancellationToken);
+        var displayValidation = await ValidateDisplayAsync(requestContext, parameters, cancellationToken);
         if (displayValidation.HasError)
         {
             return coreParameters.BuildError(displayValidation.Error);
         }
 
-        var uiLocalesValidation = await ValidateUiLocalesAsync(httpContext, parameters, cancellationToken);
+        var uiLocalesValidation = await ValidateUiLocalesAsync(requestContext, parameters, cancellationToken);
         if (uiLocalesValidation.HasError)
         {
             return coreParameters.BuildError(uiLocalesValidation.Error);
@@ -191,7 +191,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     }
 
     protected virtual async Task<CoreParametersValidationResult> ValidateCoreParametersAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         DateTimeOffset requestDate,
         string issuer,
@@ -199,31 +199,31 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var clientValidation = await ValidateClientAsync(httpContext, parameters, cancellationToken);
+        var clientValidation = await ValidateClientAsync(requestContext, parameters, cancellationToken);
         if (clientValidation.HasError)
         {
             return new(clientValidation.Error);
         }
 
-        var responseTypeValidation = await ValidateResponseTypeAsync(httpContext, parameters, clientValidation.Client, isOpenIdRequest, cancellationToken);
+        var responseTypeValidation = await ValidateResponseTypeAsync(requestContext, parameters, clientValidation.Client, isOpenIdRequest, cancellationToken);
         if (responseTypeValidation.HasError)
         {
             return new(responseTypeValidation.Error);
         }
 
-        var stateValidation = await ValidateStateAsync(httpContext, parameters, cancellationToken);
+        var stateValidation = await ValidateStateAsync(requestContext, parameters, cancellationToken);
         if (stateValidation.HasError)
         {
             return new(stateValidation.Error);
         }
 
-        var responseModeValidation = await ValidateResponseModeAsync(httpContext, parameters, responseTypeValidation.ResponseType, cancellationToken);
+        var responseModeValidation = await ValidateResponseModeAsync(requestContext, parameters, responseTypeValidation.ResponseType, cancellationToken);
         if (responseModeValidation.HasError)
         {
             return new(responseModeValidation.Error);
         }
 
-        var redirectUriValidation = await ValidateRedirectUriAsync(httpContext, parameters, clientValidation.Client, isOpenIdRequest, cancellationToken);
+        var redirectUriValidation = await ValidateRedirectUriAsync(requestContext, parameters, clientValidation.Client, isOpenIdRequest, cancellationToken);
         if (redirectUriValidation.HasError)
         {
             return new(redirectUriValidation.Error);
@@ -242,7 +242,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     }
 
     protected virtual Task<bool> IsOpenIdConnectRequestAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         CancellationToken cancellationToken)
     {
@@ -295,7 +295,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     }
 
     protected virtual async Task<ClientValidationResult> ValidateClientAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         CancellationToken cancellationToken)
     {
@@ -340,7 +340,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
         }
 
         // client not found
-        var client = await Clients.FindAsync(httpContext, clientId, cancellationToken);
+        var client = await Clients.FindAsync(requestContext, clientId, cancellationToken);
         if (client == null)
         {
             return ClientValidationResult.UnknownOrDisabledClient;
@@ -350,7 +350,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     }
 
     protected virtual Task<ResponseTypeValidationResult> ValidateResponseTypeAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         TClient client,
         bool isOpenIdRequest,
@@ -424,7 +424,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     }
 
     protected virtual Task<StateValidationResult> ValidateStateAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         CancellationToken cancellationToken)
     {
@@ -473,7 +473,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     }
 
     protected virtual Task<ResponseModeValidationResult> ValidateResponseModeAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         string responseType,
         CancellationToken cancellationToken)
@@ -541,7 +541,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     }
 
     protected virtual Task<RedirectUriValidationResult> ValidateRedirectUriAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         TClient client,
         bool isOpenIdRequest,
@@ -694,7 +694,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     }
 
     protected virtual async Task<ScopeValidationResult> ValidateScopeAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         TClient client,
         bool isOpenIdRequest,
@@ -721,7 +721,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
             if (!isOpenIdRequest)
             {
                 var defaultScopesValidation = await ResourceValidator.ValidateRequestedScopesAsync(
-                    httpContext,
+                    requestContext,
                     client,
                     client.GetAllowedScopes(),
                     DefaultTokenTypes.OAuth,
@@ -783,7 +783,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
             allowedTokenTypes = DefaultTokenTypes.OpenIdConnect;
         }
 
-        var requestedScopesValidation = await ResourceValidator.ValidateRequestedScopesAsync(httpContext, client, requestedScopes, allowedTokenTypes, cancellationToken);
+        var requestedScopesValidation = await ResourceValidator.ValidateRequestedScopesAsync(requestContext, client, requestedScopes, allowedTokenTypes, cancellationToken);
         if (requestedScopesValidation.HasError)
         {
             if (requestedScopesValidation.Error.HasConfigurationError)
@@ -798,7 +798,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     }
 
     protected virtual Task<CodeChallengeMethodValidationResult> ValidateCodeChallengeMethodAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         TClient client,
         CancellationToken cancellationToken)
@@ -857,7 +857,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     }
 
     protected virtual Task<CodeChallengeValidationResult> ValidateCodeChallengeAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         TClient client,
         string codeChallengeMethod,
@@ -920,7 +920,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     }
 
     protected virtual Task<NonceValidationResult> ValidateNonceAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         string authorizationFlow,
         CancellationToken cancellationToken)
@@ -974,7 +974,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     }
 
     protected virtual Task<PromptValidationResult> ValidatePromptAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         CancellationToken cancellationToken)
     {
@@ -1029,7 +1029,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     }
 
     protected virtual Task<MaxAgeValidationResult> ValidateMaxAgeAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         CancellationToken cancellationToken)
     {
@@ -1071,7 +1071,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     }
 
     protected virtual Task<LoginHintValidationResult> ValidateLoginHintAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         CancellationToken cancellationToken)
     {
@@ -1113,7 +1113,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     }
 
     protected virtual Task<AcrValuesValidationResult> ValidateAcrValuesAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         CancellationToken cancellationToken)
     {
@@ -1166,7 +1166,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     }
 
     protected virtual Task<DisplayValidationResult> ValidateDisplayAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         CancellationToken cancellationToken)
     {
@@ -1219,7 +1219,7 @@ public class DefaultAuthorizeRequestValidator<TClient, TClientSecret, TScope, TR
     }
 
     protected virtual Task<UiLocalesValidationResult> ValidateUiLocalesAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IReadOnlyDictionary<string, StringValues> parameters,
         CancellationToken cancellationToken)
     {

@@ -1,13 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
 
 namespace OpenIdentityFramework.Services.Core;
 
-public interface IResourceValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret>
+public interface IResourceValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
@@ -15,7 +16,7 @@ public interface IResourceValidator<TClient, TClientSecret, TScope, TResource, T
     where TResourceSecret : AbstractSecret
 {
     Task<ResourcesValidationResult<TScope, TResource, TResourceSecret>> ValidateRequestedScopesAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         TClient client,
         IReadOnlySet<string> requestedScopes,
         IReadOnlySet<string> allowedTokenTypesForScopes,

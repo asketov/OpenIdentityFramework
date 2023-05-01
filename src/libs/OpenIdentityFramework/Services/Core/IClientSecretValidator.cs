@@ -1,13 +1,14 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 
 namespace OpenIdentityFramework.Services.Core;
 
-public interface IClientSecretValidator<TClient, TClientSecret>
+public interface IClientSecretValidator<TRequestContext, TClient, TClientSecret>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {
-    Task<bool> IsValidPreSharedSecret(HttpContext httpContext, TClient client, string preSharedSecret, CancellationToken cancellationToken);
+    Task<bool> IsValidPreSharedSecret(TRequestContext requestContext, TClient client, string preSharedSecret, CancellationToken cancellationToken);
 }

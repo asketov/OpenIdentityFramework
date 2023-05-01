@@ -2,17 +2,18 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
 
 namespace OpenIdentityFramework.Storages.Operation;
 
-public interface IAuthorizationCodeStorage<TAuthorizationCode>
+public interface IAuthorizationCodeStorage<TRequestContext, TAuthorizationCode>
+    where TRequestContext : AbstractRequestContext
     where TAuthorizationCode : AbstractAuthorizationCode
 {
     Task<string> CreateAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         UserAuthentication userAuthentication,
         string clientId,
         string? originalRedirectUri,
@@ -27,12 +28,12 @@ public interface IAuthorizationCodeStorage<TAuthorizationCode>
         CancellationToken cancellationToken);
 
     Task<TAuthorizationCode?> FindAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         string authorizationCode,
         CancellationToken cancellationToken);
 
     Task DeleteAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         string authorizationCode,
         CancellationToken cancellationToken);
 }

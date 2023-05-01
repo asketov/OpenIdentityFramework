@@ -2,16 +2,18 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Models;
+using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
 
 namespace OpenIdentityFramework.Storages.Operation;
 
-public interface IAccessTokenStorage
+public interface IAccessTokenStorage<TRequestContext, TAccessToken>
+    where TRequestContext : AbstractRequestContext
+    where TAccessToken : AbstractAccessToken
 {
     Task<string> CreateAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         string issuer,
         string clientId,
         UserAuthentication? userAuthentication,

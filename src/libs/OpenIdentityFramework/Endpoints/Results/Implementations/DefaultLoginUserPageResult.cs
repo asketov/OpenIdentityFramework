@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 using OpenIdentityFramework.Configuration.Options;
+using OpenIdentityFramework.Models;
 
 namespace OpenIdentityFramework.Endpoints.Results.Implementations;
 
-public class DefaultLoginUserPageResult : IEndpointHandlerResult
+public class DefaultLoginUserPageResult<TRequestContext> : IEndpointHandlerResult<TRequestContext>
+    where TRequestContext : AbstractRequestContext
 {
     public DefaultLoginUserPageResult(OpenIdentityFrameworkOptions frameworkOptions, string authorizeRequestId)
     {
@@ -21,11 +22,11 @@ public class DefaultLoginUserPageResult : IEndpointHandlerResult
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
     protected string AuthorizeRequestId { get; }
 
-    public virtual Task ExecuteAsync(HttpContext httpContext, CancellationToken cancellationToken)
+    public virtual Task ExecuteAsync(TRequestContext requestContext, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(httpContext);
+        ArgumentNullException.ThrowIfNull(requestContext);
         cancellationToken.ThrowIfCancellationRequested();
-        httpContext.Response.Redirect(QueryHelpers.AddQueryString(
+        requestContext.HttpContext.Response.Redirect(QueryHelpers.AddQueryString(
             FrameworkOptions.UserInteraction.LoginUrl,
             BuildParameters()));
         return Task.CompletedTask;

@@ -1,14 +1,15 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Services.Core.Models.ErrorService;
 
 namespace OpenIdentityFramework.Services.Core;
 
-public interface IErrorService
+public interface IErrorService<TRequestContext>
+    where TRequestContext : AbstractRequestContext
 {
     Task<string> SaveAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         Error error,
         CancellationToken cancellationToken);
 }

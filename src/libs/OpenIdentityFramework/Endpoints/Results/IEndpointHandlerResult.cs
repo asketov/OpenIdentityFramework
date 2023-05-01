@@ -1,10 +1,11 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 
 namespace OpenIdentityFramework.Endpoints.Results;
 
-public interface IEndpointHandlerResult
+public interface IEndpointHandlerResult<TRequestContext>
+    where TRequestContext : AbstractRequestContext
 {
-    Task ExecuteAsync(HttpContext httpContext, CancellationToken cancellationToken);
+    Task ExecuteAsync(TRequestContext requestContext, CancellationToken cancellationToken);
 }

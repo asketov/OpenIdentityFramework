@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Constants.Request.Authorize;
 using OpenIdentityFramework.Constants.Response.Authorize;
@@ -19,8 +18,9 @@ using OpenIdentityFramework.Services.Operation;
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations;
 
-public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent, TGrantedConsent>
-    : IAuthorizeRequestInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent>
+public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent, TGrantedConsent>
+    : IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
@@ -30,9 +30,9 @@ public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, T
     where TGrantedConsent : AbstractGrantedConsent
 {
     public DefaultAuthorizeRequestInteractionService(
-        IUserProfileService userProfile,
+        IUserProfileService<TRequestContext> userProfile,
         ISystemClock systemClock,
-        IGrantedConsentService<TClient, TClientSecret, TGrantedConsent> consents)
+        IGrantedConsentService<TRequestContext, TClient, TClientSecret, TGrantedConsent> consents)
     {
         ArgumentNullException.ThrowIfNull(userProfile);
         ArgumentNullException.ThrowIfNull(systemClock);
@@ -42,12 +42,12 @@ public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, T
         Consents = consents;
     }
 
-    protected IUserProfileService UserProfile { get; }
+    protected IUserProfileService<TRequestContext> UserProfile { get; }
     protected ISystemClock SystemClock { get; }
-    protected IGrantedConsentService<TClient, TClientSecret, TGrantedConsent> Consents { get; }
+    protected IGrantedConsentService<TRequestContext, TClient, TClientSecret, TGrantedConsent> Consents { get; }
 
     public virtual async Task<AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>> ProcessInteractionRequirementsAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
         UserAuthenticationTicket? ticket,
         TRequestConsent? authorizeRequestConsent,
@@ -67,18 +67,17 @@ public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, T
             return LoginErrorOrInteractionRequired(isPromptNone);
         }
 
-        var authenticationResult = await HandleAuthenticationAsync(httpContext, authorizeRequest, ticket, isPromptNone, cancellationToken);
+        var authenticationResult = await HandleAuthenticationAsync(requestContext, authorizeRequest, ticket, isPromptNone, cancellationToken);
         if (authenticationResult != null)
         {
             return authenticationResult;
         }
 
-        return await HandleConsentAsync(httpContext, authorizeRequest, ticket, authorizeRequestConsent, isPromptNone, cancellationToken);
+        return await HandleConsentAsync(requestContext, authorizeRequest, ticket, authorizeRequestConsent, isPromptNone, cancellationToken);
     }
 
-
     protected virtual async Task<AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>?> HandleAuthenticationAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
         UserAuthenticationTicket ticket,
         bool isPromptNone,
@@ -87,7 +86,7 @@ public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, T
         ArgumentNullException.ThrowIfNull(authorizeRequest);
         ArgumentNullException.ThrowIfNull(ticket);
         cancellationToken.ThrowIfCancellationRequested();
-        var userIsActive = await UserProfile.IsActiveAsync(httpContext, ticket.UserAuthentication, cancellationToken);
+        var userIsActive = await UserProfile.IsActiveAsync(requestContext, ticket.UserAuthentication, cancellationToken);
         if (!userIsActive)
         {
             return LoginErrorOrInteractionRequired(isPromptNone);
@@ -126,7 +125,7 @@ public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, T
     }
 
     protected virtual async Task<AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>> HandleConsentAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
         UserAuthenticationTicket? ticket,
         TRequestConsent? authorizeRequestConsent,
@@ -136,7 +135,7 @@ public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, T
         ArgumentNullException.ThrowIfNull(authorizeRequest);
         ArgumentNullException.ThrowIfNull(ticket);
         cancellationToken.ThrowIfCancellationRequested();
-        var consentRequired = await IsConsentRequiredAsync(httpContext, authorizeRequest, ticket, cancellationToken);
+        var consentRequired = await IsConsentRequiredAsync(requestContext, authorizeRequest, ticket, cancellationToken);
         if (consentRequired && isPromptNone)
         {
             return ErrorConsentRequired();
@@ -174,7 +173,7 @@ public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, T
             scopesToPersist = authorizeRequest.RequestedResources.RawScopes;
         }
 
-        await Consents.UpsertAsync(httpContext, ticket.UserAuthentication.SubjectId, authorizeRequest.Client, scopesToPersist, cancellationToken);
+        await Consents.UpsertAsync(requestContext, ticket.UserAuthentication.SubjectId, authorizeRequest.Client, scopesToPersist, cancellationToken);
         return new(new ValidAuthorizeRequestInteraction<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
             authorizeRequest,
             ticket,
@@ -202,7 +201,7 @@ public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, T
     }
 
     protected virtual async Task<bool> IsConsentRequiredAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
         UserAuthenticationTicket ticket,
         CancellationToken cancellationToken)
@@ -235,7 +234,7 @@ public class DefaultAuthorizeRequestInteractionService<TClient, TClientSecret, T
             return true;
         }
 
-        var grantedConsent = await Consents.FindAsync(httpContext, ticket.UserAuthentication.SubjectId, authorizeRequest.Client, cancellationToken);
+        var grantedConsent = await Consents.FindAsync(requestContext, ticket.UserAuthentication.SubjectId, authorizeRequest.Client, cancellationToken);
         if (grantedConsent != null && authorizeRequest.RequestedResources.IsFullyCoveredBy(grantedConsent.GetGrantedScopes()))
         {
             return false;

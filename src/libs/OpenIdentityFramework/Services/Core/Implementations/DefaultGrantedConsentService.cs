@@ -3,20 +3,21 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Storages.Operation;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultGrantedConsentService<TClient, TClientSecret, TGrantedConsent>
-    : IGrantedConsentService<TClient, TClientSecret, TGrantedConsent>
+public class DefaultGrantedConsentService<TRequestContext, TClient, TClientSecret, TGrantedConsent>
+    : IGrantedConsentService<TRequestContext, TClient, TClientSecret, TGrantedConsent>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TGrantedConsent : AbstractGrantedConsent
 {
-    public DefaultGrantedConsentService(IGrantedConsentStorage<TGrantedConsent> storage, ISystemClock systemClock)
+    public DefaultGrantedConsentService(IGrantedConsentStorage<TRequestContext, TGrantedConsent> storage, ISystemClock systemClock)
     {
         ArgumentNullException.ThrowIfNull(storage);
         ArgumentNullException.ThrowIfNull(systemClock);
@@ -24,10 +25,14 @@ public class DefaultGrantedConsentService<TClient, TClientSecret, TGrantedConsen
         SystemClock = systemClock;
     }
 
-    protected IGrantedConsentStorage<TGrantedConsent> Storage { get; }
+    protected IGrantedConsentStorage<TRequestContext, TGrantedConsent> Storage { get; }
     protected ISystemClock SystemClock { get; }
 
-    public async Task<TGrantedConsent?> FindAsync(HttpContext httpContext, string subjectId, TClient client, CancellationToken cancellationToken)
+    public virtual async Task<TGrantedConsent?> FindAsync(
+        TRequestContext requestContext,
+        string subjectId,
+        TClient client,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(client);
         cancellationToken.ThrowIfCancellationRequested();
@@ -39,7 +44,7 @@ public class DefaultGrantedConsentService<TClient, TClientSecret, TGrantedConsen
         }
 
         var clientId = client.GetClientId();
-        var consent = await Storage.FindAsync(httpContext, subjectId, clientId, cancellationToken);
+        var consent = await Storage.FindAsync(requestContext, subjectId, clientId, cancellationToken);
         if (consent == null)
         {
             return null;
@@ -53,7 +58,7 @@ public class DefaultGrantedConsentService<TClient, TClientSecret, TGrantedConsen
                 var currentDate = SystemClock.UtcNow;
                 if (currentDate > expirationDate.Value)
                 {
-                    await Storage.DeleteAsync(httpContext, subjectId, clientId, cancellationToken);
+                    await Storage.DeleteAsync(requestContext, subjectId, clientId, cancellationToken);
                     return null;
                 }
             }
@@ -64,7 +69,12 @@ public class DefaultGrantedConsentService<TClient, TClientSecret, TGrantedConsen
         return null;
     }
 
-    public async Task UpsertAsync(HttpContext httpContext, string subjectId, TClient client, IReadOnlySet<string> grantedScopes, CancellationToken cancellationToken)
+    public virtual async Task UpsertAsync(
+        TRequestContext requestContext,
+        string subjectId,
+        TClient client,
+        IReadOnlySet<string> grantedScopes,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(grantedScopes);
@@ -81,11 +91,11 @@ public class DefaultGrantedConsentService<TClient, TClientSecret, TGrantedConsen
                     expiresAt = currentDate.Add(consentLifetime.Value);
                 }
 
-                await Storage.UpsertAsync(httpContext, subjectId, client.GetClientId(), grantedScopes, expiresAt, cancellationToken);
+                await Storage.UpsertAsync(requestContext, subjectId, client.GetClientId(), grantedScopes, expiresAt, cancellationToken);
             }
             else
             {
-                await Storage.DeleteAsync(httpContext, subjectId, client.GetClientId(), cancellationToken);
+                await Storage.DeleteAsync(requestContext, subjectId, client.GetClientId(), cancellationToken);
             }
         }
 

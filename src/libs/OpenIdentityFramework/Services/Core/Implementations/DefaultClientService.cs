@@ -1,28 +1,30 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Storages.Configuration;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultClientService<TClient, TClientSecret> : IClientService<TClient, TClientSecret>
+public class DefaultClientService<TRequestContext, TClient, TClientSecret>
+    : IClientService<TRequestContext, TClient, TClientSecret>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {
-    public DefaultClientService(IClientStorage<TClient, TClientSecret> storage)
+    public DefaultClientService(IClientStorage<TRequestContext, TClient, TClientSecret> storage)
     {
         ArgumentNullException.ThrowIfNull(storage);
         Storage = storage;
     }
 
-    protected IClientStorage<TClient, TClientSecret> Storage { get; }
+    protected IClientStorage<TRequestContext, TClient, TClientSecret> Storage { get; }
 
-    public virtual async Task<TClient?> FindAsync(HttpContext httpContext, string clientId, CancellationToken cancellationToken)
+    public virtual async Task<TClient?> FindAsync(TRequestContext requestContext, string clientId, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var client = await Storage.FindEnabledAsync(httpContext, clientId, cancellationToken);
+        var client = await Storage.FindEnabledAsync(requestContext, clientId, cancellationToken);
         if (client != null && string.Equals(clientId, client.GetClientId(), StringComparison.Ordinal))
         {
             return client;

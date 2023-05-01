@@ -1,13 +1,14 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 
 namespace OpenIdentityFramework.Services.Core;
 
-public interface IClientService<TClient, TClientSecret>
+public interface IClientService<TRequestContext, TClient, TClientSecret>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {
-    Task<TClient?> FindAsync(HttpContext httpContext, string clientId, CancellationToken cancellationToken);
+    Task<TClient?> FindAsync(TRequestContext requestContext, string clientId, CancellationToken cancellationToken);
 }

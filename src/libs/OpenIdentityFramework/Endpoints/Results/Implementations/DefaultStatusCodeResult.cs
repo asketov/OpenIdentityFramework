@@ -3,12 +3,13 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 
 namespace OpenIdentityFramework.Endpoints.Results.Implementations;
 
 [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-public class DefaultStatusCodeResult : IEndpointHandlerResult
+public class DefaultStatusCodeResult<TRequestContext> : IEndpointHandlerResult<TRequestContext>
+    where TRequestContext : AbstractRequestContext
 {
     public DefaultStatusCodeResult(HttpStatusCode httpStatusCode)
     {
@@ -17,11 +18,11 @@ public class DefaultStatusCodeResult : IEndpointHandlerResult
 
     protected HttpStatusCode StatusCode { get; }
 
-    public virtual Task ExecuteAsync(HttpContext httpContext, CancellationToken cancellationToken)
+    public virtual Task ExecuteAsync(TRequestContext requestContext, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(httpContext);
+        ArgumentNullException.ThrowIfNull(requestContext);
         cancellationToken.ThrowIfCancellationRequested();
-        httpContext.Response.StatusCode = (int) StatusCode;
+        requestContext.HttpContext.Response.StatusCode = (int) StatusCode;
         return Task.CompletedTask;
     }
 }

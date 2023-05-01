@@ -5,14 +5,15 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Extensions;
+using OpenIdentityFramework.Models;
 
 namespace OpenIdentityFramework.Endpoints.Results.Implementations;
 
-public class DefaultDirectAuthorizeResult : IEndpointHandlerResult
+public class DefaultDirectAuthorizeResult<TRequestContext> : IEndpointHandlerResult<TRequestContext>
+    where TRequestContext : AbstractRequestContext
 {
     protected static readonly string AutoSubmitScript = "window.addEventListener('load', function(){document.forms[0].submit();});";
 
@@ -39,17 +40,17 @@ public class DefaultDirectAuthorizeResult : IEndpointHandlerResult
     protected string RedirectUri { get; }
     protected string ResponseMode { get; }
 
-    public virtual async Task ExecuteAsync(HttpContext httpContext, CancellationToken cancellationToken)
+    public virtual async Task ExecuteAsync(TRequestContext requestContext, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(httpContext);
+        ArgumentNullException.ThrowIfNull(requestContext);
         cancellationToken.ThrowIfCancellationRequested();
         if (ResponseMode == Constants.Request.Authorize.ResponseMode.Query)
         {
-            HandleQueryResponse(httpContext, cancellationToken);
+            HandleQueryResponse(requestContext, cancellationToken);
         }
         else if (ResponseMode == Constants.Request.Authorize.ResponseMode.FormPost)
         {
-            await HandlePostResponseAsync(httpContext, cancellationToken);
+            await HandlePostResponseAsync(requestContext, cancellationToken);
         }
         else
         {
@@ -58,25 +59,25 @@ public class DefaultDirectAuthorizeResult : IEndpointHandlerResult
         }
     }
 
-    protected virtual void HandleQueryResponse(HttpContext httpContext, CancellationToken cancellationToken)
+    protected virtual void HandleQueryResponse(TRequestContext requestContext, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(httpContext);
+        ArgumentNullException.ThrowIfNull(requestContext);
         cancellationToken.ThrowIfCancellationRequested();
-        httpContext.Response.SetNoCache();
+        requestContext.HttpContext.Response.SetNoCache();
         var directRedirectUri = QueryHelpers.AddQueryString(
             RedirectUri,
             Parameters);
-        httpContext.Response.Redirect(directRedirectUri);
+        requestContext.HttpContext.Response.Redirect(directRedirectUri);
     }
 
-    protected virtual async Task HandlePostResponseAsync(HttpContext httpContext, CancellationToken cancellationToken)
+    protected virtual async Task HandlePostResponseAsync(TRequestContext requestContext, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(httpContext);
-        httpContext.Response.SetNoCache();
-        httpContext.Response.SetNoReferrer();
-        httpContext.Response.AddScriptCspHeaders(FrameworkOptions.ContentSecurityPolicy, AutoSubmitScriptHash);
+        ArgumentNullException.ThrowIfNull(requestContext);
+        requestContext.HttpContext.Response.SetNoCache();
+        requestContext.HttpContext.Response.SetNoReferrer();
+        requestContext.HttpContext.Response.AddScriptCspHeaders(FrameworkOptions.ContentSecurityPolicy, AutoSubmitScriptHash);
         var html = BuildHtml();
-        await httpContext.Response.WriteHtmlAsync(html, cancellationToken);
+        await requestContext.HttpContext.Response.WriteHtmlAsync(html, cancellationToken);
     }
 
     protected virtual string BuildHtml()

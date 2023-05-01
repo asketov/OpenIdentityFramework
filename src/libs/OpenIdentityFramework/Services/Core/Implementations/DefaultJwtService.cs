@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
@@ -15,7 +14,8 @@ using OpenIdentityFramework.Models;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultJwtService : IJwtService
+public class DefaultJwtService<TRequestContext> : IJwtService<TRequestContext>
+    where TRequestContext : AbstractRequestContext
 {
     public DefaultJwtService(OpenIdentityFrameworkOptions frameworkOptions)
     {
@@ -26,7 +26,7 @@ public class DefaultJwtService : IJwtService
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
 
     public virtual Task<string> CreateIdTokenAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         SigningCredentials signingCredentials,
         DateTimeOffset issuedAt,
         DateTimeOffset expiresAt,
@@ -49,7 +49,7 @@ public class DefaultJwtService : IJwtService
     }
 
     public virtual Task<string> CreateAccessTokenAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         SigningCredentials signingCredentials,
         DateTimeOffset issuedAt,
         DateTimeOffset expiresAt,

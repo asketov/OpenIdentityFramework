@@ -1,15 +1,16 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
+using OpenIdentityFramework.Models;
 
 namespace OpenIdentityFramework.Services.Core;
 
-public interface IKeyMaterialService
+public interface IKeyMaterialService<TRequestContext>
+    where TRequestContext : AbstractRequestContext
 {
     Task<SigningCredentials> GetSigningCredentialsAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         string issuer,
         IReadOnlySet<string>? allowedSigningAlgorithms,
         CancellationToken cancellationToken);

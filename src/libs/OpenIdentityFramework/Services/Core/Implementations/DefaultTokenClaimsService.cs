@@ -5,7 +5,6 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Constants;
@@ -21,8 +20,9 @@ using OpenIdentityFramework.Services.Static.Cryptography;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultTokenClaimsService<TClient, TClientSecret, TScope, TResource, TResourceSecret>
-    : ITokenClaimsService<TClient, TClientSecret, TScope, TResource, TResourceSecret>
+public class DefaultTokenClaimsService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
+    : ITokenClaimsService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
@@ -31,7 +31,7 @@ public class DefaultTokenClaimsService<TClient, TClientSecret, TScope, TResource
 {
     public DefaultTokenClaimsService(
         OpenIdentityFrameworkOptions frameworkOptions,
-        IUserProfileService userProfile,
+        IUserProfileService<TRequestContext> userProfile,
         IIdTokenLeftMostHasher idTokenLeftMostHasher)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
@@ -43,11 +43,11 @@ public class DefaultTokenClaimsService<TClient, TClientSecret, TScope, TResource
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
-    protected IUserProfileService UserProfile { get; }
+    protected IUserProfileService<TRequestContext> UserProfile { get; }
     protected IIdTokenLeftMostHasher IdTokenLeftMostHasher { get; }
 
     public virtual async Task<HashSet<LightweightClaim>> GetIdentityTokenClaimsAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         CreateIdTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> createIdTokenRequest,
         SigningCredentials signingCredentials,
         CancellationToken cancellationToken)
@@ -65,7 +65,7 @@ public class DefaultTokenClaimsService<TClient, TClientSecret, TScope, TResource
         // aud - REQUIRED. Audience(s) that this ID Token is intended for. It MUST contain the OAuth 2.0 client_id of the Relying Party as an audience value.
         // It MAY also contain identifiers for other audiences. In the general case, the aud value is an array of case sensitive strings.
         // In the common special case when there is one audience, the aud value MAY be a single case sensitive string.
-        var audiences = await GetIdTokenAudiencesAsync(httpContext, createIdTokenRequest, cancellationToken);
+        var audiences = await GetIdTokenAudiencesAsync(requestContext, createIdTokenRequest, cancellationToken);
         foreach (var audience in audiences)
         {
             result.Add(audience);
@@ -111,13 +111,13 @@ public class DefaultTokenClaimsService<TClient, TClientSecret, TScope, TResource
         }
 
         var scopeClaimTypes = await GetIdTokenClaimTypesAllowedByScopesAsync(
-            httpContext,
+            requestContext,
             createIdTokenRequest.AllowedResources,
             cancellationToken);
         if (createIdTokenRequest.Client.ShouldAlwaysIncludeUserClaimsInIdToken() || createIdTokenRequest.ForceIncludeUserClaimsInIdToken)
         {
             var profileClaims = await UserProfile.GetProfileClaimsAsync(
-                httpContext,
+                requestContext,
                 createIdTokenRequest.UserAuthentication,
                 scopeClaimTypes,
                 cancellationToken);
@@ -134,7 +134,7 @@ public class DefaultTokenClaimsService<TClient, TClientSecret, TScope, TResource
     }
 
     public virtual async Task<HashSet<LightweightClaim>> GetAccessTokenClaimsAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         CreateAccessTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> createAccessTokenRequest,
         CancellationToken cancellationToken)
     {
@@ -150,7 +150,7 @@ public class DefaultTokenClaimsService<TClient, TClientSecret, TScope, TResource
         // aud - REQUIRED. Audience(s) that this ID Token is intended for. It MUST contain the OAuth 2.0 client_id of the Relying Party as an audience value.
         // It MAY also contain identifiers for other audiences. In the general case, the aud value is an array of case sensitive strings.
         // In the common special case when there is one audience, the aud value MAY be a single case sensitive string.
-        var audiences = await GetAccessTokenAudiencesAsync(httpContext, createAccessTokenRequest, cancellationToken);
+        var audiences = await GetAccessTokenAudiencesAsync(requestContext, createAccessTokenRequest, cancellationToken);
         foreach (var audience in audiences)
         {
             result.Add(audience);
@@ -170,11 +170,11 @@ public class DefaultTokenClaimsService<TClient, TClientSecret, TScope, TResource
             }
 
             var scopeClaimTypes = await GetAccessTokenClaimTypesAllowedByScopesAsync(
-                httpContext,
+                requestContext,
                 createAccessTokenRequest.AllowedResources,
                 cancellationToken);
             var profileClaims = await UserProfile.GetProfileClaimsAsync(
-                httpContext,
+                requestContext,
                 createAccessTokenRequest.UserAuthentication,
                 scopeClaimTypes,
                 cancellationToken);
@@ -196,7 +196,7 @@ public class DefaultTokenClaimsService<TClient, TClientSecret, TScope, TResource
     }
 
     protected virtual Task<IReadOnlySet<LightweightClaim>> GetIdTokenAudiencesAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         CreateIdTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> createIdTokenRequest,
         CancellationToken cancellationToken)
     {
@@ -211,7 +211,7 @@ public class DefaultTokenClaimsService<TClient, TClientSecret, TScope, TResource
     }
 
     protected virtual Task<IReadOnlySet<LightweightClaim>> GetAccessTokenAudiencesAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         CreateAccessTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> createAccessTokenRequest,
         CancellationToken cancellationToken)
     {
@@ -237,7 +237,7 @@ public class DefaultTokenClaimsService<TClient, TClientSecret, TScope, TResource
     }
 
     protected virtual Task<IReadOnlySet<string>> GetIdTokenClaimTypesAllowedByScopesAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         ValidResources<TScope, TResource, TResourceSecret> grantedResources,
         CancellationToken cancellationToken)
     {
@@ -261,7 +261,7 @@ public class DefaultTokenClaimsService<TClient, TClientSecret, TScope, TResource
     }
 
     protected virtual Task<IReadOnlySet<string>> GetAccessTokenClaimTypesAllowedByScopesAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         ValidResources<TScope, TResource, TResourceSecret> grantedResources,
         CancellationToken cancellationToken)
     {

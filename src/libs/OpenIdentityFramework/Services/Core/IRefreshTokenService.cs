@@ -1,13 +1,14 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core.Models.RefreshTokenService;
 
 namespace OpenIdentityFramework.Services.Core;
 
-public interface IRefreshTokenService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken>
+public interface IRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
@@ -16,19 +17,19 @@ public interface IRefreshTokenService<TClient, TClientSecret, TScope, TResource,
     where TRefreshToken : AbstractRefreshToken
 {
     Task<RefreshTokenCreationResult> CreateAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         CreateRefreshTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> createRefreshTokenRequest,
         CancellationToken cancellationToken);
 
     Task<TRefreshToken?> FindAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         string issuer,
         string refreshToken,
         string clientId,
         CancellationToken cancellationToken);
 
     Task<RefreshTokenCreationResult> DeleteAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         string refreshTokenHandle,
         CancellationToken cancellationToken);
 }

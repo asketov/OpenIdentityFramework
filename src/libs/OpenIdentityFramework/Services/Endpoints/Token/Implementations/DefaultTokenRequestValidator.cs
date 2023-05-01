@@ -20,8 +20,9 @@ using OpenIdentityFramework.Services.Static.SyntaxValidation;
 
 namespace OpenIdentityFramework.Services.Endpoints.Token.Implementations;
 
-public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken>
-    : ITokenRequestValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken>
+public class DefaultTokenRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken>
+    : ITokenRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
@@ -42,10 +43,10 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
 
     public DefaultTokenRequestValidator(
         OpenIdentityFrameworkOptions frameworkOptions,
-        IAuthorizationCodeService<TClient, TClientSecret, TAuthorizationCode> authorizationCodes,
+        IAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode> authorizationCodes,
         ICodeVerifierValidator codeVerifierValidator,
-        IResourceValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret> resourceValidator,
-        IRefreshTokenService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken> refreshTokens)
+        IResourceValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> resourceValidator,
+        IRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken> refreshTokens)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
         ArgumentNullException.ThrowIfNull(authorizationCodes);
@@ -61,17 +62,16 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
 
-    protected IAuthorizationCodeService<TClient, TClientSecret, TAuthorizationCode> AuthorizationCodes { get; }
+    protected IAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode> AuthorizationCodes { get; }
 
     protected ICodeVerifierValidator CodeVerifierValidator { get; }
 
-    protected IResourceValidator<TClient, TClientSecret, TScope, TResource, TResourceSecret> ResourceValidator { get; }
+    protected IResourceValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> ResourceValidator { get; }
 
-    protected IRefreshTokenService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken> RefreshTokens { get; }
-
+    protected IRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken> RefreshTokens { get; }
 
     public virtual async Task<TokenRequestValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken>> ValidateAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IFormCollection form,
         TClient client,
         string clientAuthenticationMethod,
@@ -79,7 +79,7 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var grantTypeValidation = await ValidateGrantTypeAsync(httpContext, form, client, cancellationToken);
+        var grantTypeValidation = await ValidateGrantTypeAsync(requestContext, form, client, cancellationToken);
         if (grantTypeValidation.HasError)
         {
             return new(grantTypeValidation.Error);
@@ -87,24 +87,24 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
 
         if (grantTypeValidation.GrantType == DefaultGrantTypes.AuthorizationCode)
         {
-            return await ValidateAuthorizationCodeFlowAsync(httpContext, form, client, issuer, cancellationToken);
+            return await ValidateAuthorizationCodeFlowAsync(requestContext, form, client, issuer, cancellationToken);
         }
 
         if (grantTypeValidation.GrantType == DefaultGrantTypes.ClientCredentials)
         {
-            return await ValidateClientCredentialsFlowAsync(httpContext, form, client, clientAuthenticationMethod, issuer, cancellationToken);
+            return await ValidateClientCredentialsFlowAsync(requestContext, form, client, clientAuthenticationMethod, issuer, cancellationToken);
         }
 
         if (grantTypeValidation.GrantType == DefaultGrantTypes.RefreshToken)
         {
-            return await ValidateRefreshTokenFlowAsync(httpContext, form, client, issuer, cancellationToken);
+            return await ValidateRefreshTokenFlowAsync(requestContext, form, client, issuer, cancellationToken);
         }
 
         return UnsupportedGrantType;
     }
 
     protected virtual Task<GrantTypeValidationResult> ValidateGrantTypeAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IFormCollection form,
         TClient client,
         CancellationToken cancellationToken)
@@ -148,7 +148,7 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
     }
 
     protected virtual async Task<TokenRequestValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken>> ValidateAuthorizationCodeFlowAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IFormCollection form,
         TClient client,
         string issuer,
@@ -164,7 +164,7 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
             return UnauthorizedClient;
         }
 
-        var authorizationCodeValidation = await ValidateAuthorizationCodeAsync(httpContext, form, client, cancellationToken);
+        var authorizationCodeValidation = await ValidateAuthorizationCodeAsync(requestContext, form, client, cancellationToken);
         if (authorizationCodeValidation.HasError)
         {
             return new(authorizationCodeValidation.Error);
@@ -176,19 +176,19 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
             return InvalidGrant;
         }
 
-        var codeVerifierValidation = await ValidateCodeVerifierAsync(httpContext, form, client, authorizationCode, cancellationToken);
+        var codeVerifierValidation = await ValidateCodeVerifierAsync(requestContext, form, client, authorizationCode, cancellationToken);
         if (codeVerifierValidation.HasError)
         {
             return new(codeVerifierValidation.Error);
         }
 
-        var redirectUriValidation = await ValidateAuthorizationCodeRedirectUriAsync(httpContext, form, client, authorizationCode, cancellationToken);
+        var redirectUriValidation = await ValidateAuthorizationCodeRedirectUriAsync(requestContext, form, client, authorizationCode, cancellationToken);
         if (redirectUriValidation.HasError)
         {
             return new(redirectUriValidation.Error);
         }
 
-        var scopeValidation = await ValidateScopeAsync(httpContext, form, client, authorizationCode.GetGrantedScopes(), cancellationToken);
+        var scopeValidation = await ValidateScopeAsync(requestContext, form, client, authorizationCode.GetGrantedScopes(), cancellationToken);
         if (scopeValidation.HasError)
         {
             return new(scopeValidation.Error);
@@ -204,7 +204,7 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
     }
 
     protected virtual async Task<TokenRequestValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken>> ValidateClientCredentialsFlowAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IFormCollection form,
         TClient client,
         string clientAuthenticationMethod,
@@ -229,7 +229,7 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
             return UnauthorizedClient;
         }
 
-        var scopeValidation = await ValidateClientCredentialsScopeAsync(httpContext, form, client, cancellationToken);
+        var scopeValidation = await ValidateClientCredentialsScopeAsync(requestContext, form, client, cancellationToken);
         if (scopeValidation.HasError)
         {
             return new(scopeValidation.Error);
@@ -243,7 +243,7 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
     }
 
     protected virtual async Task<TokenRequestValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken>> ValidateRefreshTokenFlowAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IFormCollection form,
         TClient client,
         string issuer,
@@ -257,14 +257,14 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
             return UnauthorizedClient;
         }
 
-        var refreshTokenValidation = await ValidateRefreshTokenAsync(httpContext, form, client, issuer, cancellationToken);
+        var refreshTokenValidation = await ValidateRefreshTokenAsync(requestContext, form, client, issuer, cancellationToken);
         if (refreshTokenValidation.HasError)
         {
             return new(refreshTokenValidation.Error);
         }
 
         var refreshTokenScopes = refreshTokenValidation.RefreshToken.GetGrantedScopes();
-        var scopeValidation = await ValidateScopeAsync(httpContext, form, client, refreshTokenScopes, cancellationToken);
+        var scopeValidation = await ValidateScopeAsync(requestContext, form, client, refreshTokenScopes, cancellationToken);
         if (scopeValidation.HasError)
         {
             return new(scopeValidation.Error);
@@ -343,7 +343,7 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
     }
 
     protected virtual async Task<AuthorizationCodeValidationResult> ValidateAuthorizationCodeAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IFormCollection form,
         TClient client,
         CancellationToken cancellationToken)
@@ -384,7 +384,7 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
             return AuthorizationCodeValidationResult.InvalidAuthorizationCodeSyntax;
         }
 
-        var authorizationCode = await AuthorizationCodes.FindAsync(httpContext, code, cancellationToken);
+        var authorizationCode = await AuthorizationCodes.FindAsync(requestContext, code, cancellationToken);
         if (authorizationCode == null)
         {
             return AuthorizationCodeValidationResult.UnknownCode;
@@ -394,7 +394,7 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
     }
 
     protected virtual Task<CodeVerifierValidationResult> ValidateCodeVerifierAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IFormCollection form,
         TClient client,
         TAuthorizationCode authorizationCode,
@@ -454,7 +454,7 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
 
 
     protected virtual Task<RedirectUriValidationResult> ValidateAuthorizationCodeRedirectUriAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IFormCollection form,
         TClient client,
         TAuthorizationCode authorizationCode,
@@ -518,7 +518,7 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
     }
 
     protected virtual async Task<ScopeValidationResult> ValidateScopeAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IFormCollection form,
         TClient client,
         IReadOnlySet<string> grantedScopes,
@@ -585,7 +585,7 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
             allowedTokenTypes = DefaultTokenTypes.OpenIdConnect;
         }
 
-        var requestedScopesValidation = await ResourceValidator.ValidateRequestedScopesAsync(httpContext, client, requestedScopes, allowedTokenTypes, cancellationToken);
+        var requestedScopesValidation = await ResourceValidator.ValidateRequestedScopesAsync(requestContext, client, requestedScopes, allowedTokenTypes, cancellationToken);
         if (requestedScopesValidation.HasError)
         {
             if (requestedScopesValidation.Error.HasConfigurationError)
@@ -600,7 +600,7 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
     }
 
     protected virtual async Task<ScopeValidationResult> ValidateClientCredentialsScopeAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IFormCollection form,
         TClient client,
         CancellationToken cancellationToken)
@@ -662,7 +662,7 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
             return ScopeValidationResult.InvalidScope;
         }
 
-        var requestedScopesValidation = await ResourceValidator.ValidateRequestedScopesAsync(httpContext, client, requestedScopes, DefaultTokenTypes.OAuth, cancellationToken);
+        var requestedScopesValidation = await ResourceValidator.ValidateRequestedScopesAsync(requestContext, client, requestedScopes, DefaultTokenTypes.OAuth, cancellationToken);
         if (requestedScopesValidation.HasError)
         {
             if (requestedScopesValidation.Error.HasConfigurationError)
@@ -677,7 +677,7 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
     }
 
     protected async Task<RefreshTokenValidationResult> ValidateRefreshTokenAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IFormCollection form,
         TClient client,
         string issuer,
@@ -716,7 +716,7 @@ public class DefaultTokenRequestValidator<TClient, TClientSecret, TScope, TResou
             return RefreshTokenValidationResult.RefreshTokenIsTooLong;
         }
 
-        var refreshToken = await RefreshTokens.FindAsync(httpContext, issuer, refreshTokenHandle, client.GetClientId(), cancellationToken);
+        var refreshToken = await RefreshTokens.FindAsync(requestContext, issuer, refreshTokenHandle, client.GetClientId(), cancellationToken);
         if (refreshToken is not null)
         {
             return new(refreshTokenHandle, refreshToken);

@@ -6,11 +6,13 @@ using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Constants.Response.Token;
 using OpenIdentityFramework.Extensions;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Services.Endpoints.Token.Models.TokenResponseGenerator;
 
 namespace OpenIdentityFramework.Endpoints.Results.Implementations;
 
-public class DefaultTokenSuccessfulResult : IEndpointHandlerResult
+public class DefaultTokenSuccessfulResult<TRequestContext> : IEndpointHandlerResult<TRequestContext>
+    where TRequestContext : AbstractRequestContext
 {
     public DefaultTokenSuccessfulResult(OpenIdentityFrameworkOptions frameworkOptions, SuccessfulTokenResponse successfulTokenResponse)
     {
@@ -23,9 +25,9 @@ public class DefaultTokenSuccessfulResult : IEndpointHandlerResult
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
     protected SuccessfulTokenResponse SuccessfulTokenResponse { get; }
 
-    public virtual async Task ExecuteAsync(HttpContext httpContext, CancellationToken cancellationToken)
+    public virtual async Task ExecuteAsync(TRequestContext requestContext, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(httpContext);
+        ArgumentNullException.ThrowIfNull(requestContext);
         cancellationToken.ThrowIfCancellationRequested();
         var response = new ResponseDto(
             SuccessfulTokenResponse.AccessToken,
@@ -35,10 +37,10 @@ public class DefaultTokenSuccessfulResult : IEndpointHandlerResult
             SuccessfulTokenResponse.IdToken,
             SuccessfulTokenResponse.Scope,
             SuccessfulTokenResponse.Issuer);
-        httpContext.Response.StatusCode = 200;
-        httpContext.Response.SetNoCache();
-        await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);
-        await httpContext.Response.Body.FlushAsync(cancellationToken);
+        requestContext.HttpContext.Response.StatusCode = 200;
+        requestContext.HttpContext.Response.SetNoCache();
+        await requestContext.HttpContext.Response.WriteAsJsonAsync(response, cancellationToken);
+        await requestContext.HttpContext.Response.Body.FlushAsync(cancellationToken);
     }
 
     protected class ResponseDto

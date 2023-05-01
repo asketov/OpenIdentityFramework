@@ -25,7 +25,7 @@ public sealed class Program
         app.UseStaticFiles();
         app.UseRouting();
         app.UseAuthentication();
-        app.MapOpenIdentityFrameworkEndpoints(); // <-- call after UseAuthentication
+        //app.MapOpenIdentityFrameworkEndpoints(); // <-- call after UseAuthentication
         app.UseAuthorization();
         app.MapDefaultControllerRoute();
         app.Run();
@@ -45,7 +45,7 @@ public sealed class Program
             options.AppendTrailingSlash = false;
             options.LowercaseQueryStrings = false; // <-- important!
         });
-        builder.Services.AddOpenIdentityFrameworkBuilder();
+        //builder.Services.AddOpenIdentityFrameworkBuilder();
         builder.Services.ConfigureSameSiteNoneCookiePolicy();
         return builder;
     }

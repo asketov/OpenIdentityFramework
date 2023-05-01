@@ -1,5 +1,8 @@
-﻿namespace OpenIdentityFramework.Endpoints.Handlers;
+﻿using OpenIdentityFramework.Models;
 
-public interface IAuthorizeEndpointHandler : IEndpointHandler
+namespace OpenIdentityFramework.Endpoints.Handlers;
+
+public interface IAuthorizeEndpointHandler<TRequestContext> : IEndpointHandler<TRequestContext>
+    where TRequestContext : AbstractRequestContext
 {
 }

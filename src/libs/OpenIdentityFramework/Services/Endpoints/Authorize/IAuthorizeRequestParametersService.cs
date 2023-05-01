@@ -2,28 +2,29 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Operation;
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize;
 
-public interface IAuthorizeRequestParametersService<TAuthorizeRequestParameters>
+public interface IAuthorizeRequestParametersService<TRequestContext, TAuthorizeRequestParameters>
+    where TRequestContext : AbstractRequestContext
     where TAuthorizeRequestParameters : AbstractAuthorizeRequestParameters
 {
     Task<string> SaveAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         DateTimeOffset initialRequestDate,
         IReadOnlyDictionary<string, StringValues> parameters,
         CancellationToken cancellationToken);
 
     Task<TAuthorizeRequestParameters?> ReadAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         string authorizeRequestId,
         CancellationToken cancellationToken);
 
     Task DeleteAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         string authorizeRequestId,
         CancellationToken cancellationToken);
 }

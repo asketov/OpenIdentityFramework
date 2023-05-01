@@ -9,14 +9,16 @@ using Microsoft.Net.Http.Headers;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Constants.Request;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core.Models.ClientAuthenticationService;
 using OpenIdentityFramework.Services.Static.SyntaxValidation;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultClientAuthenticationService<TClient, TClientSecret>
-    : IClientAuthenticationService<TClient, TClientSecret>
+public class DefaultClientAuthenticationService<TRequestContext, TClient, TClientSecret>
+    : IClientAuthenticationService<TRequestContext, TClient, TClientSecret>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {
@@ -35,8 +37,8 @@ public class DefaultClientAuthenticationService<TClient, TClientSecret>
 
     public DefaultClientAuthenticationService(
         OpenIdentityFrameworkOptions frameworkOptions,
-        IClientService<TClient, TClientSecret> clients,
-        IClientSecretValidator<TClient, TClientSecret> secretValidator)
+        IClientService<TRequestContext, TClient, TClientSecret> clients,
+        IClientSecretValidator<TRequestContext, TClient, TClientSecret> secretValidator)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
         ArgumentNullException.ThrowIfNull(clients);
@@ -47,19 +49,18 @@ public class DefaultClientAuthenticationService<TClient, TClientSecret>
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
-    protected IClientService<TClient, TClientSecret> Clients { get; }
-    protected IClientSecretValidator<TClient, TClientSecret> SecretValidator { get; }
-
+    protected IClientService<TRequestContext, TClient, TClientSecret> Clients { get; }
+    protected IClientSecretValidator<TRequestContext, TClient, TClientSecret> SecretValidator { get; }
 
     public virtual async Task<ClientAuthenticationResult<TClient, TClientSecret>> AuthenticateAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IFormCollection form,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(httpContext);
+        ArgumentNullException.ThrowIfNull(requestContext);
         ArgumentNullException.ThrowIfNull(form);
         cancellationToken.ThrowIfCancellationRequested();
-        var basicResult = await AuthenticateUsingHttpBasicSchemeAsync(httpContext, cancellationToken);
+        var basicResult = await AuthenticateUsingHttpBasicSchemeAsync(requestContext, cancellationToken);
         if (basicResult.IsAuthenticated)
         {
             return new(basicResult.Client, basicResult.ClientAuthenticationMethod);
@@ -74,12 +75,12 @@ public class DefaultClientAuthenticationService<TClient, TClientSecret>
     }
 
     protected virtual async Task<ClientAuthenticationResult<TClient, TClientSecret>> AuthenticateUsingHttpBasicSchemeAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(httpContext);
+        ArgumentNullException.ThrowIfNull(requestContext);
         cancellationToken.ThrowIfCancellationRequested();
-        if (!httpContext.Request.Headers.TryGetValue(HeaderNames.Authorization, out var authorizationHeaderValues))
+        if (!requestContext.HttpContext.Request.Headers.TryGetValue(HeaderNames.Authorization, out var authorizationHeaderValues))
         {
             return NotAuthenticated;
         }
@@ -131,7 +132,7 @@ public class DefaultClientAuthenticationService<TClient, TClientSecret>
             return InvalidClientIdSyntax;
         }
 
-        var client = await Clients.FindAsync(httpContext, clientId, cancellationToken);
+        var client = await Clients.FindAsync(requestContext, clientId, cancellationToken);
         if (client == null)
         {
             return UnknownOrDisabledClient;
@@ -142,7 +143,7 @@ public class DefaultClientAuthenticationService<TClient, TClientSecret>
             return InvalidAuthenticationMethod;
         }
 
-        if (await SecretValidator.IsValidPreSharedSecret(httpContext, client, clientSecret, cancellationToken))
+        if (await SecretValidator.IsValidPreSharedSecret(requestContext, client, clientSecret, cancellationToken))
         {
             return new(client, DefaultClientAuthenticationMethods.ClientSecretBasic);
         }
@@ -245,7 +246,7 @@ public class DefaultClientAuthenticationService<TClient, TClientSecret>
     }
 
     protected virtual async Task<ClientAuthenticationResult<TClient, TClientSecret>> ClientSecretPostOrNoneAsync(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         IFormCollection form,
         CancellationToken cancellationToken)
     {
@@ -279,7 +280,7 @@ public class DefaultClientAuthenticationService<TClient, TClientSecret>
             return InvalidClientIdSyntax;
         }
 
-        var client = await Clients.FindAsync(httpContext, clientId, cancellationToken);
+        var client = await Clients.FindAsync(requestContext, clientId, cancellationToken);
         if (client == null)
         {
             return UnknownOrDisabledClient;
@@ -320,7 +321,7 @@ public class DefaultClientAuthenticationService<TClient, TClientSecret>
             return ClientSecretIsTooLong;
         }
 
-        if (await SecretValidator.IsValidPreSharedSecret(httpContext, client, clientSecret, cancellationToken))
+        if (await SecretValidator.IsValidPreSharedSecret(requestContext, client, clientSecret, cancellationToken))
         {
             return new(client, DefaultClientAuthenticationMethods.ClientSecretPost);
         }

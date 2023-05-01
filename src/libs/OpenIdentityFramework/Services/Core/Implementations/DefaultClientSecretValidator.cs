@@ -3,14 +3,15 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Constants;
+using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultClientSecretValidator<TClient, TClientSecret>
-    : IClientSecretValidator<TClient, TClientSecret>
+public class DefaultClientSecretValidator<TRequestContext, TClient, TClientSecret>
+    : IClientSecretValidator<TRequestContext, TClient, TClientSecret>
+    where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {
@@ -26,12 +27,13 @@ public class DefaultClientSecretValidator<TClient, TClientSecret>
     protected ISystemClock SystemClock { get; }
 
     public virtual Task<bool> IsValidPreSharedSecret(
-        HttpContext httpContext,
+        TRequestContext requestContext,
         TClient client,
         string preSharedSecret,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(client);
+        cancellationToken.ThrowIfCancellationRequested();
         var clientSecrets = client.GetSecrets();
         if (!(clientSecrets.Count > 0))
         {

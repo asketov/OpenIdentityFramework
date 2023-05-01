@@ -52,7 +52,7 @@ public class DefaultTokenEndpointHandler<TRequestContext, TClient, TClientSecret
     protected ITokenRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken> RequestValidator { get; }
     protected ITokenResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken> ResponseGenerator { get; }
 
-    public virtual async Task<IEndpointHandlerResult<TRequestContext>> HandleAsync(TRequestContext requestContext, CancellationToken cancellationToken)
+    public virtual async Task<IEndpointHandlerResult> HandleAsync(TRequestContext requestContext, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(requestContext);
         cancellationToken.ThrowIfCancellationRequested();
@@ -64,12 +64,12 @@ public class DefaultTokenEndpointHandler<TRequestContext, TClient, TClientSecret
         // as described in Section 3.2 of OAuth 2.0 [RFC6749], when using the Authorization Code Flow.
         if (!HttpMethods.IsPost(requestContext.HttpContext.Request.Method))
         {
-            return new DefaultStatusCodeResult<TRequestContext>(HttpStatusCode.MethodNotAllowed);
+            return new DefaultStatusCodeResult(HttpStatusCode.MethodNotAllowed);
         }
 
         if (!requestContext.HttpContext.Request.HasApplicationFormContentType())
         {
-            return new DefaultStatusCodeResult<TRequestContext>(HttpStatusCode.UnsupportedMediaType);
+            return new DefaultStatusCodeResult(HttpStatusCode.UnsupportedMediaType);
         }
 
         var form = await requestContext.HttpContext.Request.ReadFormAsync(cancellationToken);
@@ -77,7 +77,7 @@ public class DefaultTokenEndpointHandler<TRequestContext, TClient, TClientSecret
         var issuer = await IssuerUrlProvider.GetIssuerAsync(requestContext, cancellationToken);
         if (authenticationResult.HasError)
         {
-            return new DefaultTokenErrorResult<TRequestContext>(
+            return new DefaultTokenErrorResult(
                 FrameworkOptions,
                 new(Errors.InvalidRequest, FrameworkOptions.ErrorHandling.HideErrorDescriptionsOnSafeAuthorizeErrorResponses ? null : authenticationResult.ErrorDescription),
                 issuer);
@@ -85,7 +85,7 @@ public class DefaultTokenEndpointHandler<TRequestContext, TClient, TClientSecret
 
         if (!authenticationResult.IsAuthenticated)
         {
-            return new DefaultTokenErrorResult<TRequestContext>(
+            return new DefaultTokenErrorResult(
                 FrameworkOptions,
                 new(Errors.InvalidClient, null),
                 issuer);
@@ -94,7 +94,7 @@ public class DefaultTokenEndpointHandler<TRequestContext, TClient, TClientSecret
         var validationResult = await RequestValidator.ValidateAsync(requestContext, form, authenticationResult.Client, authenticationResult.ClientAuthenticationMethod, issuer, cancellationToken);
         if (validationResult.HasError)
         {
-            return new DefaultTokenErrorResult<TRequestContext>(
+            return new DefaultTokenErrorResult(
                 FrameworkOptions,
                 validationResult.ProtocolError,
                 issuer);
@@ -103,12 +103,12 @@ public class DefaultTokenEndpointHandler<TRequestContext, TClient, TClientSecret
         var responseGenerationResult = await ResponseGenerator.CreateResponseAsync(requestContext, validationResult.ValidRequest, cancellationToken);
         if (responseGenerationResult.HasError)
         {
-            return new DefaultTokenErrorResult<TRequestContext>(
+            return new DefaultTokenErrorResult(
                 FrameworkOptions,
                 new(Errors.InvalidRequest, responseGenerationResult.ErrorDescription),
                 issuer);
         }
 
-        return new DefaultTokenSuccessfulResult<TRequestContext>(FrameworkOptions, responseGenerationResult.TokenResponse);
+        return new DefaultTokenSuccessfulResult(FrameworkOptions, responseGenerationResult.TokenResponse);
     }
 }

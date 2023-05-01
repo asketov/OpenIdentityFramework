@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -74,23 +76,38 @@ public static class EndpointRouteBuilderExtensions
             {
                 httpContext.RequestAborted.ThrowIfCancellationRequested();
                 var contextFactory = httpContext.RequestServices.GetRequiredService<IRequestContextFactory<TRequestContext>>();
-                IEndpointHandlerResult<TRequestContext> result;
-                await using var requestContext = await contextFactory.CreateAsync(httpContext, httpContext.RequestAborted);
-                try
-                {
-                    var handler = httpContext.RequestServices.GetRequiredService<THandler>();
-                    result = await handler.HandleAsync(requestContext, httpContext.RequestAborted);
-                    await requestContext.CommitAsync(httpContext.RequestAborted);
-                }
-                catch
-                {
-                    await requestContext.RollbackAsync(httpContext.RequestAborted);
-                    throw;
-                }
-
-                await result.ExecuteAsync(requestContext, httpContext.RequestAborted);
+                var handler = httpContext.RequestServices.GetRequiredService<THandler>();
+                var result = await ExecuteHandlerInContextAsync(httpContext, contextFactory, handler, httpContext.RequestAborted);
+                await result.ExecuteAsync(httpContext, httpContext.RequestAborted);
             });
         endpointBuilder.WithMetadata(metadata);
         endpointBuilder.WithDisplayName($"{path} HTTP: {string.Join(", ", metadata.HttpMethods)}");
+    }
+
+    public static async Task<IEndpointHandlerResult> ExecuteHandlerInContextAsync<TRequestContext, THandler>(
+        HttpContext httpContext,
+        IRequestContextFactory<TRequestContext> contextFactory,
+        THandler handler,
+        CancellationToken cancellationToken)
+        where TRequestContext : AbstractRequestContext
+        where THandler : class, IEndpointHandler<TRequestContext>
+    {
+        ArgumentNullException.ThrowIfNull(httpContext);
+        ArgumentNullException.ThrowIfNull(contextFactory);
+        ArgumentNullException.ThrowIfNull(handler);
+        IEndpointHandlerResult result;
+        await using var requestContext = await contextFactory.CreateAsync(httpContext, cancellationToken);
+        try
+        {
+            result = await handler.HandleAsync(requestContext, httpContext.RequestAborted);
+            await requestContext.CommitAsync(httpContext.RequestAborted);
+        }
+        catch
+        {
+            await requestContext.RollbackAsync(httpContext.RequestAborted);
+            throw;
+        }
+
+        return result;
     }
 }

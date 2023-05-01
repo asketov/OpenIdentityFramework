@@ -5,15 +5,14 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Extensions;
-using OpenIdentityFramework.Models;
 
 namespace OpenIdentityFramework.Endpoints.Results.Implementations;
 
-public class DefaultDirectAuthorizeResult<TRequestContext> : IEndpointHandlerResult<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+public class DefaultDirectAuthorizeResult : IEndpointHandlerResult
 {
     protected static readonly string AutoSubmitScript = "window.addEventListener('load', function(){document.forms[0].submit();});";
 
@@ -40,44 +39,45 @@ public class DefaultDirectAuthorizeResult<TRequestContext> : IEndpointHandlerRes
     protected string RedirectUri { get; }
     protected string ResponseMode { get; }
 
-    public virtual async Task ExecuteAsync(TRequestContext requestContext, CancellationToken cancellationToken)
+    public virtual async Task ExecuteAsync(HttpContext httpContext, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(requestContext);
+        ArgumentNullException.ThrowIfNull(httpContext);
         cancellationToken.ThrowIfCancellationRequested();
         if (ResponseMode == Constants.Request.Authorize.ResponseMode.Query)
         {
-            HandleQueryResponse(requestContext, cancellationToken);
+            HandleQueryResponse(httpContext, cancellationToken);
+            return;
         }
-        else if (ResponseMode == Constants.Request.Authorize.ResponseMode.FormPost)
+
+        if (ResponseMode == Constants.Request.Authorize.ResponseMode.FormPost)
         {
-            await HandlePostResponseAsync(requestContext, cancellationToken);
+            await HandlePostResponseAsync(httpContext, cancellationToken);
+            return;
         }
-        else
-        {
-            throw new InvalidOperationException(
-                $"Unexpected response mode. Expected values are: {Constants.Request.Authorize.ResponseMode.Query}, {Constants.Request.Authorize.ResponseMode.FormPost}, but actual was: {ResponseMode}");
-        }
+
+        throw new InvalidOperationException(
+            $"Unexpected response mode. Expected values are: {Constants.Request.Authorize.ResponseMode.Query}, {Constants.Request.Authorize.ResponseMode.FormPost}, but actual was: {ResponseMode}");
     }
 
-    protected virtual void HandleQueryResponse(TRequestContext requestContext, CancellationToken cancellationToken)
+    protected virtual void HandleQueryResponse(HttpContext httpContext, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(requestContext);
+        ArgumentNullException.ThrowIfNull(httpContext);
         cancellationToken.ThrowIfCancellationRequested();
-        requestContext.HttpContext.Response.SetNoCache();
+        httpContext.Response.SetNoCache();
         var directRedirectUri = QueryHelpers.AddQueryString(
             RedirectUri,
             Parameters);
-        requestContext.HttpContext.Response.Redirect(directRedirectUri);
+        httpContext.Response.Redirect(directRedirectUri);
     }
 
-    protected virtual async Task HandlePostResponseAsync(TRequestContext requestContext, CancellationToken cancellationToken)
+    protected virtual async Task HandlePostResponseAsync(HttpContext httpContext, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(requestContext);
-        requestContext.HttpContext.Response.SetNoCache();
-        requestContext.HttpContext.Response.SetNoReferrer();
-        requestContext.HttpContext.Response.AddScriptCspHeaders(FrameworkOptions.ContentSecurityPolicy, AutoSubmitScriptHash);
+        ArgumentNullException.ThrowIfNull(httpContext);
+        httpContext.Response.SetNoCache();
+        httpContext.Response.SetNoReferrer();
+        httpContext.Response.AddScriptCspHeaders(FrameworkOptions.ContentSecurityPolicy, AutoSubmitScriptHash);
         var html = BuildHtml();
-        await requestContext.HttpContext.Response.WriteHtmlAsync(html, cancellationToken);
+        await httpContext.Response.WriteHtmlAsync(html, cancellationToken);
     }
 
     protected virtual string BuildHtml()

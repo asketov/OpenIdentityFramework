@@ -8,5 +8,5 @@ namespace OpenIdentityFramework.Endpoints;
 public interface IEndpointHandler<TRequestContext>
     where TRequestContext : AbstractRequestContext
 {
-    Task<IEndpointHandlerResult<TRequestContext>> HandleAsync(TRequestContext requestContext, CancellationToken cancellationToken);
+    Task<IEndpointHandlerResult> HandleAsync(TRequestContext requestContext, CancellationToken cancellationToken);
 }

@@ -2,14 +2,13 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 using OpenIdentityFramework.Configuration.Options;
-using OpenIdentityFramework.Models;
 
 namespace OpenIdentityFramework.Endpoints.Results.Implementations;
 
-public class DefaultConsentPageResult<TRequestContext> : IEndpointHandlerResult<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+public class DefaultConsentPageResult : IEndpointHandlerResult
 {
     public DefaultConsentPageResult(OpenIdentityFrameworkOptions frameworkOptions, string authorizeRequestId)
     {
@@ -22,11 +21,11 @@ public class DefaultConsentPageResult<TRequestContext> : IEndpointHandlerResult<
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
     protected string AuthorizeRequestId { get; }
 
-    public virtual Task ExecuteAsync(TRequestContext requestContext, CancellationToken cancellationToken)
+    public virtual Task ExecuteAsync(HttpContext httpContext, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(requestContext);
+        ArgumentNullException.ThrowIfNull(httpContext);
         cancellationToken.ThrowIfCancellationRequested();
-        requestContext.HttpContext.Response.Redirect(QueryHelpers.AddQueryString(
+        httpContext.Response.Redirect(QueryHelpers.AddQueryString(
             FrameworkOptions.UserInteraction.ConsentUrl,
             BuildParameters()));
         return Task.CompletedTask;

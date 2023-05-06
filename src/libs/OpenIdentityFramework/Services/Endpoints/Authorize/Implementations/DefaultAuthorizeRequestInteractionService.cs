@@ -93,7 +93,7 @@ public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient,
         }
 
         // OpenID Connect 1.0 - max age check
-        if (authorizeRequest is { IsOpenIdRequest: true, MaxAge: { } })
+        if (authorizeRequest is { IsOpenIdRequest: true, MaxAge: not null })
         {
             if (authorizeRequest.MaxAge.Value > 0)
             {

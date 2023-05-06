@@ -159,7 +159,7 @@ public class DefaultAuthorizeEndpointCallbackHandler<TRequestContext, TClient, T
             FrameworkOptions,
             HtmlEncoder,
             successfulResponseParameters,
-            interactionResult.ValidRequest.AuthorizeRequest.ActualRedirectUri,
+            interactionResult.ValidRequest.AuthorizeRequest.RedirectUriToUse,
             interactionResult.ValidRequest.AuthorizeRequest.ResponseMode);
     }
 
@@ -258,11 +258,11 @@ public class DefaultAuthorizeEndpointCallbackHandler<TRequestContext, TClient, T
                 FrameworkOptions,
                 HtmlEncoder,
                 errorParameters,
-                authorizeRequest.ActualRedirectUri,
+                authorizeRequest.RedirectUriToUse,
                 authorizeRequest.ResponseMode);
         }
 
-        var errorToSave = new Error(protocolError, authorizeRequest.Client.GetClientId(), authorizeRequest.ActualRedirectUri, authorizeRequest.ResponseMode, authorizeRequest.Issuer);
+        var errorToSave = new Error(protocolError, authorizeRequest.Client.GetClientId(), authorizeRequest.RedirectUriToUse, authorizeRequest.ResponseMode, authorizeRequest.Issuer);
         var errorId = await ErrorService.SaveAsync(requestContext, errorToSave, cancellationToken);
         return new DefaultErrorPageResult(FrameworkOptions, errorId);
     }

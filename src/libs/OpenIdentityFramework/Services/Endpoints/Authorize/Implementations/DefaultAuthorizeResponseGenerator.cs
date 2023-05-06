@@ -52,7 +52,7 @@ public class DefaultAuthorizeResponseGenerator<TRequestContext, TClient, TClient
         var codeRequest = new CreateAuthorizationCodeRequest<TClient, TClientSecret>(
             request.Ticket.UserAuthentication,
             request.AuthorizeRequest.Client,
-            request.AuthorizeRequest.OriginalRedirectUri,
+            request.AuthorizeRequest.AuthorizeRequestRedirectUri,
             request.GrantedResources.RawScopes,
             request.AuthorizeRequest.CodeChallenge,
             request.AuthorizeRequest.CodeChallengeMethod,

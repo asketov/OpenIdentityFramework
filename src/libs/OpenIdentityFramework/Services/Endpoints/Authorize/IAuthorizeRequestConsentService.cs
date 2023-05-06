@@ -14,6 +14,6 @@ public interface IAuthorizeRequestConsentService<TRequestContext, TRequestConsen
 
     Task DenyAsync(TRequestContext requestContext, string authorizeRequestId, CancellationToken cancellationToken);
 
-    Task<TRequestConsent> ReadAsync(TRequestContext requestContext, string authorizeRequestId, CancellationToken cancellationToken);
+    Task<TRequestConsent?> ReadAsync(TRequestContext requestContext, string authorizeRequestId, CancellationToken cancellationToken);
     Task DeleteAsync(TRequestContext requestContext, string authorizeRequestId, CancellationToken cancellationToken);
 }

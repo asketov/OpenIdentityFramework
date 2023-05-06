@@ -19,7 +19,7 @@ public interface IAuthorizeRequestValidator<TRequestContext, TClient, TClientSec
 {
     Task<AuthorizeRequestValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>> ValidateAsync(
         TRequestContext requestContext,
-        IReadOnlyDictionary<string, StringValues> parameters,
+        IReadOnlyDictionary<string, StringValues> rawParameters,
         DateTimeOffset initialRequestDate,
         string issuer,
         CancellationToken cancellationToken);

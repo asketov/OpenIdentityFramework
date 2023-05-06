@@ -11,12 +11,12 @@ public interface IUserProfileService<TRequestContext>
 {
     Task<bool> IsActiveAsync(
         TRequestContext requestContext,
-        UserAuthentication ticket,
+        UserAuthentication userAuthentication,
         CancellationToken cancellationToken);
 
     Task<IReadOnlySet<LightweightClaim>> GetProfileClaimsAsync(
         TRequestContext requestContext,
-        UserAuthentication ticket,
+        UserAuthentication userAuthentication,
         IReadOnlySet<string> requestedClaimTypes,
         CancellationToken cancellationToken);
 }

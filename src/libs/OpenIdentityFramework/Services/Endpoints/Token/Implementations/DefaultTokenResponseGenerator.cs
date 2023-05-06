@@ -92,7 +92,7 @@ public class DefaultTokenResponseGenerator<TRequestContext, TClient, TClientSecr
                 cancellationToken);
         }
 
-        if (request.GrantType == DefaultGrantTypes.ClientCredentials)
+        if (request.GrantType == DefaultGrantTypes.RefreshToken)
         {
             if (request.RefreshTokenHandle is null || request.RefreshToken is null)
             {
@@ -118,7 +118,7 @@ public class DefaultTokenResponseGenerator<TRequestContext, TClient, TClientSecr
         string authorizationCodeHandle,
         TClient client,
         ValidResources<TScope, TResource, TResourceSecret> allowedResources,
-        UserAuthentication? userAuthentication,
+        UserAuthentication userAuthentication,
         string? nonce,
         string? state,
         string issuer,
@@ -163,11 +163,6 @@ public class DefaultTokenResponseGenerator<TRequestContext, TClient, TClientSecr
         string? idToken = null;
         if (allowedResources.HasOpenId)
         {
-            if (userAuthentication == null)
-            {
-                return new("User authentication can't be null when id_token requested via \"openid\" scope value");
-            }
-
             var idTokenRequest = new CreateIdTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
                 userAuthentication,
                 client,
@@ -250,8 +245,8 @@ public class DefaultTokenResponseGenerator<TRequestContext, TClient, TClientSecr
         ArgumentNullException.ThrowIfNull(allowedResources);
         ArgumentNullException.ThrowIfNull(refreshToken);
         cancellationToken.ThrowIfCancellationRequested();
-        var issuedAt = SystemClock.UtcNow;
         var userAuthentication = refreshToken.GetUserAuthentication();
+        var issuedAt = SystemClock.UtcNow;
         var accessTokenRequest = new CreateAccessTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
             DefaultGrantTypes.RefreshToken,
             client,

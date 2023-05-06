@@ -73,17 +73,17 @@ public class DefaultTokenEndpointHandler<TRequestContext, TClient, TClientSecret
         }
 
         var form = await requestContext.HttpContext.Request.ReadFormAsync(cancellationToken);
-        var authenticationResult = await ClientAuthentication.AuthenticateAsync(requestContext, form, cancellationToken);
+        var clientAuthentication = await ClientAuthentication.AuthenticateAsync(requestContext, form, cancellationToken);
         var issuer = await IssuerUrlProvider.GetIssuerAsync(requestContext, cancellationToken);
-        if (authenticationResult.HasError)
+        if (clientAuthentication.HasError)
         {
             return new DefaultTokenErrorResult(
                 FrameworkOptions,
-                new(Errors.InvalidRequest, FrameworkOptions.ErrorHandling.HideErrorDescriptionsOnSafeAuthorizeErrorResponses ? null : authenticationResult.ErrorDescription),
+                new(Errors.InvalidRequest, FrameworkOptions.ErrorHandling.HideErrorDescriptionsOnSafeAuthorizeErrorResponses ? null : clientAuthentication.ErrorDescription),
                 issuer);
         }
 
-        if (!authenticationResult.IsAuthenticated)
+        if (!clientAuthentication.IsAuthenticated)
         {
             return new DefaultTokenErrorResult(
                 FrameworkOptions,
@@ -91,7 +91,7 @@ public class DefaultTokenEndpointHandler<TRequestContext, TClient, TClientSecret
                 issuer);
         }
 
-        var validationResult = await RequestValidator.ValidateAsync(requestContext, form, authenticationResult.Client, authenticationResult.ClientAuthenticationMethod, issuer, cancellationToken);
+        var validationResult = await RequestValidator.ValidateAsync(requestContext, form, clientAuthentication.Client, clientAuthentication.ClientAuthenticationMethod, issuer, cancellationToken);
         if (validationResult.HasError)
         {
             return new DefaultTokenErrorResult(
@@ -105,7 +105,7 @@ public class DefaultTokenEndpointHandler<TRequestContext, TClient, TClientSecret
         {
             return new DefaultTokenErrorResult(
                 FrameworkOptions,
-                new(Errors.InvalidRequest, responseGenerationResult.ErrorDescription),
+                new(Errors.InvalidGrant, responseGenerationResult.ErrorDescription),
                 issuer);
         }
 

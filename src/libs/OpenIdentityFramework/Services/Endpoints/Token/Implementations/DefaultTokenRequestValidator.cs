@@ -16,6 +16,7 @@ using OpenIdentityFramework.Services.Core;
 using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
 using OpenIdentityFramework.Services.Endpoints.Authorize;
 using OpenIdentityFramework.Services.Endpoints.Token.Models.TokenRequestValidator;
+using OpenIdentityFramework.Services.Operation;
 using OpenIdentityFramework.Services.Static.SyntaxValidation;
 
 namespace OpenIdentityFramework.Services.Endpoints.Token.Implementations;
@@ -43,17 +44,20 @@ public class DefaultTokenRequestValidator<TRequestContext, TClient, TClientSecre
 
     public DefaultTokenRequestValidator(
         OpenIdentityFrameworkOptions frameworkOptions,
+        IUserProfileService<TRequestContext> userProfile,
         IAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode> authorizationCodes,
         ICodeVerifierValidator codeVerifierValidator,
         IResourceValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> resourceValidator,
         IRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken> refreshTokens)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
+        ArgumentNullException.ThrowIfNull(userProfile);
         ArgumentNullException.ThrowIfNull(authorizationCodes);
         ArgumentNullException.ThrowIfNull(codeVerifierValidator);
         ArgumentNullException.ThrowIfNull(resourceValidator);
         ArgumentNullException.ThrowIfNull(refreshTokens);
         FrameworkOptions = frameworkOptions;
+        UserProfile = userProfile;
         AuthorizationCodes = authorizationCodes;
         CodeVerifierValidator = codeVerifierValidator;
         ResourceValidator = resourceValidator;
@@ -61,13 +65,10 @@ public class DefaultTokenRequestValidator<TRequestContext, TClient, TClientSecre
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
-
+    protected IUserProfileService<TRequestContext> UserProfile { get; }
     protected IAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode> AuthorizationCodes { get; }
-
     protected ICodeVerifierValidator CodeVerifierValidator { get; }
-
     protected IResourceValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> ResourceValidator { get; }
-
     protected IRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken> RefreshTokens { get; }
 
     public virtual async Task<TokenRequestValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken>> ValidateAsync(
@@ -388,6 +389,12 @@ public class DefaultTokenRequestValidator<TRequestContext, TClient, TClientSecre
         if (authorizationCode == null)
         {
             return AuthorizationCodeValidationResult.UnknownCode;
+        }
+
+        var isUserActive = await UserProfile.IsActiveAsync(requestContext, authorizationCode.GetUserAuthentication(), cancellationToken);
+        if (!isUserActive)
+        {
+            return AuthorizationCodeValidationResult.InactiveUser;
         }
 
         return new(code, authorizationCode);
@@ -719,6 +726,12 @@ public class DefaultTokenRequestValidator<TRequestContext, TClient, TClientSecre
         var refreshToken = await RefreshTokens.FindAsync(requestContext, client, issuer, refreshTokenHandle, cancellationToken);
         if (refreshToken is not null)
         {
+            var isActive = await UserProfile.IsActiveAsync(requestContext, refreshToken.GetUserAuthentication(), cancellationToken);
+            if (!isActive)
+            {
+                return RefreshTokenValidationResult.InactiveUser;
+            }
+
             return new(refreshTokenHandle, refreshToken);
         }
 
@@ -832,6 +845,10 @@ public class DefaultTokenRequestValidator<TRequestContext, TClient, TClientSecre
         public static readonly AuthorizationCodeValidationResult UnknownCode = new(new(
             Errors.InvalidGrant,
             "Unknown \"code\""));
+
+        public static readonly AuthorizationCodeValidationResult InactiveUser = new(new(
+            Errors.InvalidGrant,
+            "User account for provided \"refresh_token\" has been disabled"));
 
         public AuthorizationCodeValidationResult(ProtocolError error)
         {
@@ -959,6 +976,10 @@ public class DefaultTokenRequestValidator<TRequestContext, TClient, TClientSecre
         public static readonly RefreshTokenValidationResult UnknownRefreshToken = new(new(
             Errors.InvalidGrant,
             "Unknown \"refresh_token\""));
+
+        public static readonly RefreshTokenValidationResult InactiveUser = new(new(
+            Errors.InvalidGrant,
+            "User account for provided \"refresh_token\" has been disabled"));
 
         public RefreshTokenValidationResult(ProtocolError error)
         {

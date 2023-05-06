@@ -27,7 +27,7 @@ public class DefaultAuthorizeRequestParameterRedirectUriValidator<TRequestContex
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
 
-    public Task<AuthorizeRequestParameterRedirectUriValidationResult> ValidateRedirectUriAsync(
+    public virtual Task<AuthorizeRequestParameterRedirectUriValidationResult> ValidateRedirectUriAsync(
         TRequestContext requestContext,
         AuthorizeRequestParametersToValidate parameters,
         TClient client,
@@ -161,7 +161,7 @@ public class DefaultAuthorizeRequestParameterRedirectUriValidator<TRequestContex
         return Task.FromResult(AuthorizeRequestParameterRedirectUriValidationResult.InvalidRedirectUri);
     }
 
-    protected static AuthorizeRequestParameterRedirectUriValidationResult InferRedirectUri(bool isOpenIdRequest, IReadOnlySet<string> clientRedirectUris)
+    protected virtual AuthorizeRequestParameterRedirectUriValidationResult InferRedirectUri(bool isOpenIdRequest, IReadOnlySet<string> clientRedirectUris)
     {
         ArgumentNullException.ThrowIfNull(clientRedirectUris);
         // OAuth 2.1 flow

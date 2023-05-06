@@ -17,7 +17,7 @@ public class DefaultAuthorizeRequestOidcParameterMaxAgeValidator<TRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {
-    public Task<AuthorizeRequestOidcParameterMaxAgeValidationResult> ValidateMaxAgeOidcParameterAsync(
+    public virtual Task<AuthorizeRequestOidcParameterMaxAgeValidationResult> ValidateMaxAgeOidcParameterAsync(
         TRequestContext requestContext,
         AuthorizeRequestParametersToValidate parameters,
         TClient client,

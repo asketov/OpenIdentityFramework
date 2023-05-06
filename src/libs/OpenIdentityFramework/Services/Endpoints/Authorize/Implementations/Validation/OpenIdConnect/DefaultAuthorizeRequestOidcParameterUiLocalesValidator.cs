@@ -25,7 +25,7 @@ public class DefaultAuthorizeRequestOidcParameterUiLocalesValidator<TRequestCont
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
 
-    public Task<AuthorizeRequestOidcParameterUiLocalesValidationResult> ValidateUiLocalesOidcParameterAsync(
+    public virtual Task<AuthorizeRequestOidcParameterUiLocalesValidationResult> ValidateUiLocalesOidcParameterAsync(
         TRequestContext requestContext,
         AuthorizeRequestParametersToValidate parameters,
         TClient client,

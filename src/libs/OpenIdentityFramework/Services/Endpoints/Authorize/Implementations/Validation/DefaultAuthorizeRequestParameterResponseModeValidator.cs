@@ -15,7 +15,7 @@ public class DefaultAuthorizeRequestParameterResponseModeValidator<TRequestConte
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {
-    public Task<AuthorizeRequestParameterResponseModeValidationResult> ValidateResponseModeParameterAsync(
+    public virtual Task<AuthorizeRequestParameterResponseModeValidationResult> ValidateResponseModeParameterAsync(
         TRequestContext requestContext,
         AuthorizeRequestParametersToValidate parameters,
         TClient client,
@@ -52,7 +52,7 @@ public class DefaultAuthorizeRequestParameterResponseModeValidator<TRequestConte
         return Task.FromResult(ResponseModeToResult(responseMode));
     }
 
-    protected static AuthorizeRequestParameterResponseModeValidationResult InferResponseMode(string responseType)
+    protected virtual AuthorizeRequestParameterResponseModeValidationResult InferResponseMode(string responseType)
     {
         if (ResponseType.ToResponseMode.TryGetValue(responseType, out var inferredResponseMode))
         {
@@ -62,7 +62,7 @@ public class DefaultAuthorizeRequestParameterResponseModeValidator<TRequestConte
         return AuthorizeRequestParameterResponseModeValidationResult.UnableToInferResponseMode;
     }
 
-    protected static AuthorizeRequestParameterResponseModeValidationResult ResponseModeToResult(string responseMode)
+    protected virtual AuthorizeRequestParameterResponseModeValidationResult ResponseModeToResult(string responseMode)
     {
         // https://openid.net/specs/oauth-v2-multiple-response-types-1_0.html#rfc.section.2.1
         // https://openid.net/specs/oauth-v2-form-post-response-mode-1_0.html#rfc.section.2

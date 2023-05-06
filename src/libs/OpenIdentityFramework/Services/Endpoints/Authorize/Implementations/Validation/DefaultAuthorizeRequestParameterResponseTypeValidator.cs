@@ -17,7 +17,7 @@ public class DefaultAuthorizeRequestParameterResponseTypeValidator<TRequestConte
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {
-    public Task<AuthorizeRequestParameterResponseTypeValidationResult> ValidateResponseTypeParameterAsync(
+    public virtual Task<AuthorizeRequestParameterResponseTypeValidationResult> ValidateResponseTypeParameterAsync(
         TRequestContext requestContext,
         AuthorizeRequestParametersToValidate parameters,
         TClient client,

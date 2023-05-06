@@ -25,7 +25,7 @@ public class DefaultAuthorizeRequestOidcParameterLoginHintValidator<TRequestCont
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
 
-    public Task<AuthorizeRequestOidcParameterLoginHintValidationResult> ValidateLoginHintOidcParameterAsync(
+    public virtual Task<AuthorizeRequestOidcParameterLoginHintValidationResult> ValidateLoginHintOidcParameterAsync(
         TRequestContext requestContext,
         AuthorizeRequestParametersToValidate parameters,
         TClient client,

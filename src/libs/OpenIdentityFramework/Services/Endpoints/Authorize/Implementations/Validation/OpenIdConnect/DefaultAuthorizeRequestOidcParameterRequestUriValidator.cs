@@ -16,7 +16,7 @@ public class DefaultAuthorizeRequestOidcParameterRequestUriValidator<TRequestCon
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {
-    public Task<AuthorizeRequestOidcParameterRequestUriValidationResult> ValidateRequestUriOidcParameterAsync(
+    public virtual Task<AuthorizeRequestOidcParameterRequestUriValidationResult> ValidateRequestUriOidcParameterAsync(
         TRequestContext requestContext,
         AuthorizeRequestParametersToValidate parameters,
         TClient client,

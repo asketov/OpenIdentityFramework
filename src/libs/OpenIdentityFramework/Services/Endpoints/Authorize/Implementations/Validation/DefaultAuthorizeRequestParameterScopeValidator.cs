@@ -36,7 +36,7 @@ public class DefaultAuthorizeRequestParameterScopeValidator<TRequestContext, TCl
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
     protected IResourceValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> ResourceValidator { get; }
 
-    public async Task<AuthorizeRequestParameterScopeValidationResult<TScope, TResource, TResourceSecret>> ValidateScopeParameterAsync(
+    public virtual async Task<AuthorizeRequestParameterScopeValidationResult<TScope, TResource, TResourceSecret>> ValidateScopeParameterAsync(
         TRequestContext requestContext,
         AuthorizeRequestParametersToValidate parameters,
         TClient client,

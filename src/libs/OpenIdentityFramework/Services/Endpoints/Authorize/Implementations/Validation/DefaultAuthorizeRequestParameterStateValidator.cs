@@ -25,7 +25,7 @@ public class DefaultAuthorizeRequestParameterStateValidator<TRequestContext, TCl
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
 
-    public Task<AuthorizeRequestParameterStateValidationResult> ValidateStateParameterAsync(
+    public virtual Task<AuthorizeRequestParameterStateValidationResult> ValidateStateParameterAsync(
         TRequestContext requestContext,
         AuthorizeRequestParametersToValidate parameters,
         TClient client,

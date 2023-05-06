@@ -26,7 +26,7 @@ public class DefaultAuthorizeRequestOidcParameterNonceValidator<TRequestContext,
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
 
-    public Task<AuthorizeRequestOidcParameterNonceValidationResult> ValidateNonceOidcParameterAsync(
+    public virtual Task<AuthorizeRequestOidcParameterNonceValidationResult> ValidateNonceOidcParameterAsync(
         TRequestContext requestContext,
         AuthorizeRequestParametersToValidate parameters,
         TClient client,
@@ -71,7 +71,7 @@ public class DefaultAuthorizeRequestOidcParameterNonceValidator<TRequestContext,
         return Task.FromResult(new AuthorizeRequestOidcParameterNonceValidationResult(nonce));
     }
 
-    protected static AuthorizeRequestOidcParameterNonceValidationResult InferDefaultResult(string authorizationFlow)
+    protected virtual AuthorizeRequestOidcParameterNonceValidationResult InferDefaultResult(string authorizationFlow)
     {
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.3.2.11
         // nonce - Use of the "nonce" Claim is REQUIRED for this flow (hybrid).

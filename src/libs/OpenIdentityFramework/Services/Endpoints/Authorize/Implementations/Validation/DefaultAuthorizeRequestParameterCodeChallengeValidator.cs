@@ -16,7 +16,7 @@ public class DefaultAuthorizeRequestParameterCodeChallengeValidator<TRequestCont
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {
-    public Task<AuthorizeRequestParameterCodeChallengeValidationResult> ValidateCodeChallengeParameterAsync(
+    public virtual Task<AuthorizeRequestParameterCodeChallengeValidationResult> ValidateCodeChallengeParameterAsync(
         TRequestContext requestContext,
         AuthorizeRequestParametersToValidate parameters,
         TClient client,

@@ -25,7 +25,7 @@ public class DefaultAuthorizeRequestOidcParameterAcrValuesValidator<TRequestCont
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
 
-    public Task<AuthorizeRequestOidcParameterAcrValuesValidationResult> ValidateAcrValuesOidcParameterAsync(
+    public virtual Task<AuthorizeRequestOidcParameterAcrValuesValidationResult> ValidateAcrValuesOidcParameterAsync(
         TRequestContext requestContext,
         AuthorizeRequestParametersToValidate parameters,
         TClient client,

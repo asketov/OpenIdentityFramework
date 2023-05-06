@@ -17,7 +17,7 @@ public class DefaultAuthorizeRequestOidcParameterPromptValidator<TRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {
-    public Task<AuthorizeRequestOidcParameterPromptValidationResult> ValidatePromptOidcParameterAsync(
+    public virtual Task<AuthorizeRequestOidcParameterPromptValidationResult> ValidatePromptOidcParameterAsync(
         TRequestContext requestContext,
         AuthorizeRequestParametersToValidate parameters,
         TClient client,

@@ -16,7 +16,7 @@ public class DefaultAuthorizeRequestOidcParameterRegistrationValidator<TRequestC
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {
-    public Task<AuthorizeRequestOidcParameterRegistrationValidationResult> ValidateRegistrationOidcParameterAsync(
+    public virtual Task<AuthorizeRequestOidcParameterRegistrationValidationResult> ValidateRegistrationOidcParameterAsync(
         TRequestContext requestContext,
         AuthorizeRequestParametersToValidate parameters,
         TClient client,

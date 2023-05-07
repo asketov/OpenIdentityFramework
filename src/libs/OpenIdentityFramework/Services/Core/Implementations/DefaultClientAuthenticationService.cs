@@ -25,15 +25,15 @@ public class DefaultClientAuthenticationService<TRequestContext, TClient, TClien
     protected static readonly ClientAuthenticationResult<TClient, TClientSecret> NotAuthenticated = new();
     protected static readonly ClientAuthenticationResult<TClient, TClientSecret> MultipleAuthorizeHeader = new($"Multiple \"{HeaderNames.Authorization}\" headers are present");
     protected static readonly ClientAuthenticationResult<TClient, TClientSecret> InvalidAuthorizeHeader = new($"Invalid \"{HeaderNames.Authorization}\" header value");
-    protected static readonly ClientAuthenticationResult<TClient, TClientSecret> MissingClientId = new($"\"{DefaultRequestAuthenticationParameters.ClientId}\" is missing");
-    protected static readonly ClientAuthenticationResult<TClient, TClientSecret> ClientIdIsTooLong = new($"\"{DefaultRequestAuthenticationParameters.ClientId}\" is too long");
-    protected static readonly ClientAuthenticationResult<TClient, TClientSecret> ClientSecretIsTooLong = new($"\"{DefaultRequestAuthenticationParameters.ClientSecret}\" is too long");
-    protected static readonly ClientAuthenticationResult<TClient, TClientSecret> InvalidClientIdSyntax = new($"Invalid \"{DefaultRequestAuthenticationParameters.ClientId}\" syntax");
+    protected static readonly ClientAuthenticationResult<TClient, TClientSecret> MissingClientId = new($"\"{ClientAuthenticationParameters.ClientId}\" is missing");
+    protected static readonly ClientAuthenticationResult<TClient, TClientSecret> ClientIdIsTooLong = new($"\"{ClientAuthenticationParameters.ClientId}\" is too long");
+    protected static readonly ClientAuthenticationResult<TClient, TClientSecret> ClientSecretIsTooLong = new($"\"{ClientAuthenticationParameters.ClientSecret}\" is too long");
+    protected static readonly ClientAuthenticationResult<TClient, TClientSecret> InvalidClientIdSyntax = new($"Invalid \"{ClientAuthenticationParameters.ClientId}\" syntax");
     protected static readonly ClientAuthenticationResult<TClient, TClientSecret> UnknownOrDisabledClient = new("Unknown or disabled client");
     protected static readonly ClientAuthenticationResult<TClient, TClientSecret> InvalidAuthenticationMethod = new("Invalid authentication method");
-    protected static readonly ClientAuthenticationResult<TClient, TClientSecret> MultipleClientId = new($"Multiple \"{DefaultRequestAuthenticationParameters.ClientId}\" values are present, but only one is allowed");
-    protected static readonly ClientAuthenticationResult<TClient, TClientSecret> MissingClientSecret = new($"\"{DefaultRequestAuthenticationParameters.ClientSecret}\" is missing");
-    protected static readonly ClientAuthenticationResult<TClient, TClientSecret> MultipleClientSecret = new($"Multiple \"{DefaultRequestAuthenticationParameters.ClientSecret}\" values are present, but only one is allowed");
+    protected static readonly ClientAuthenticationResult<TClient, TClientSecret> MultipleClientId = new($"Multiple \"{ClientAuthenticationParameters.ClientId}\" values are present, but only one is allowed");
+    protected static readonly ClientAuthenticationResult<TClient, TClientSecret> MissingClientSecret = new($"\"{ClientAuthenticationParameters.ClientSecret}\" is missing");
+    protected static readonly ClientAuthenticationResult<TClient, TClientSecret> MultipleClientSecret = new($"Multiple \"{ClientAuthenticationParameters.ClientSecret}\" values are present, but only one is allowed");
 
     public DefaultClientAuthenticationService(
         OpenIdentityFrameworkOptions frameworkOptions,
@@ -263,7 +263,7 @@ public class DefaultClientAuthenticationService<TRequestContext, TClient, TClien
     {
         ArgumentNullException.ThrowIfNull(form);
         cancellationToken.ThrowIfCancellationRequested();
-        if (!form.TryGetValue(DefaultRequestAuthenticationParameters.ClientId, out var clientIdValues))
+        if (!form.TryGetValue(ClientAuthenticationParameters.ClientId, out var clientIdValues))
         {
             return NotAuthenticated;
         }
@@ -315,7 +315,7 @@ public class DefaultClientAuthenticationService<TRequestContext, TClient, TClien
             return InvalidAuthenticationMethod;
         }
 
-        if (!form.TryGetValue(DefaultRequestAuthenticationParameters.ClientSecret, out var clientSecretValues))
+        if (!form.TryGetValue(ClientAuthenticationParameters.ClientSecret, out var clientSecretValues))
         {
             return MissingClientSecret;
         }

@@ -1,22 +1,21 @@
-﻿using System.Collections.Generic;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Models;
-using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
+using OpenIdentityFramework.Models.Authentication;
+using OpenIdentityFramework.Services.Operation.Models;
 
 namespace OpenIdentityFramework.Services.Operation;
 
 public interface IUserProfileService<TRequestContext>
     where TRequestContext : AbstractRequestContext
 {
-    Task<bool> IsActiveAsync(
+    Task GetProfileAsync(
         TRequestContext requestContext,
-        UserAuthentication userAuthentication,
+        UserProfileContext context,
         CancellationToken cancellationToken);
 
-    Task<IReadOnlySet<LightweightClaim>> GetProfileClaimsAsync(
+    Task<bool> IsActiveAsync(
         TRequestContext requestContext,
-        UserAuthentication userAuthentication,
-        IReadOnlySet<string> requestedClaimTypes,
+        ResourceOwnerIdentifiers resourceOwnerIdentifiers,
         CancellationToken cancellationToken);
 }

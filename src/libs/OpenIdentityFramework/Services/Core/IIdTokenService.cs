@@ -1,8 +1,11 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core.Models.IdTokenService;
+using OpenIdentityFramework.Services.Core.Models.ResourceOwnerProfileService;
+using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
 
 namespace OpenIdentityFramework.Services.Core;
 
@@ -16,6 +19,13 @@ public interface IIdTokenService<TRequestContext, TClient, TClientSecret, TScope
 {
     Task<IdTokenCreationResult> CreateIdTokenAsync(
         TRequestContext requestContext,
-        CreateIdTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> createIdTokenRequest,
+        TClient client,
+        string issuer,
+        string? authorizationCodeHandle,
+        string? accessTokenHandle,
+        string? nonce,
+        ResourceOwnerProfile resourceOwnerProfile,
+        ValidResources<TScope, TResource, TResourceSecret> grantedResources,
+        DateTimeOffset issuedAt,
         CancellationToken cancellationToken);
 }

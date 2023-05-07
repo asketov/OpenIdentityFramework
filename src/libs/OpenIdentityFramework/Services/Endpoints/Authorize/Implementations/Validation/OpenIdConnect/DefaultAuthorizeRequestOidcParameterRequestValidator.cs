@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
@@ -26,7 +26,7 @@ public class DefaultAuthorizeRequestOidcParameterRequestValidator<TRequestContex
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.6
         // Support for the request parameter is OPTIONAL.
         // Should an OP not support this parameter and an RP uses it, the OP MUST return the request_not_supported error.
-        if (!parameters.Raw.TryGetValue(RequestParameters.Request, out var requestValues) || requestValues.Count == 0)
+        if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.Request, out var requestValues) || requestValues.Count == 0)
         {
             return Task.FromResult(AuthorizeRequestOidcParameterRequestValidationResult.Null);
         }

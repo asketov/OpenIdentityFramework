@@ -10,6 +10,6 @@ public interface IErrorService<TRequestContext>
 {
     Task<string> SaveAsync(
         TRequestContext requestContext,
-        Error error,
+        UnredirectableError unredirectableError,
         CancellationToken cancellationToken);
 }

@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Constants;
-using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
@@ -41,7 +41,7 @@ public class DefaultAuthorizeRequestOidcParameterNonceValidator<TRequestContext,
         // Sufficient entropy MUST be present in the nonce values used to prevent attackers from guessing values.
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.3.2.11
         // nonce - Use of the "nonce" Claim is REQUIRED for this flow (hybrid).
-        if (!parameters.Raw.TryGetValue(RequestParameters.Nonce, out var nonceValues) || nonceValues.Count == 0)
+        if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.Nonce, out var nonceValues) || nonceValues.Count == 0)
         {
             return Task.FromResult(InferDefaultResult(authorizationFlow));
         }

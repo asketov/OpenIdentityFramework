@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using OpenIdentityFramework.Constants.Response.Authorize;
+using OpenIdentityFramework.Constants.Response.Errors;
 using OpenIdentityFramework.Models;
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation.OpenIdConnect;
@@ -9,15 +9,15 @@ public class AuthorizeRequestOidcParameterAcrValuesValidationResult
     public static readonly AuthorizeRequestOidcParameterAcrValuesValidationResult Null = new((string[]?) null);
 
     public static readonly AuthorizeRequestOidcParameterAcrValuesValidationResult MultipleAcrValuesValues = new(new ProtocolError(
-        Errors.InvalidRequest,
+        AuthorizeErrors.InvalidRequest,
         "Multiple \"acr_values\" parameter values are present, but only 1 has allowed"));
 
     public static readonly AuthorizeRequestOidcParameterAcrValuesValidationResult AcrValuesIsTooLong = new(new ProtocolError(
-        Errors.InvalidRequest,
+        AuthorizeErrors.InvalidRequest,
         "\"acr_values\" parameter is too long"));
 
     public static readonly AuthorizeRequestOidcParameterAcrValuesValidationResult InvalidAcrValuesSyntax = new(new ProtocolError(
-        Errors.InvalidRequest,
+        AuthorizeErrors.InvalidRequest,
         "Invalid \"acr_values\" syntax"));
 
     public AuthorizeRequestOidcParameterAcrValuesValidationResult(ProtocolError error)

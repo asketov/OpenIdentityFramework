@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Primitives;
 using OpenIdentityFramework.Constants;
-using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestValidator;
@@ -326,7 +326,7 @@ public class DefaultAuthorizeRequestValidator<TRequestContext, TClient, TClientS
         // Scope values used that are not understood by an implementation SHOULD be ignored.
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
-        if (!parameters.TryGetValue(RequestParameters.Scope, out var scopeValues) || scopeValues.Count == 0)
+        if (!parameters.TryGetValue(AuthorizeRequestParameters.Scope, out var scopeValues) || scopeValues.Count == 0)
         {
             return Task.FromResult(false);
         }

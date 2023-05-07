@@ -1,9 +1,12 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core.Models.AccessTokenService;
+using OpenIdentityFramework.Services.Core.Models.ResourceOwnerProfileService;
+using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
 
 namespace OpenIdentityFramework.Services.Core;
 
@@ -18,7 +21,12 @@ public interface IAccessTokenService<TRequestContext, TClient, TClientSecret, TS
 {
     Task<AccessTokenCreationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>> CreateAccessTokenAsync(
         TRequestContext requestContext,
-        CreateAccessTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> createAccessTokenRequest,
+        TClient client,
+        string issuer,
+        string grantType,
+        ResourceOwnerProfile? resourceOwnerProfile,
+        ValidResources<TScope, TResource, TResourceSecret> grantedResources,
+        DateTimeOffset issuedAt,
         CancellationToken cancellationToken);
 
     Task DeleteAsync(

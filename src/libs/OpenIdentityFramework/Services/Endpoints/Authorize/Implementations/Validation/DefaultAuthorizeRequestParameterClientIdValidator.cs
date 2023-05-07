@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Configuration.Options;
-using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core;
@@ -43,7 +43,7 @@ public class DefaultAuthorizeRequestParameterClientIdValidator<TRequestContext, 
         // "client_id" - REQUIRED.
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
-        if (!parameters.Raw.TryGetValue(RequestParameters.ClientId, out var clientIdValues) || clientIdValues.Count == 0)
+        if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.ClientId, out var clientIdValues) || clientIdValues.Count == 0)
         {
             return AuthorizeRequestParameterClientIdValidationResult<TClient, TClientSecret>.ClientIdIsMissing;
         }

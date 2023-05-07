@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Constants;
-using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
@@ -32,7 +32,7 @@ public class DefaultAuthorizeRequestParameterResponseTypeValidator<TRequestConte
         // response_type - REQUIRED in both specs
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
-        if (!parameters.Raw.TryGetValue(RequestParameters.ResponseType, out var responseTypeValues) || responseTypeValues.Count == 0)
+        if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.ResponseType, out var responseTypeValues) || responseTypeValues.Count == 0)
         {
             return Task.FromResult(AuthorizeRequestParameterResponseTypeValidationResult.ResponseTypeIsMissing);
         }
@@ -68,7 +68,7 @@ public class DefaultAuthorizeRequestParameterResponseTypeValidator<TRequestConte
         if (parameters.IsOpenIdRequest && responseType.Contains(' ', StringComparison.Ordinal))
         {
             var multipleResponseTypes = responseType.Split(' ');
-            if (multipleResponseTypes.Except(ResponseType.HybridFlow).Any())
+            if (multipleResponseTypes.Except(DefaultResponseType.HybridFlow).Any())
             {
                 return Task.FromResult(AuthorizeRequestParameterResponseTypeValidationResult.UnsupportedResponseType);
             }
@@ -82,7 +82,7 @@ public class DefaultAuthorizeRequestParameterResponseTypeValidator<TRequestConte
         }
 
         // Both OAuth 2.1 and OpenID Connect 1.0
-        if (responseType == ResponseType.Code && allowedAuthorizationFlows.Contains(DefaultAuthorizationFlows.AuthorizationCode))
+        if (responseType == DefaultResponseType.Code && allowedAuthorizationFlows.Contains(DefaultAuthorizationFlows.AuthorizationCode))
         {
             return Task.FromResult(AuthorizeRequestParameterResponseTypeValidationResult.Code);
         }

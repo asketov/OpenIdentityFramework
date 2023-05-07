@@ -9,7 +9,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Constants;
-using OpenIdentityFramework.Constants.Response.Authorize;
+using OpenIdentityFramework.Constants.Response;
+using OpenIdentityFramework.Constants.Response.Errors;
 using OpenIdentityFramework.Endpoints.Results;
 using OpenIdentityFramework.Endpoints.Results.Implementations;
 using OpenIdentityFramework.Extensions;
@@ -42,7 +43,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
         IAuthorizeRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> requestValidator,
         HtmlEncoder htmlEncoder,
         IErrorService<TRequestContext> errorService,
-        IUserAuthenticationTicketService<TRequestContext> userAuthentication,
+        IResourceOwnerAuthenticationService<TRequestContext> resourceOwnerAuthentication,
         IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent> interactionService,
         IAuthorizeRequestParametersService<TRequestContext, TAuthorizeRequestParameters> authorizeRequestParameters,
         IAuthorizeResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> responseGenerator)
@@ -53,7 +54,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
         ArgumentNullException.ThrowIfNull(requestValidator);
         ArgumentNullException.ThrowIfNull(htmlEncoder);
         ArgumentNullException.ThrowIfNull(errorService);
-        ArgumentNullException.ThrowIfNull(userAuthentication);
+        ArgumentNullException.ThrowIfNull(resourceOwnerAuthentication);
         ArgumentNullException.ThrowIfNull(interactionService);
         ArgumentNullException.ThrowIfNull(authorizeRequestParameters);
         ArgumentNullException.ThrowIfNull(responseGenerator);
@@ -63,7 +64,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
         RequestValidator = requestValidator;
         HtmlEncoder = htmlEncoder;
         ErrorService = errorService;
-        UserAuthentication = userAuthentication;
+        ResourceOwnerAuthentication = resourceOwnerAuthentication;
         InteractionService = interactionService;
         AuthorizeRequestParameters = authorizeRequestParameters;
         ResponseGenerator = responseGenerator;
@@ -75,7 +76,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
     protected IAuthorizeRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> RequestValidator { get; }
     protected HtmlEncoder HtmlEncoder { get; }
     protected IErrorService<TRequestContext> ErrorService { get; }
-    protected IUserAuthenticationTicketService<TRequestContext> UserAuthentication { get; }
+    protected IResourceOwnerAuthenticationService<TRequestContext> ResourceOwnerAuthentication { get; }
     protected IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent> InteractionService { get; }
     protected IAuthorizeRequestParametersService<TRequestContext, TAuthorizeRequestParameters> AuthorizeRequestParameters { get; }
     protected IAuthorizeResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> ResponseGenerator { get; }
@@ -120,17 +121,17 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
             return await HandleValidationErrorAsync(requestContext, validationResult.ValidationError, cancellationToken);
         }
 
-        var authenticationResult = await UserAuthentication.AuthenticateAsync(requestContext, cancellationToken);
+        var authenticationResult = await ResourceOwnerAuthentication.AuthenticateAsync(requestContext, cancellationToken);
         if (authenticationResult.HasError)
         {
-            var authenticationError = new ProtocolError(Errors.ServerError, authenticationResult.ErrorDescription);
+            var authenticationError = new ProtocolError(AuthorizeErrors.ServerError, authenticationResult.ErrorDescription);
             return await HandlerErrorAsync(requestContext, authenticationError, validationResult.ValidRequest, cancellationToken);
         }
 
         var interactionResult = await InteractionService.ProcessInteractionRequirementsAsync(
             requestContext,
             validationResult.ValidRequest,
-            authenticationResult.Ticket,
+            authenticationResult.Authentication,
             null,
             cancellationToken);
         if (interactionResult.HasError)
@@ -145,13 +146,13 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
 
         if (!interactionResult.HasValidRequest)
         {
-            return await HandlerErrorAsync(requestContext, new(Errors.ServerError, "Incorrect interaction state"), validationResult.ValidRequest, cancellationToken);
+            return await HandlerErrorAsync(requestContext, new(AuthorizeErrors.ServerError, "Incorrect interaction state"), validationResult.ValidRequest, cancellationToken);
         }
 
         var responseResult = await ResponseGenerator.CreateResponseAsync(requestContext, interactionResult.ValidRequest, cancellationToken);
         if (responseResult.HasError)
         {
-            return await HandlerErrorAsync(requestContext, new(Errors.ServerError, responseResult.ErrorDescription), validationResult.ValidRequest, cancellationToken);
+            return await HandlerErrorAsync(requestContext, new(AuthorizeErrors.ServerError, responseResult.ErrorDescription), validationResult.ValidRequest, cancellationToken);
         }
 
         var successfulResponseParameters = BuildSuccessfulResponseParameters(responseResult.AuthorizeResponse);
@@ -182,7 +183,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
                 validationError.ResponseMode);
         }
 
-        var errorToSave = new Error(validationError.ProtocolError, validationError.Client?.GetClientId(), validationError.RedirectUri, validationError.ResponseMode, validationError.Issuer);
+        var errorToSave = new UnredirectableError(validationError.ProtocolError, validationError.Client?.GetClientId(), validationError.RedirectUri, validationError.ResponseMode, validationError.Issuer);
         var errorId = await ErrorService.SaveAsync(requestContext, errorToSave, cancellationToken);
         return new DefaultErrorPageResult(FrameworkOptions, errorId);
     }
@@ -207,7 +208,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
             return new DefaultConsentPageResult(FrameworkOptions, authorizeRequestId);
         }
 
-        return await HandlerErrorAsync(requestContext, new(Errors.ServerError, "Incorrect interaction state"), authorizeRequest, cancellationToken);
+        return await HandlerErrorAsync(requestContext, new(AuthorizeErrors.ServerError, "Incorrect interaction state"), authorizeRequest, cancellationToken);
     }
 
     protected virtual async Task<IEndpointHandlerResult> HandlerErrorAsync(
@@ -228,7 +229,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
                 authorizeRequest.ResponseMode);
         }
 
-        var errorToSave = new Error(protocolError, authorizeRequest.Client.GetClientId(), authorizeRequest.RedirectUriToUse, authorizeRequest.ResponseMode, authorizeRequest.Issuer);
+        var errorToSave = new UnredirectableError(protocolError, authorizeRequest.Client.GetClientId(), authorizeRequest.RedirectUriToUse, authorizeRequest.ResponseMode, authorizeRequest.Issuer);
         var errorId = await ErrorService.SaveAsync(requestContext, errorToSave, cancellationToken);
         return new DefaultErrorPageResult(FrameworkOptions, errorId);
     }
@@ -239,45 +240,45 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
         string issuer)
     {
         ArgumentNullException.ThrowIfNull(protocolError);
-        yield return new(ResponseParameters.Error, protocolError.Error);
+        yield return new(AuthorizeResponseParameters.Error, protocolError.Error);
         if (!FrameworkOptions.ErrorHandling.HideErrorDescriptionsOnSafeAuthorizeErrorResponses && !string.IsNullOrWhiteSpace(protocolError.Description))
         {
-            yield return new(ResponseParameters.ErrorDescription, protocolError.Description);
+            yield return new(AuthorizeResponseParameters.ErrorDescription, protocolError.Description);
         }
 
         if (state != null)
         {
-            yield return new(ResponseParameters.State, state);
+            yield return new(AuthorizeResponseParameters.State, state);
         }
 
-        yield return new(ResponseParameters.Issuer, issuer);
+        yield return new(AuthorizeResponseParameters.Issuer, issuer);
     }
 
     protected virtual IEnumerable<KeyValuePair<string, string?>> BuildSuccessfulResponseParameters(SuccessfulAuthorizeResponse successfulAuthorizeResponse)
     {
         ArgumentNullException.ThrowIfNull(successfulAuthorizeResponse);
-        yield return new(ResponseParameters.Code, successfulAuthorizeResponse.Code);
+        yield return new(AuthorizeResponseParameters.Code, successfulAuthorizeResponse.Code);
         if (successfulAuthorizeResponse.State != null)
         {
-            yield return new(ResponseParameters.State, successfulAuthorizeResponse.State);
+            yield return new(AuthorizeResponseParameters.State, successfulAuthorizeResponse.State);
         }
 
         if (successfulAuthorizeResponse.IdToken != null)
         {
-            yield return new(ResponseParameters.IdToken, successfulAuthorizeResponse.IdToken);
+            yield return new(AuthorizeResponseParameters.IdToken, successfulAuthorizeResponse.IdToken);
         }
 
-        yield return new(ResponseParameters.Issuer, successfulAuthorizeResponse.Issuer);
+        yield return new(AuthorizeResponseParameters.Issuer, successfulAuthorizeResponse.Issuer);
     }
 
     protected virtual bool IsSafeError(ProtocolError protocolError)
     {
         ArgumentNullException.ThrowIfNull(protocolError);
-        return protocolError.Error == Errors.AccessDenied
-               || protocolError.Error == Errors.TemporarilyUnavailable
-               || protocolError.Error == Errors.InteractionRequired
-               || protocolError.Error == Errors.LoginRequired
-               || protocolError.Error == Errors.AccountSelectionRequired
-               || protocolError.Error == Errors.ConsentRequired;
+        return protocolError.Error == AuthorizeErrors.AccessDenied
+               || protocolError.Error == AuthorizeErrors.TemporarilyUnavailable
+               || protocolError.Error == AuthorizeErrors.InteractionRequired
+               || protocolError.Error == AuthorizeErrors.LoginRequired
+               || protocolError.Error == AuthorizeErrors.AccountSelectionRequired
+               || protocolError.Error == AuthorizeErrors.ConsentRequired;
     }
 }

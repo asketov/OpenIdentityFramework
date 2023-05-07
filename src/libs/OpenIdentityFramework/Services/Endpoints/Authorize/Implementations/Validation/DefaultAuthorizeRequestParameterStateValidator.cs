@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Configuration.Options;
-using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
@@ -38,7 +38,7 @@ public class DefaultAuthorizeRequestParameterStateValidator<TRequestContext, TCl
         // "state" - OPTIONAL (OAuth 2.1) / RECOMMENDED (OpenID Connect 1.0).
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
-        if (!parameters.Raw.TryGetValue(RequestParameters.State, out var stateValues) || stateValues.Count == 0)
+        if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.State, out var stateValues) || stateValues.Count == 0)
         {
             return Task.FromResult(AuthorizeRequestParameterStateValidationResult.Null);
         }

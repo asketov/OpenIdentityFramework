@@ -7,8 +7,6 @@ using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core;
-using OpenIdentityFramework.Services.Core.Models.IdTokenService;
-using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizationCodeService;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestInteractionService;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeResponseGenerator;
 
@@ -29,9 +27,6 @@ public class DefaultAuthorizeResponseGenerator<TRequestContext, TClient, TClient
         IAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode> authorizationCodeService,
         IIdTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> idTokenService)
     {
-        ArgumentNullException.ThrowIfNull(systemClock);
-        ArgumentNullException.ThrowIfNull(authorizationCodeService);
-        ArgumentNullException.ThrowIfNull(idTokenService);
         SystemClock = systemClock;
         AuthorizationCodeService = authorizationCodeService;
         IdTokenService = idTokenService;
@@ -46,37 +41,40 @@ public class DefaultAuthorizeResponseGenerator<TRequestContext, TClient, TClient
         ValidAuthorizeRequestInteraction<TClient, TClientSecret, TScope, TResource, TResourceSecret> request,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(requestContext);
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
-        var issuedAt = DateTimeOffset.FromUnixTimeSeconds(SystemClock.UtcNow.ToUnixTimeSeconds());
-        var codeRequest = new CreateAuthorizationCodeRequest<TClient, TClientSecret>(
-            request.Ticket.UserAuthentication,
+        var authorizationCodeIssuedAt = SystemClock.UtcNow;
+        var authorizationCodeResult = await AuthorizationCodeService.CreateAsync(
+            requestContext,
             request.AuthorizeRequest.Client,
-            request.AuthorizeRequest.AuthorizeRequestRedirectUri,
+            request.ResourceOwnerProfile.EssentialClaims,
             request.GrantedResources.RawScopes,
+            request.AuthorizeRequest.AuthorizeRequestRedirectUri,
             request.AuthorizeRequest.CodeChallenge,
             request.AuthorizeRequest.CodeChallengeMethod,
-            request.AuthorizeRequest.Nonce,
-            request.AuthorizeRequest.State,
-            request.AuthorizeRequest.Issuer,
-            issuedAt);
-        var authorizationCode = await AuthorizationCodeService.CreateAsync(requestContext, codeRequest, cancellationToken);
+            authorizationCodeIssuedAt,
+            cancellationToken);
         string? idToken = null;
-        if (request.AuthorizeRequest.AuthorizationFlow == DefaultAuthorizationFlows.Hybrid
-            && request.GrantedResources.HasOpenId)
+        if (request.AuthorizeRequest.AuthorizationFlow == DefaultAuthorizationFlows.Hybrid)
         {
-            var idTokenRequest = new CreateIdTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
-                request.Ticket.UserAuthentication,
+            if (string.IsNullOrEmpty(request.AuthorizeRequest.Nonce))
+            {
+                return new("Nonce is required for hybrid flow");
+            }
+
+            var idTokenIssuedAt = authorizationCodeResult.IssuedAt;
+            var idTokenResult = await IdTokenService.CreateIdTokenAsync(
+                requestContext,
                 request.AuthorizeRequest.Client,
-                request.GrantedResources,
-                request.AuthorizeRequest.Nonce,
-                request.AuthorizeRequest.State,
                 request.AuthorizeRequest.Issuer,
-                issuedAt,
+                authorizationCodeResult.Handle,
                 null,
-                authorizationCode,
-                request.AuthorizeRequest.Client.ShouldAlwaysIncludeUserClaimsInIdToken());
-            var idTokenResult = await IdTokenService.CreateIdTokenAsync(requestContext, idTokenRequest, cancellationToken);
+                request.AuthorizeRequest.Nonce,
+                request.ResourceOwnerProfile,
+                request.GrantedResources,
+                idTokenIssuedAt,
+                cancellationToken);
             if (idTokenResult.HasError)
             {
                 return new(idTokenResult.ErrorDescription);
@@ -85,7 +83,7 @@ public class DefaultAuthorizeResponseGenerator<TRequestContext, TClient, TClient
             idToken = idTokenResult.IdToken.Handle;
         }
 
-        var result = new SuccessfulAuthorizeResponse(authorizationCode, request.AuthorizeRequest.State, request.AuthorizeRequest.Issuer, idToken);
+        var result = new SuccessfulAuthorizeResponse(authorizationCodeResult.Handle, request.AuthorizeRequest.State, request.AuthorizeRequest.Issuer, idToken);
         return new(result);
     }
 }

@@ -1,7 +1,8 @@
 ﻿using System;
 using OpenIdentityFramework.Models.Configuration;
+using OpenIdentityFramework.Services.Core.Models.ResourceOwnerAuthenticationService;
+using OpenIdentityFramework.Services.Core.Models.ResourceOwnerProfileService;
 using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
-using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestValidator;
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestInteractionService;
@@ -15,20 +16,22 @@ public class ValidAuthorizeRequestInteraction<TClient, TClientSecret, TScope, TR
 {
     public ValidAuthorizeRequestInteraction(
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
-        UserAuthenticationTicket ticket,
-        ValidResources<TScope, TResource, TResourceSecret> grantedResources)
+        ValidResources<TScope, TResource, TResourceSecret> grantedResources,
+        ResourceOwnerAuthentication resourceOwnerAuthentication,
+        ResourceOwnerProfile resourceOwnerProfile)
     {
         ArgumentNullException.ThrowIfNull(authorizeRequest);
-        ArgumentNullException.ThrowIfNull(ticket);
         ArgumentNullException.ThrowIfNull(grantedResources);
+        ArgumentNullException.ThrowIfNull(resourceOwnerAuthentication);
+        ArgumentNullException.ThrowIfNull(resourceOwnerProfile);
         AuthorizeRequest = authorizeRequest;
-        Ticket = ticket;
         GrantedResources = grantedResources;
+        ResourceOwnerAuthentication = resourceOwnerAuthentication;
+        ResourceOwnerProfile = resourceOwnerProfile;
     }
 
     public ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> AuthorizeRequest { get; }
-
-    public UserAuthenticationTicket Ticket { get; }
-
     public ValidResources<TScope, TResource, TResourceSecret> GrantedResources { get; }
+    public ResourceOwnerAuthentication ResourceOwnerAuthentication { get; }
+    public ResourceOwnerProfile ResourceOwnerProfile { get; }
 }

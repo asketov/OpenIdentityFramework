@@ -11,9 +11,23 @@ public interface IGrantedConsentStorage<TRequestContext, TGrantedConsent>
     where TRequestContext : AbstractRequestContext
     where TGrantedConsent : AbstractGrantedConsent
 {
-    Task<TGrantedConsent?> FindAsync(TRequestContext requestContext, string subjectId, string clientId, CancellationToken cancellationToken);
+    Task<TGrantedConsent?> FindAsync(
+        TRequestContext requestContext,
+        string subjectId,
+        string clientId,
+        CancellationToken cancellationToken);
 
-    Task DeleteAsync(TRequestContext requestContext, string subjectId, string clientId, CancellationToken cancellationToken);
+    Task DeleteAsync(
+        TRequestContext requestContext,
+        string subjectId,
+        string clientId,
+        CancellationToken cancellationToken);
 
-    Task UpsertAsync(TRequestContext requestContext, string subjectId, string clientId, IReadOnlySet<string> grantedScopes, DateTimeOffset? expiresAt, CancellationToken cancellationToken);
+    Task UpsertAsync(
+        TRequestContext requestContext,
+        string subjectId,
+        string clientId,
+        IReadOnlySet<string> grantedScopes,
+        DateTimeOffset? expiresAt,
+        CancellationToken cancellationToken);
 }

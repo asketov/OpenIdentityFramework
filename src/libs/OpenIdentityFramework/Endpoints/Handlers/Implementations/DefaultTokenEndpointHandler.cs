@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Configuration.Options;
-using OpenIdentityFramework.Constants.Response.Token;
+using OpenIdentityFramework.Constants.Response.Errors;
 using OpenIdentityFramework.Endpoints.Results;
 using OpenIdentityFramework.Endpoints.Results.Implementations;
 using OpenIdentityFramework.Extensions;
@@ -13,6 +13,7 @@ using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core;
 using OpenIdentityFramework.Services.Endpoints.Token;
+using OpenIdentityFramework.Services.Endpoints.Token.Validation;
 
 namespace OpenIdentityFramework.Endpoints.Handlers.Implementations;
 
@@ -79,7 +80,7 @@ public class DefaultTokenEndpointHandler<TRequestContext, TClient, TClientSecret
         {
             return new DefaultTokenErrorResult(
                 FrameworkOptions,
-                new(Errors.InvalidRequest, FrameworkOptions.ErrorHandling.HideErrorDescriptionsOnSafeAuthorizeErrorResponses ? null : clientAuthentication.ErrorDescription),
+                new(TokenErrors.InvalidRequest, FrameworkOptions.ErrorHandling.HideErrorDescriptionsOnSafeAuthorizeErrorResponses ? null : clientAuthentication.ErrorDescription),
                 issuer);
         }
 
@@ -87,7 +88,7 @@ public class DefaultTokenEndpointHandler<TRequestContext, TClient, TClientSecret
         {
             return new DefaultTokenErrorResult(
                 FrameworkOptions,
-                new(Errors.InvalidClient, null),
+                new(TokenErrors.InvalidClient, null),
                 issuer);
         }
 
@@ -105,7 +106,7 @@ public class DefaultTokenEndpointHandler<TRequestContext, TClient, TClientSecret
         {
             return new DefaultTokenErrorResult(
                 FrameworkOptions,
-                new(Errors.InvalidGrant, responseGenerationResult.ErrorDescription),
+                new(TokenErrors.InvalidGrant, responseGenerationResult.ErrorDescription),
                 issuer);
         }
 

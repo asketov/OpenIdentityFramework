@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using OpenIdentityFramework.Models;
+using OpenIdentityFramework.Models.Authentication;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizationCodeService;
@@ -28,28 +30,34 @@ public class DefaultAuthorizationCodeService<TRequestContext, TClient, TClientSe
     protected IAuthorizationCodeStorage<TRequestContext, TAuthorizationCode> Storage { get; }
     protected ISystemClock SystemClock { get; }
 
-    public virtual async Task<string> CreateAsync(
+    public virtual async Task<AuthorizationCodeCreationResult> CreateAsync(
         TRequestContext requestContext,
-        CreateAuthorizationCodeRequest<TClient, TClientSecret> createRequest,
+        TClient client,
+        EssentialResourceOwnerClaims essentialClaims,
+        IReadOnlySet<string> grantedScopes,
+        string? authorizeRequestRedirectUri,
+        string codeChallenge,
+        string codeChallengeMethod,
+        DateTimeOffset issuedAt,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(createRequest);
+        ArgumentNullException.ThrowIfNull(client);
+        ArgumentNullException.ThrowIfNull(essentialClaims);
         cancellationToken.ThrowIfCancellationRequested();
-        var expiresAt = createRequest.IssuedAt.Add(createRequest.Client.GetAuthorizationCodeLifetime());
-        return await Storage.CreateAsync(
+        var roundIssuedAt = DateTimeOffset.FromUnixTimeSeconds(issuedAt.ToUnixTimeSeconds());
+        var roundExpiresAt = DateTimeOffset.FromUnixTimeSeconds(roundIssuedAt.Add(client.GetAuthorizationCodeLifetime()).ToUnixTimeSeconds());
+        var handle = await Storage.CreateAsync(
             requestContext,
-            createRequest.UserAuthentication,
-            createRequest.Client.GetClientId(),
-            createRequest.OriginalRedirectUri,
-            createRequest.GrantedScopes,
-            createRequest.CodeChallenge,
-            createRequest.CodeChallengeMethod,
-            createRequest.Nonce,
-            createRequest.State,
-            createRequest.Issuer,
-            createRequest.IssuedAt,
-            expiresAt,
+            client.GetClientId(),
+            essentialClaims,
+            grantedScopes,
+            authorizeRequestRedirectUri,
+            codeChallenge,
+            codeChallengeMethod,
+            roundIssuedAt,
+            roundExpiresAt,
             cancellationToken);
+        return new(handle, roundIssuedAt, roundExpiresAt);
     }
 
     public virtual async Task<TAuthorizationCode?> FindAsync(TRequestContext requestContext, string authorizationCode, CancellationToken cancellationToken)

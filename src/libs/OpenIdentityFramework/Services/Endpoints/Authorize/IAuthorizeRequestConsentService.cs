@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Models;
+using OpenIdentityFramework.Models.Authentication;
 using OpenIdentityFramework.Models.Operation;
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize;
@@ -10,10 +11,28 @@ public interface IAuthorizeRequestConsentService<TRequestContext, TRequestConsen
     where TRequestContext : AbstractRequestContext
     where TRequestConsent : AbstractAuthorizeRequestConsent
 {
-    Task GrantAsync(TRequestContext requestContext, string authorizeRequestId, IReadOnlySet<string> grantedScopes, bool remember, CancellationToken cancellationToken);
+    Task GrantAsync(
+        TRequestContext requestContext,
+        ResourceOwnerIdentifiers resourceOwnerIdentifiers,
+        string authorizeRequestId,
+        IReadOnlySet<string> grantedScopes,
+        bool remember,
+        CancellationToken cancellationToken);
 
-    Task DenyAsync(TRequestContext requestContext, string authorizeRequestId, CancellationToken cancellationToken);
+    Task DenyAsync(
+        TRequestContext requestContext,
+        ResourceOwnerIdentifiers resourceOwnerIdentifiers,
+        string authorizeRequestId,
+        CancellationToken cancellationToken);
 
-    Task<TRequestConsent?> ReadAsync(TRequestContext requestContext, string authorizeRequestId, CancellationToken cancellationToken);
-    Task DeleteAsync(TRequestContext requestContext, string authorizeRequestId, CancellationToken cancellationToken);
+    Task<TRequestConsent?> ReadAsync(
+        TRequestContext requestContext,
+        ResourceOwnerIdentifiers resourceOwnerIdentifiers,
+        string authorizeRequestId,
+        CancellationToken cancellationToken);
+
+    Task DeleteAsync(
+        TRequestContext requestContext,
+        string authorizeRequestId,
+        CancellationToken cancellationToken);
 }

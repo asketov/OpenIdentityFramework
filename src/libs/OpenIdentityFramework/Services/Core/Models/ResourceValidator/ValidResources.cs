@@ -10,9 +10,6 @@ public class ValidResources<TScope, TResource, TResourceSecret>
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
 {
-    private readonly IReadOnlySet<string> _requiredScopes;
-
-
     public ValidResources(IReadOnlySet<TScope> allScopes, IReadOnlySet<TResource> resources, bool hasOfflineAccess)
     {
         ArgumentNullException.ThrowIfNull(allScopes);
@@ -55,7 +52,7 @@ public class ValidResources<TScope, TResource, TResourceSecret>
         }
 
         RawScopes = rawScopes;
-        _requiredScopes = requiredScopes;
+        RequiredScopes = requiredScopes;
         IdTokenScopes = idTokenScopes;
         AccessTokenScopes = accessTokenScopes;
     }
@@ -63,6 +60,7 @@ public class ValidResources<TScope, TResource, TResourceSecret>
     public IReadOnlySet<TScope> IdTokenScopes { get; }
     public IReadOnlySet<TScope> AccessTokenScopes { get; }
     public IReadOnlySet<string> RawScopes { get; }
+    public IReadOnlySet<string> RequiredScopes { get; }
     public IReadOnlySet<TResource> Resources { get; }
     public bool HasOfflineAccess { get; }
     public bool HasOpenId { get; }
@@ -81,7 +79,7 @@ public class ValidResources<TScope, TResource, TResourceSecret>
     public bool IsRequiredScopesCoveredBy(IReadOnlySet<string> providedScopes)
     {
         ArgumentNullException.ThrowIfNull(providedScopes);
-        return providedScopes.IsSupersetOf(_requiredScopes);
+        return providedScopes.IsSupersetOf(RequiredScopes);
     }
 
     public ValidResources<TScope, TResource, TResourceSecret> FilterGrantedScopes(IReadOnlySet<string> grantedScopes)

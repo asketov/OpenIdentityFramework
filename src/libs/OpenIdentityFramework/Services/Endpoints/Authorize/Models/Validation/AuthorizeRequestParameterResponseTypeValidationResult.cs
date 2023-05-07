@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using OpenIdentityFramework.Constants;
-using OpenIdentityFramework.Constants.Response.Authorize;
+using OpenIdentityFramework.Constants.Response.Errors;
 using OpenIdentityFramework.Models;
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
@@ -9,23 +9,23 @@ namespace OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
 public class AuthorizeRequestParameterResponseTypeValidationResult
 {
     public static readonly AuthorizeRequestParameterResponseTypeValidationResult Code = new(
-        Constants.Request.Authorize.ResponseType.Code,
+        DefaultResponseType.Code,
         DefaultAuthorizationFlows.AuthorizationCode);
 
     public static readonly AuthorizeRequestParameterResponseTypeValidationResult CodeIdToken = new(
-        Constants.Request.Authorize.ResponseType.CodeIdToken,
+        DefaultResponseType.CodeIdToken,
         DefaultAuthorizationFlows.Hybrid);
 
     public static readonly AuthorizeRequestParameterResponseTypeValidationResult ResponseTypeIsMissing = new(new(
-        Errors.InvalidRequest,
+        AuthorizeErrors.InvalidRequest,
         "\"response_type\" is missing"));
 
     public static readonly AuthorizeRequestParameterResponseTypeValidationResult MultipleResponseTypeValuesNotAllowed = new(new(
-        Errors.InvalidRequest,
+        AuthorizeErrors.InvalidRequest,
         "Multiple \"response_type\" values are present, but only one is allowed"));
 
     public static readonly AuthorizeRequestParameterResponseTypeValidationResult UnsupportedResponseType = new(new(
-        Errors.UnsupportedResponseType,
+        AuthorizeErrors.UnsupportedResponseType,
         "Unsupported \"response_type\""));
 
     public AuthorizeRequestParameterResponseTypeValidationResult(ProtocolError error)

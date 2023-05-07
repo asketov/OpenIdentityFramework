@@ -63,6 +63,16 @@ public class InputLengthRestrictionsOptions
     public int CodeVerifierMaxLength { get; set; } = 128;
 
     /// <summary>
+    ///     Min length for "code_challenge". https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.18
+    /// </summary>
+    public int CodeChallengeMinLength { get; set; } = 43;
+
+    /// <summary>
+    ///     Max length for "code_challenge". https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.18
+    /// </summary>
+    public int CodeChallengeMaxLength { get; set; } = 128;
+
+    /// <summary>
     ///     Max length for "code".
     /// </summary>
     public int Code { get; set; } = 300;

@@ -3,7 +3,9 @@ using System.Threading.Tasks;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
+using OpenIdentityFramework.Services.Core.Models.AccessTokenService;
 using OpenIdentityFramework.Services.Core.Models.RefreshTokenService;
+using OpenIdentityFramework.Services.Endpoints.Token.Models.Validation.TokenRequestValidator;
 
 namespace OpenIdentityFramework.Services.Core;
 
@@ -18,13 +20,14 @@ public interface IRefreshTokenService<TRequestContext, TClient, TClientSecret, T
 {
     Task<RefreshTokenCreationResult> CreateAsync(
         TRequestContext requestContext,
-        CreateRefreshTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken> createRequest,
+        string issuer,
+        ValidRefreshToken<TRefreshToken>? previousRefreshToken,
+        CreatedAccessToken<TClient, TClientSecret, TScope, TResource, TResourceSecret> createdAccessToken,
         CancellationToken cancellationToken);
 
     Task<TRefreshToken?> FindAsync(
         TRequestContext requestContext,
         TClient client,
-        string issuer,
         string refreshTokenHandle,
         CancellationToken cancellationToken);
 

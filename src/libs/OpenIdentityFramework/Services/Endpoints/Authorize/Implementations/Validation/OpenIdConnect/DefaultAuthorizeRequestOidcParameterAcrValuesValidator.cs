@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Configuration.Options;
-using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
@@ -38,7 +38,7 @@ public class DefaultAuthorizeRequestOidcParameterAcrValuesValidator<TRequestCont
         // Space-separated string that specifies the acr values that the Authorization Server is being requested to use for processing this Authentication Request, with the values appearing in order of preference.
         // The Authentication Context Class satisfied by the authentication performed is returned as the "acr" Claim Value, as specified in Section 2.
         // The "acr" Claim is requested as a Voluntary Claim by this parameter.
-        if (!parameters.Raw.TryGetValue(RequestParameters.AcrValues, out var acrValuesValues) || acrValuesValues.Count == 0)
+        if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.AcrValues, out var acrValuesValues) || acrValuesValues.Count == 0)
         {
             return Task.FromResult(AuthorizeRequestOidcParameterAcrValuesValidationResult.Null);
         }

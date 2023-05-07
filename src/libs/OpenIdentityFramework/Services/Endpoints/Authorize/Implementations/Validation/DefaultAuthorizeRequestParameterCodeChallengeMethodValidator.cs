@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Constants;
+using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
@@ -29,9 +30,9 @@ public class DefaultAuthorizeRequestParameterCodeChallengeMethodValidator<TReque
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
         var allowedCodeChallengeMethods = client.GetAllowedCodeChallengeMethods();
-        if (!parameters.Raw.TryGetValue(RequestParameters.CodeChallengeMethod, out var codeChallengeMethodValues) || codeChallengeMethodValues.Count == 0)
+        if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.CodeChallengeMethod, out var codeChallengeMethodValues) || codeChallengeMethodValues.Count == 0)
         {
-            if (allowedCodeChallengeMethods.Contains(CodeChallengeMethod.Plain))
+            if (allowedCodeChallengeMethods.Contains(DefaultCodeChallengeMethod.Plain))
             {
                 return Task.FromResult(AuthorizeRequestParameterCodeChallengeMethodValidationResult.Plain);
             }
@@ -51,7 +52,7 @@ public class DefaultAuthorizeRequestParameterCodeChallengeMethodValidator<TReque
         var codeChallengeMethod = codeChallengeMethodValues.ToString();
         if (string.IsNullOrEmpty(codeChallengeMethod))
         {
-            if (allowedCodeChallengeMethods.Contains(CodeChallengeMethod.Plain))
+            if (allowedCodeChallengeMethods.Contains(DefaultCodeChallengeMethod.Plain))
             {
                 return Task.FromResult(AuthorizeRequestParameterCodeChallengeMethodValidationResult.Plain);
             }
@@ -61,12 +62,12 @@ public class DefaultAuthorizeRequestParameterCodeChallengeMethodValidator<TReque
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-4.1.1
         // Code verifier transformation method is "S256" or "plain".
-        if (codeChallengeMethod == CodeChallengeMethod.Plain && allowedCodeChallengeMethods.Contains(codeChallengeMethod))
+        if (codeChallengeMethod == DefaultCodeChallengeMethod.Plain && allowedCodeChallengeMethods.Contains(codeChallengeMethod))
         {
             return Task.FromResult(AuthorizeRequestParameterCodeChallengeMethodValidationResult.Plain);
         }
 
-        if (codeChallengeMethod == CodeChallengeMethod.S256 && allowedCodeChallengeMethods.Contains(codeChallengeMethod))
+        if (codeChallengeMethod == DefaultCodeChallengeMethod.S256 && allowedCodeChallengeMethods.Contains(codeChallengeMethod))
         {
             return Task.FromResult(AuthorizeRequestParameterCodeChallengeMethodValidationResult.S256);
         }

@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Configuration.Options;
-using OpenIdentityFramework.Constants.Response.Token;
+using OpenIdentityFramework.Constants.Response;
 using OpenIdentityFramework.Extensions;
 using OpenIdentityFramework.Services.Endpoints.Token.Models.TokenResponseGenerator;
 
@@ -54,31 +54,31 @@ public class DefaultTokenSuccessfulResult : IEndpointHandlerResult
             Issuer = issuer;
         }
 
-        [JsonPropertyName(ResponseParameters.AccessToken)]
+        [JsonPropertyName(TokenResponseParameters.AccessToken)]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string AccessToken { get; }
 
-        [JsonPropertyName(ResponseParameters.TokenType)]
+        [JsonPropertyName(TokenResponseParameters.TokenType)]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string TokenType { get; }
 
-        [JsonPropertyName(ResponseParameters.RefreshToken)]
+        [JsonPropertyName(TokenResponseParameters.RefreshToken)]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? RefreshToken { get; }
 
-        [JsonPropertyName(ResponseParameters.ExpiresIn)]
+        [JsonPropertyName(TokenResponseParameters.ExpiresIn)]
         [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         public long ExpiresIn { get; }
 
-        [JsonPropertyName(ResponseParameters.IdToken)]
+        [JsonPropertyName(TokenResponseParameters.IdToken)]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? IdToken { get; }
 
-        [JsonPropertyName(ResponseParameters.Scope)]
+        [JsonPropertyName(TokenResponseParameters.Scope)]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Scope { get; }
 
-        [JsonPropertyName(ResponseParameters.Issuer)]
+        [JsonPropertyName(TokenResponseParameters.Issuer)]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string Issuer { get; }
     }

@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using OpenIdentityFramework.Constants.Response.Authorize;
+using OpenIdentityFramework.Constants.Response.Errors;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
@@ -12,27 +12,27 @@ public class AuthorizeRequestParameterScopeValidationResult<TScope, TResource, T
     where TResourceSecret : AbstractSecret
 {
     public static readonly AuthorizeRequestParameterScopeValidationResult<TScope, TResource, TResourceSecret> ScopeIsMissing = new(new ProtocolError(
-        Errors.InvalidScope,
+        AuthorizeErrors.InvalidScope,
         "\"scope\" is missing"));
 
     public static readonly AuthorizeRequestParameterScopeValidationResult<TScope, TResource, TResourceSecret> MultipleScope = new(new ProtocolError(
-        Errors.InvalidRequest,
+        AuthorizeErrors.InvalidRequest,
         "Multiple \"scope\" values are present, but only 1 has allowed"));
 
     public static readonly AuthorizeRequestParameterScopeValidationResult<TScope, TResource, TResourceSecret> ScopeIsTooLong = new(new ProtocolError(
-        Errors.InvalidRequest,
+        AuthorizeErrors.InvalidRequest,
         "\"scope\" parameter is too long"));
 
     public static readonly AuthorizeRequestParameterScopeValidationResult<TScope, TResource, TResourceSecret> InvalidScopeSyntax = new(new ProtocolError(
-        Errors.InvalidRequest,
+        AuthorizeErrors.InvalidRequest,
         "Invalid \"scope\" syntax"));
 
     public static readonly AuthorizeRequestParameterScopeValidationResult<TScope, TResource, TResourceSecret> InvalidScope = new(new ProtocolError(
-        Errors.InvalidScope,
+        AuthorizeErrors.InvalidScope,
         "Invalid \"scope\""));
 
     public static readonly AuthorizeRequestParameterScopeValidationResult<TScope, TResource, TResourceSecret> Misconfigured = new(new ProtocolError(
-        Errors.ServerError,
+        AuthorizeErrors.ServerError,
         "\"scope\" contains misconfigured scopes"));
 
     public AuthorizeRequestParameterScopeValidationResult(ProtocolError error)

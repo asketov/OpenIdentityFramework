@@ -1,11 +1,15 @@
-﻿using System.Collections.Generic;
-using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
+﻿using System;
+using System.Collections.Generic;
+using OpenIdentityFramework.Models.Authentication;
 
 namespace OpenIdentityFramework.Models.Operation;
 
 public abstract class AbstractAccessToken
 {
     public abstract string GetClientId();
+    public abstract EssentialResourceOwnerClaims? GetEssentialResourceOwnerClaims();
     public abstract IReadOnlySet<string> GetGrantedScopes();
-    public abstract UserAuthentication GetUserAuthentication();
+    public abstract IReadOnlySet<LightweightClaim> GetClaims();
+    public abstract DateTimeOffset GetIssueDate();
+    public abstract DateTimeOffset GetExpirationDate();
 }

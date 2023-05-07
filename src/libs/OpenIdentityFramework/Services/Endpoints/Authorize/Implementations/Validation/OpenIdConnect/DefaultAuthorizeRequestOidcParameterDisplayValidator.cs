@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Constants;
+using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
@@ -26,7 +27,7 @@ public class DefaultAuthorizeRequestOidcParameterDisplayValidator<TRequestContex
         cancellationToken.ThrowIfCancellationRequested();
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.1
         // display - OPTIONAL. ASCII string value that specifies how the Authorization Server displays the authentication and consent user interface pages to the End-User.
-        if (!parameters.Raw.TryGetValue(RequestParameters.Display, out var displayValues) || displayValues.Count == 0)
+        if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.Display, out var displayValues) || displayValues.Count == 0)
         {
             return Task.FromResult(AuthorizeRequestOidcParameterDisplayValidationResult.Null);
         }
@@ -47,22 +48,22 @@ public class DefaultAuthorizeRequestOidcParameterDisplayValidator<TRequestContex
             return Task.FromResult(AuthorizeRequestOidcParameterDisplayValidationResult.Null);
         }
 
-        if (display == Display.Page)
+        if (display == DefaultDisplay.Page)
         {
             return Task.FromResult(AuthorizeRequestOidcParameterDisplayValidationResult.Page);
         }
 
-        if (display == Display.Popup)
+        if (display == DefaultDisplay.Popup)
         {
             return Task.FromResult(AuthorizeRequestOidcParameterDisplayValidationResult.Popup);
         }
 
-        if (display == Display.Touch)
+        if (display == DefaultDisplay.Touch)
         {
             return Task.FromResult(AuthorizeRequestOidcParameterDisplayValidationResult.Touch);
         }
 
-        if (display == Display.Wap)
+        if (display == DefaultDisplay.Wap)
         {
             return Task.FromResult(AuthorizeRequestOidcParameterDisplayValidationResult.Wap);
         }

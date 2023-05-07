@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
+using OpenIdentityFramework.Services.Core.Models.ResourceOwnerProfileService;
 using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
-using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
 
 namespace OpenIdentityFramework.Services.Core.Models.AccessTokenService;
 
@@ -13,39 +11,37 @@ public class CreatedAccessToken<TClient, TClientSecret, TScope, TResource, TReso
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
+
 {
     public CreatedAccessToken(
         string accessTokenFormat,
-        string issuer,
+        string handle,
         TClient client,
-        UserAuthentication? userAuthentication,
-        ValidResources<TScope, TResource, TResourceSecret> requestedResources,
-        IReadOnlySet<LightweightClaim> claims,
-        DateTimeOffset issuedAt,
-        DateTimeOffset expiresAt,
-        long lifetimeInSeconds,
-        string handle)
+        ResourceOwnerProfile? resourceOwnerProfile,
+        ValidResources<TScope, TResource, TResourceSecret> grantedResources,
+        DateTimeOffset actualIssuedAt,
+        DateTimeOffset actualExpiresAt)
     {
         AccessTokenFormat = accessTokenFormat;
-        Issuer = issuer;
-        Client = client;
-        UserAuthentication = userAuthentication;
-        RequestedResources = requestedResources;
-        Claims = claims;
-        IssuedAt = issuedAt;
-        ExpiresAt = expiresAt;
-        LifetimeInSeconds = lifetimeInSeconds;
         Handle = handle;
+        Client = client;
+        ResourceOwnerProfile = resourceOwnerProfile;
+        GrantedResources = grantedResources;
+        ActualIssuedAt = actualIssuedAt;
+        var lifetimeInSeconds = actualExpiresAt.Subtract(actualIssuedAt).Ticks / TimeSpan.TicksPerSecond;
+        if (lifetimeInSeconds < 0)
+        {
+            lifetimeInSeconds = 0;
+        }
+
+        LifetimeInSeconds = lifetimeInSeconds;
     }
 
     public string AccessTokenFormat { get; }
-    public string Issuer { get; }
-    public TClient Client { get; }
-    public UserAuthentication? UserAuthentication { get; }
-    public ValidResources<TScope, TResource, TResourceSecret> RequestedResources { get; }
-    public IReadOnlySet<LightweightClaim> Claims { get; }
-    public DateTimeOffset IssuedAt { get; }
-    public DateTimeOffset ExpiresAt { get; }
-    public long LifetimeInSeconds { get; }
     public string Handle { get; }
+    public TClient Client { get; }
+    public ResourceOwnerProfile? ResourceOwnerProfile { get; }
+    public ValidResources<TScope, TResource, TResourceSecret> GrantedResources { get; }
+    public DateTimeOffset ActualIssuedAt { get; }
+    public long LifetimeInSeconds { get; }
 }

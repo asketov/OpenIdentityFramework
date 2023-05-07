@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Configuration.Options;
-using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
@@ -38,7 +38,7 @@ public class DefaultAuthorizeRequestOidcParameterLoginHintValidator<TRequestCont
         // This hint can be used by an RP if it first asks the End-User for their e-mail address (or other identifier) and then wants to pass that value as a hint to the discovered authorization service.
         // It is RECOMMENDED that the hint value match the value used for discovery.
         // This value MAY also be a phone number in the format specified for the "phone_number" Claim. The use of this parameter is left to the OP's discretion.
-        if (!parameters.Raw.TryGetValue(RequestParameters.LoginHint, out var loginHintValues) || loginHintValues.Count == 0)
+        if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.LoginHint, out var loginHintValues) || loginHintValues.Count == 0)
         {
             return Task.FromResult(AuthorizeRequestOidcParameterLoginHintValidationResult.Null);
         }

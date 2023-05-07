@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.IdentityModel.Tokens;
 using OpenIdentityFramework.Models;
+using OpenIdentityFramework.Services.Core.Models.KeyMaterialService;
 using OpenIdentityFramework.Storages.Configuration;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
@@ -20,18 +21,17 @@ public class DefaultKeyMaterialService<TRequestContext> : IKeyMaterialService<TR
 
     protected IKeyMaterialStorage<TRequestContext> Storage { get; }
 
-    public virtual async Task<SigningCredentials> GetSigningCredentialsAsync(
+    public virtual async Task<SigningCredentialsSearchResult> FindSigningCredentialsAsync(
         TRequestContext requestContext,
-        string issuer,
         IReadOnlySet<string>? allowedSigningAlgorithms,
         CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        var credentials = await Storage.FindAsync(requestContext, issuer, allowedSigningAlgorithms, cancellationToken);
+        var credentials = await Storage.FindAsync(requestContext, allowedSigningAlgorithms, cancellationToken);
         return GetSigningCredentials(credentials, allowedSigningAlgorithms);
     }
 
-    protected virtual SigningCredentials GetSigningCredentials(
+
+    protected virtual SigningCredentialsSearchResult GetSigningCredentials(
         IReadOnlyCollection<SigningCredentials>? credentials,
         IReadOnlySet<string>? algorithms)
     {
@@ -39,7 +39,7 @@ public class DefaultKeyMaterialService<TRequestContext> : IKeyMaterialService<TR
         {
             if (algorithms is { Count: > 0 })
             {
-                throw new InvalidOperationException($"No signing credential for algorithms ({string.Join(" ", algorithms)}) registered");
+                return new($"No signing credential for algorithms ({string.Join(" ", algorithms)}) registered");
             }
 
             throw new InvalidOperationException("No signing credential registered");
@@ -47,15 +47,15 @@ public class DefaultKeyMaterialService<TRequestContext> : IKeyMaterialService<TR
 
         if (algorithms == null || algorithms.Count == 0)
         {
-            return credentials.First();
+            return new(credentials.First());
         }
 
         var credentialForSpecificAlgorithm = credentials.FirstOrDefault(x => algorithms.Contains(x.Algorithm));
         if (credentialForSpecificAlgorithm == null)
         {
-            throw new InvalidOperationException($"No signing credential for algorithms ({string.Join(" ", algorithms)}) registered");
+            return new($"No signing credential for algorithms ({string.Join(" ", algorithms)}) registered");
         }
 
-        return credentialForSpecificAlgorithm;
+        return new(credentialForSpecificAlgorithm);
     }
 }

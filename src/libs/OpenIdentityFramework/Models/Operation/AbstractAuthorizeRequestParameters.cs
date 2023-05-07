@@ -8,5 +8,6 @@ public abstract class AbstractAuthorizeRequestParameters
 {
     public abstract DateTimeOffset GetInitialRequestDate();
     public abstract IReadOnlyDictionary<string, StringValues> GetAuthorizeRequestParameters();
+    public abstract DateTimeOffset GetCreationDate();
     public abstract DateTimeOffset GetExpirationDate();
 }

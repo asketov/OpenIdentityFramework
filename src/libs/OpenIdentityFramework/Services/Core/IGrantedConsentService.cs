@@ -13,7 +13,16 @@ public interface IGrantedConsentService<TRequestContext, TClient, TClientSecret,
     where TClientSecret : AbstractSecret
     where TGrantedConsent : AbstractGrantedConsent
 {
-    Task<TGrantedConsent?> FindAsync(TRequestContext requestContext, string subjectId, TClient client, CancellationToken cancellationToken);
+    Task<TGrantedConsent?> FindAsync(
+        TRequestContext requestContext,
+        string subjectId,
+        TClient client,
+        CancellationToken cancellationToken);
 
-    Task UpsertAsync(TRequestContext requestContext, string subjectId, TClient client, IReadOnlySet<string> grantedScopes, CancellationToken cancellationToken);
+    Task UpsertAsync(
+        TRequestContext requestContext,
+        string subjectId,
+        TClient client,
+        IReadOnlySet<string> grantedScopes,
+        CancellationToken cancellationToken);
 }

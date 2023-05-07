@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
-using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
+using OpenIdentityFramework.Services.Core.Models.ResourceOwnerAuthenticationService;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestInteractionService;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestValidator;
 
@@ -21,7 +21,7 @@ public interface IAuthorizeRequestInteractionService<TRequestContext, TClient, T
     Task<AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>> ProcessInteractionRequirementsAsync(
         TRequestContext requestContext,
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
-        UserAuthenticationTicket? ticket,
+        ResourceOwnerAuthentication? resourceOwnerAuthentication,
         TRequestConsent? authorizeRequestConsent,
         CancellationToken cancellationToken);
 }

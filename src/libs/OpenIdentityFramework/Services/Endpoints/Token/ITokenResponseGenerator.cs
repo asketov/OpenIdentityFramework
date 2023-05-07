@@ -3,8 +3,8 @@ using System.Threading.Tasks;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
-using OpenIdentityFramework.Services.Endpoints.Token.Models.TokenRequestValidator;
 using OpenIdentityFramework.Services.Endpoints.Token.Models.TokenResponseGenerator;
+using OpenIdentityFramework.Services.Endpoints.Token.Models.Validation.TokenRequestValidator;
 
 namespace OpenIdentityFramework.Services.Endpoints.Token;
 

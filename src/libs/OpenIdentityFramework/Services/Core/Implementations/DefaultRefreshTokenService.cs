@@ -3,11 +3,16 @@ using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
+using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Models;
+using OpenIdentityFramework.Models.Authentication;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
+using OpenIdentityFramework.Services.Core.Models.AccessTokenService;
 using OpenIdentityFramework.Services.Core.Models.RefreshTokenService;
+using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
+using OpenIdentityFramework.Services.Endpoints.Token.Models.Validation.TokenRequestValidator;
 using OpenIdentityFramework.Storages.Operation;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
@@ -22,76 +27,62 @@ public class DefaultRefreshTokenService<TRequestContext, TClient, TClientSecret,
     where TResourceSecret : AbstractSecret
     where TRefreshToken : AbstractRefreshToken
 {
-    public DefaultRefreshTokenService(IRefreshTokenStorage<TRequestContext, TRefreshToken> storage, ISystemClock systemClock)
+    public DefaultRefreshTokenService(
+        OpenIdentityFrameworkOptions frameworkOptions,
+        ISystemClock systemClock,
+        IRefreshTokenStorage<TRequestContext, TRefreshToken> storage)
     {
-        ArgumentNullException.ThrowIfNull(storage);
+        ArgumentNullException.ThrowIfNull(frameworkOptions);
         ArgumentNullException.ThrowIfNull(systemClock);
-        Storage = storage;
+        ArgumentNullException.ThrowIfNull(storage);
+        FrameworkOptions = frameworkOptions;
         SystemClock = systemClock;
+        Storage = storage;
     }
 
-    protected IRefreshTokenStorage<TRequestContext, TRefreshToken> Storage { get; }
+    protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
     protected ISystemClock SystemClock { get; }
+    protected IRefreshTokenStorage<TRequestContext, TRefreshToken> Storage { get; }
 
-    public async Task<RefreshTokenCreationResult> CreateAsync(
+    public virtual async Task<RefreshTokenCreationResult> CreateAsync(
         TRequestContext requestContext,
-        CreateRefreshTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken> createRequest,
+        string issuer,
+        ValidRefreshToken<TRefreshToken>? previousRefreshToken,
+        CreatedAccessToken<TClient, TClientSecret, TScope, TResource, TResourceSecret> createdAccessToken,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(createRequest);
+        ArgumentNullException.ThrowIfNull(createdAccessToken);
         cancellationToken.ThrowIfCancellationRequested();
-        string? referenceAccessTokenHandle = null;
-        if (createRequest.AccessToken.AccessTokenFormat == DefaultAccessTokenFormat.Reference)
-        {
-            referenceAccessTokenHandle = createRequest.AccessToken.Handle;
-        }
-
-        var issuedAt = DateTimeOffset.FromUnixTimeSeconds(createRequest.IssuedAt.ToUnixTimeSeconds());
-        if (!TryComputeTokenLifetime(createRequest.Client, out var lifetime))
-        {
-            return new("Unable to compute refresh token lifetime");
-        }
-
-        var expiresAt = issuedAt.Add(lifetime.Value);
-        DateTimeOffset? absoluteExpirationDate = null;
-        if (HasAbsoluteExpirationDate(createRequest.Client, expiresAt, createRequest.PreviousRefreshToken, out var possibleAbsoluteExpirationDate))
-        {
-            absoluteExpirationDate = possibleAbsoluteExpirationDate.Value;
-        }
-
-        var refreshTokenHandle = await Storage.CreateAsync(
+        var referenceAccessTokenHandle = createdAccessToken.AccessTokenFormat == DefaultAccessTokenFormat.Reference
+            ? createdAccessToken.Handle
+            : null;
+        return await CreateRefreshTokenAsync(
             requestContext,
-            createRequest.Issuer,
-            createRequest.Client.GetClientId(),
-            createRequest.AccessToken.UserAuthentication,
-            createRequest.AccessToken.RequestedResources.RawScopes,
-            createRequest.AccessToken.Claims,
+            createdAccessToken.Client,
+            createdAccessToken.ResourceOwnerProfile?.EssentialClaims,
+            createdAccessToken.GrantedResources,
+            createdAccessToken.ActualIssuedAt,
             referenceAccessTokenHandle,
-            issuedAt,
-            expiresAt,
-            absoluteExpirationDate,
+            previousRefreshToken,
             cancellationToken);
-        return new(new CreatedRefreshToken(refreshTokenHandle));
     }
-
 
     public virtual async Task<TRefreshToken?> FindAsync(
         TRequestContext requestContext,
         TClient client,
-        string issuer,
         string refreshTokenHandle,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(client);
         cancellationToken.ThrowIfCancellationRequested();
-        var clientId = client.GetClientId();
-        var refreshToken = await Storage.FindAsync(requestContext, refreshTokenHandle, issuer, clientId, cancellationToken);
+
+        var refreshToken = await Storage.FindAsync(requestContext, refreshTokenHandle, cancellationToken);
         if (refreshToken == null)
         {
             return null;
         }
 
-        if (refreshToken.GetClientId() == clientId)
+        if (refreshToken.GetClientId() == client.GetClientId())
         {
             var expiresAt = refreshToken.GetExpirationDate();
             if (SystemClock.UtcNow > expiresAt)
@@ -109,7 +100,6 @@ public class DefaultRefreshTokenService<TRequestContext, TClient, TClientSecret,
         return null;
     }
 
-
     public virtual async Task DeleteAsync(
         TRequestContext requestContext,
         string refreshTokenHandle,
@@ -117,6 +107,55 @@ public class DefaultRefreshTokenService<TRequestContext, TClient, TClientSecret,
     {
         cancellationToken.ThrowIfCancellationRequested();
         await Storage.DeleteAsync(requestContext, refreshTokenHandle, cancellationToken);
+    }
+
+    protected virtual async Task<RefreshTokenCreationResult> CreateRefreshTokenAsync(
+        TRequestContext requestContext,
+        TClient client,
+        EssentialResourceOwnerClaims? essentialClaims,
+        ValidResources<TScope, TResource, TResourceSecret> grantedResources,
+        DateTimeOffset issuedAt,
+        string? referenceAccessTokenHandle,
+        ValidRefreshToken<TRefreshToken>? previousRefreshToken,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        ArgumentNullException.ThrowIfNull(grantedResources);
+        cancellationToken.ThrowIfCancellationRequested();
+        var roundIssuedAt = DateTimeOffset.FromUnixTimeSeconds(issuedAt.ToUnixTimeSeconds());
+        if (!TryComputeTokenLifetime(client, out var lifetime))
+        {
+            return new("Unable to compute refresh token lifetime");
+        }
+
+        var roundExpiresAt = DateTimeOffset.FromUnixTimeSeconds(roundIssuedAt.Add(lifetime.Value).ToUnixTimeSeconds());
+        DateTimeOffset? absoluteExpirationDate = null;
+        if (HasAbsoluteExpirationDate(client, roundExpiresAt, previousRefreshToken, out var possibleAbsoluteExpirationDate))
+        {
+            absoluteExpirationDate = possibleAbsoluteExpirationDate.Value;
+            if (possibleAbsoluteExpirationDate.Value < roundExpiresAt)
+            {
+                roundExpiresAt = possibleAbsoluteExpirationDate.Value;
+            }
+        }
+
+        if (previousRefreshToken is not null)
+        {
+            await Storage.DeleteAsync(requestContext, previousRefreshToken.Handle, cancellationToken);
+        }
+
+        var refreshTokenHandle = await Storage.CreateAsync(
+            requestContext,
+            client.GetClientId(),
+            essentialClaims,
+            grantedResources.RawScopes,
+            referenceAccessTokenHandle,
+            previousRefreshToken?.Handle,
+            roundIssuedAt,
+            roundExpiresAt,
+            absoluteExpirationDate);
+        var createdRefreshToken = new CreatedRefreshToken(refreshTokenHandle);
+        return new(createdRefreshToken);
     }
 
     protected virtual bool TryComputeTokenLifetime(TClient client, [NotNullWhen(true)] out TimeSpan? result)
@@ -150,21 +189,21 @@ public class DefaultRefreshTokenService<TRequestContext, TClient, TClientSecret,
     protected virtual bool HasAbsoluteExpirationDate(
         TClient client,
         DateTimeOffset currentExpiresAt,
-        TRefreshToken? previousRefreshToken,
+        ValidRefreshToken<TRefreshToken>? previousRefreshToken,
         [NotNullWhen(true)] out DateTimeOffset? absoluteExpirationDate)
     {
         ArgumentNullException.ThrowIfNull(client);
         DateTimeOffset? previousAbsoluteExpirationDate;
-        if (previousRefreshToken is not null && (previousAbsoluteExpirationDate = previousRefreshToken.GetAbsoluteExpirationDate()).HasValue)
+        if (previousRefreshToken is not null && (previousAbsoluteExpirationDate = previousRefreshToken.Token.GetAbsoluteExpirationDate()).HasValue)
         {
-            absoluteExpirationDate = previousAbsoluteExpirationDate.Value;
+            absoluteExpirationDate = DateTimeOffset.FromUnixTimeSeconds(previousAbsoluteExpirationDate.Value.ToUnixTimeSeconds());
             return true;
         }
 
         var expirationType = client.GetRefreshTokenExpirationType();
         if (expirationType == DefaultRefreshTokenExpirationType.Absolute)
         {
-            absoluteExpirationDate = currentExpiresAt;
+            absoluteExpirationDate = DateTimeOffset.FromUnixTimeSeconds(currentExpiresAt.ToUnixTimeSeconds());
             return true;
         }
 

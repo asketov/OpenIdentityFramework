@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Configuration.Options;
-using OpenIdentityFramework.Constants.Response.Token;
+using OpenIdentityFramework.Constants.Response;
+using OpenIdentityFramework.Constants.Response.Errors;
 using OpenIdentityFramework.Extensions;
 using OpenIdentityFramework.Models;
 
@@ -40,7 +42,7 @@ public class DefaultTokenErrorResult : IEndpointHandlerResult
 
     protected virtual int GetStatusCode()
     {
-        if (ProtocolError.Error == Errors.InvalidClient)
+        if (ProtocolError.Error == TokenErrors.InvalidClient)
         {
             return 401;
         }
@@ -48,6 +50,7 @@ public class DefaultTokenErrorResult : IEndpointHandlerResult
         return 400;
     }
 
+    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
     protected class ResponseDto
     {
         public ResponseDto(string error, string? errorDescription, string issuer)
@@ -57,15 +60,15 @@ public class DefaultTokenErrorResult : IEndpointHandlerResult
             Issuer = issuer;
         }
 
-        [JsonPropertyName(ResponseParameters.Error)]
+        [JsonPropertyName(TokenResponseParameters.Error)]
         [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         public string Error { get; }
 
-        [JsonPropertyName(ResponseParameters.ErrorDescription)]
+        [JsonPropertyName(TokenResponseParameters.ErrorDescription)]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? ErrorDescription { get; }
 
-        [JsonPropertyName(ResponseParameters.Issuer)]
+        [JsonPropertyName(TokenResponseParameters.Issuer)]
         [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         public string Issuer { get; }
     }

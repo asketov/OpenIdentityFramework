@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Constants;
-using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core;
@@ -56,7 +56,7 @@ public class DefaultAuthorizeRequestParameterScopeValidator<TRequestContext, TCl
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
         string scopeParameterValue;
-        if (!parameters.Raw.TryGetValue(RequestParameters.Scope, out var scopeValues)
+        if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.Scope, out var scopeValues)
             || scopeValues.Count == 0
             || string.IsNullOrEmpty(scopeParameterValue = scopeValues.ToString()))
         {
@@ -66,7 +66,7 @@ public class DefaultAuthorizeRequestParameterScopeValidator<TRequestContext, TCl
                     requestContext,
                     client,
                     client.GetAllowedScopes(),
-                    DefaultTokenTypes.OAuth,
+                    DefaultTokenTypeFilters.AccessToken,
                     cancellationToken);
                 if (defaultScopesValidation.HasError)
                 {
@@ -119,13 +119,13 @@ public class DefaultAuthorizeRequestParameterScopeValidator<TRequestContext, TCl
             }
         }
 
-        var allowedTokenTypes = DefaultTokenTypes.OAuth;
+        var tokenTypeFilter = DefaultTokenTypeFilters.AccessToken;
         if (parameters.IsOpenIdRequest)
         {
-            allowedTokenTypes = DefaultTokenTypes.OpenIdConnect;
+            tokenTypeFilter = DefaultTokenTypeFilters.IdTokenAccessToken;
         }
 
-        var requestedScopesValidation = await ResourceValidator.ValidateRequestedScopesAsync(requestContext, client, requestedScopes, allowedTokenTypes, cancellationToken);
+        var requestedScopesValidation = await ResourceValidator.ValidateRequestedScopesAsync(requestContext, client, requestedScopes, tokenTypeFilter, cancellationToken);
         if (requestedScopesValidation.HasError)
         {
             if (requestedScopesValidation.Error.HasConfigurationError)

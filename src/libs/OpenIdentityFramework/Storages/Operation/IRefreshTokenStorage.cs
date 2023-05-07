@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Models;
+using OpenIdentityFramework.Models.Authentication;
 using OpenIdentityFramework.Models.Operation;
-using OpenIdentityFramework.Services.Core.Models.UserAuthenticationTicketService;
 
 namespace OpenIdentityFramework.Storages.Operation;
 
@@ -14,22 +14,18 @@ public interface IRefreshTokenStorage<TRequestContext, TRefreshToken>
 {
     Task<string> CreateAsync(
         TRequestContext requestContext,
-        string issuer,
         string clientId,
-        UserAuthentication? userAuthentication,
+        EssentialResourceOwnerClaims? essentialResourceOwnerClaims,
         IReadOnlySet<string> grantedScopes,
-        IReadOnlySet<LightweightClaim> claims,
-        string? accessTokenHandle,
+        string? referenceAccessTokenHandle,
+        string? parentRefreshTokenHandle,
         DateTimeOffset issuedAt,
         DateTimeOffset expiresAt,
-        DateTimeOffset? absoluteExpirationDate,
-        CancellationToken cancellationToken);
+        DateTimeOffset? absoluteExpiresAt);
 
     Task<TRefreshToken?> FindAsync(
         TRequestContext requestContext,
         string refreshTokenHandle,
-        string issuer,
-        string clientId,
         CancellationToken cancellationToken);
 
     Task DeleteAsync(

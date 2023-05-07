@@ -16,6 +16,7 @@ public interface IAuthorizeRequestParametersStorage<TRequestContext, TAuthorizeR
         TRequestContext requestContext,
         DateTimeOffset initialRequestDate,
         IReadOnlyDictionary<string, StringValues> parameters,
+        DateTimeOffset createdAt,
         DateTimeOffset? expiresAt,
         CancellationToken cancellationToken);
 

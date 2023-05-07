@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
@@ -25,7 +25,7 @@ public class DefaultAuthorizeRequestOidcParameterRequestUriValidator<TRequestCon
         ArgumentNullException.ThrowIfNull(parameters);
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.6.2
         // Should an OP not support this parameter and an RP uses it, the OP MUST return the request_uri_not_supported error.
-        if (!parameters.Raw.TryGetValue(RequestParameters.RequestUri, out var requestUriValues) || requestUriValues.Count == 0)
+        if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.RequestUri, out var requestUriValues) || requestUriValues.Count == 0)
         {
             return Task.FromResult(AuthorizeRequestOidcParameterRequestUriValidationResult.Null);
         }

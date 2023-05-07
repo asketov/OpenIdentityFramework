@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Constants;
+using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
@@ -29,7 +30,7 @@ public class DefaultAuthorizeRequestParameterResponseModeValidator<TRequestConte
         // "response_mode" - OPTIONAL (OAuth 2.0, OpenID Connect 1.0).
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
-        if (!parameters.Raw.TryGetValue(RequestParameters.ResponseMode, out var responseModeValues) || responseModeValues.Count == 0)
+        if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.ResponseMode, out var responseModeValues) || responseModeValues.Count == 0)
         {
             return Task.FromResult(InferResponseMode(responseType));
         }
@@ -54,7 +55,7 @@ public class DefaultAuthorizeRequestParameterResponseModeValidator<TRequestConte
 
     protected virtual AuthorizeRequestParameterResponseModeValidationResult InferResponseMode(string responseType)
     {
-        if (ResponseType.ToResponseMode.TryGetValue(responseType, out var inferredResponseMode))
+        if (DefaultResponseType.ToResponseMode.TryGetValue(responseType, out var inferredResponseMode))
         {
             return ResponseModeToResult(inferredResponseMode);
         }
@@ -66,17 +67,17 @@ public class DefaultAuthorizeRequestParameterResponseModeValidator<TRequestConte
     {
         // https://openid.net/specs/oauth-v2-multiple-response-types-1_0.html#rfc.section.2.1
         // https://openid.net/specs/oauth-v2-form-post-response-mode-1_0.html#rfc.section.2
-        if (responseMode == ResponseMode.Fragment)
+        if (responseMode == DefaultResponseMode.Fragment)
         {
             return AuthorizeRequestParameterResponseModeValidationResult.Fragment;
         }
 
-        if (responseMode == ResponseMode.Query)
+        if (responseMode == DefaultResponseMode.Query)
         {
             return AuthorizeRequestParameterResponseModeValidationResult.Query;
         }
 
-        if (responseMode == ResponseMode.FormPost)
+        if (responseMode == DefaultResponseMode.FormPost)
         {
             return AuthorizeRequestParameterResponseModeValidationResult.FormPost;
         }

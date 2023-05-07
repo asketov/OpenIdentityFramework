@@ -1,6 +1,9 @@
-﻿using System.Threading;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Models;
+using OpenIdentityFramework.Models.Authentication;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizationCodeService;
@@ -13,9 +16,15 @@ public interface IAuthorizationCodeService<TRequestContext, TClient, TClientSecr
     where TClientSecret : AbstractSecret
     where TAuthorizationCode : AbstractAuthorizationCode
 {
-    Task<string> CreateAsync(
+    Task<AuthorizationCodeCreationResult> CreateAsync(
         TRequestContext requestContext,
-        CreateAuthorizationCodeRequest<TClient, TClientSecret> createRequest,
+        TClient client,
+        EssentialResourceOwnerClaims essentialClaims,
+        IReadOnlySet<string> grantedScopes,
+        string? authorizeRequestRedirectUri,
+        string codeChallenge,
+        string codeChallengeMethod,
+        DateTimeOffset issuedAt,
         CancellationToken cancellationToken);
 
     Task<TAuthorizationCode?> FindAsync(

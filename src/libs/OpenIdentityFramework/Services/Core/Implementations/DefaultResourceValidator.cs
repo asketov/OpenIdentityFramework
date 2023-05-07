@@ -32,12 +32,12 @@ public class DefaultResourceValidator<TRequestContext, TClient, TClientSecret, T
         TRequestContext requestContext,
         TClient client,
         IReadOnlySet<string> requestedScopes,
-        IReadOnlySet<string> allowedTokenTypesForScopes,
+        IReadOnlySet<string> tokenTypesFilter,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(requestedScopes);
-        ArgumentNullException.ThrowIfNull(allowedTokenTypesForScopes);
+        ArgumentNullException.ThrowIfNull(tokenTypesFilter);
         cancellationToken.ThrowIfCancellationRequested();
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.2.2.1
@@ -98,7 +98,7 @@ public class DefaultResourceValidator<TRequestContext, TClient, TClientSecret, T
             }
 
             var scopeTokenType = scope.GetScopeTokenType();
-            if (!allowedTokenTypesForScopes.Contains(scopeTokenType))
+            if (!tokenTypesFilter.Contains(scopeTokenType))
             {
                 disallowedScopes.Add(scopeName);
             }

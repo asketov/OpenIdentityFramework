@@ -33,7 +33,6 @@ public class DefaultAuthorizeRequestParametersService<TRequestContext, TAuthoriz
     protected IAuthorizeRequestParametersStorage<TRequestContext, TAuthorizeRequestParameters> Storage { get; }
     protected ISystemClock SystemClock { get; }
 
-
     public virtual async Task<string> SaveAsync(
         TRequestContext requestContext,
         DateTimeOffset initialRequestDate,
@@ -47,7 +46,8 @@ public class DefaultAuthorizeRequestParametersService<TRequestContext, TAuthoriz
             expiresAt = initialRequestDate.Add(FrameworkOptions.Endpoints.Authorize.AuthorizeRequestLifetime.Value);
         }
 
-        return await Storage.SaveAsync(requestContext, initialRequestDate, parameters, expiresAt, cancellationToken);
+        var createdAt = DateTimeOffset.FromUnixTimeSeconds(SystemClock.UtcNow.ToUnixTimeSeconds());
+        return await Storage.SaveAsync(requestContext, initialRequestDate, parameters, createdAt, expiresAt, cancellationToken);
     }
 
     public virtual async Task<TAuthorizeRequestParameters?> ReadAsync(

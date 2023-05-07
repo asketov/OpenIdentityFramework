@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Configuration.Options;
-using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
@@ -50,7 +50,7 @@ public class DefaultAuthorizeRequestParameterRedirectUriValidator<TRequestContex
         // "redirect_uri" - OPTIONAL
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.1
         // "redirect_uri" - REQUIRED.
-        if (!parameters.Raw.TryGetValue(RequestParameters.RedirectUri, out var redirectUriValues) || redirectUriValues.Count == 0)
+        if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.RedirectUri, out var redirectUriValues) || redirectUriValues.Count == 0)
         {
             return Task.FromResult(InferRedirectUri(parameters.IsOpenIdRequest, preRegisteredRedirectUris));
         }

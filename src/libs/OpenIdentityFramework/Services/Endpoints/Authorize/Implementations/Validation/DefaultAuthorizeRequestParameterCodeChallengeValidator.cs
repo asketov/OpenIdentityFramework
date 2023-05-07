@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Configuration.Options;
+using OpenIdentityFramework.Constants;
+using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Validation;
+using OpenIdentityFramework.Services.Static.Cryptography;
 using OpenIdentityFramework.Services.Static.SyntaxValidation;
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations.Validation;
@@ -16,6 +19,14 @@ public class DefaultAuthorizeRequestParameterCodeChallengeValidator<TRequestCont
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {
+    public DefaultAuthorizeRequestParameterCodeChallengeValidator(OpenIdentityFrameworkOptions frameworkOptions)
+    {
+        ArgumentNullException.ThrowIfNull(frameworkOptions);
+        FrameworkOptions = frameworkOptions;
+    }
+
+    protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
+
     public virtual Task<AuthorizeRequestParameterCodeChallengeValidationResult> ValidateCodeChallengeParameterAsync(
         TRequestContext requestContext,
         AuthorizeRequestParametersToValidate parameters,
@@ -33,7 +44,7 @@ public class DefaultAuthorizeRequestParameterCodeChallengeValidator<TRequestCont
         // In this case, using and enforcing code_challenge and code_verifier is still RECOMMENDED.
         // ------
         // In current implementation "code_challenge" is required.
-        if (!parameters.Raw.TryGetValue(RequestParameters.CodeChallenge, out var codeChallengeValues) || codeChallengeValues.Count == 0)
+        if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.CodeChallenge, out var codeChallengeValues) || codeChallengeValues.Count == 0)
         {
             return Task.FromResult(AuthorizeRequestParameterCodeChallengeValidationResult.CodeChallengeIsMissing);
         }
@@ -54,24 +65,27 @@ public class DefaultAuthorizeRequestParameterCodeChallengeValidator<TRequestCont
         }
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.18
-        if (codeChallenge.Length < 43)
-        {
-            return Task.FromResult(AuthorizeRequestParameterCodeChallengeValidationResult.CodeChallengeIsTooShort);
-        }
-
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.18
-        if (codeChallenge.Length > 128)
-        {
-            return Task.FromResult(AuthorizeRequestParameterCodeChallengeValidationResult.CodeChallengeIsTooLong);
-        }
-
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.18
         if (!CodeChallengeSyntaxValidator.IsValid(codeChallenge))
         {
             return Task.FromResult(AuthorizeRequestParameterCodeChallengeValidationResult.InvalidCodeChallengeSyntax);
         }
 
-        if (codeChallengeMethod == CodeChallengeMethod.S256 && !HexValidator.IsValid(codeChallenge))
+        if (codeChallengeMethod == DefaultCodeChallengeMethod.Plain)
+        {
+            // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.18
+            if (codeChallenge.Length < FrameworkOptions.InputLengthRestrictions.CodeChallengeMinLength)
+            {
+                return Task.FromResult(AuthorizeRequestParameterCodeChallengeValidationResult.CodeChallengeIsTooShort);
+            }
+
+            // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.18
+            if (codeChallenge.Length > FrameworkOptions.InputLengthRestrictions.CodeChallengeMaxLength)
+            {
+                return Task.FromResult(AuthorizeRequestParameterCodeChallengeValidationResult.CodeChallengeIsTooLong);
+            }
+        }
+
+        if (codeChallengeMethod == DefaultCodeChallengeMethod.S256 && (!HexValidator.IsValid(codeChallenge) || codeChallenge.Length != Sha256Hasher.Sha256HexCharsCount))
         {
             return Task.FromResult(AuthorizeRequestParameterCodeChallengeValidationResult.InvalidCodeChallengeSyntax);
         }

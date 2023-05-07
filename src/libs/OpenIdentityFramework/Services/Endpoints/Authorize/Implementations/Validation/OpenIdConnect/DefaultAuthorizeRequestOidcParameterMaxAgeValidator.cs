@@ -2,7 +2,7 @@
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
-using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
@@ -30,7 +30,7 @@ public class DefaultAuthorizeRequestOidcParameterMaxAgeValidator<TRequestContext
         // Specifies the allowable elapsed time in seconds since the last time the End-User was actively authenticated by the OP.
         // If the elapsed time is greater than this value, the OP MUST attempt to actively re-authenticate the End-User.
         // When max_age is used, the ID Token returned MUST include an auth_time Claim Value.
-        if (!parameters.Raw.TryGetValue(RequestParameters.MaxAge, out var maxAgeValues) || maxAgeValues.Count == 0)
+        if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.MaxAge, out var maxAgeValues) || maxAgeValues.Count == 0)
         {
             return Task.FromResult(AuthorizeRequestOidcParameterMaxAgeValidationResult.Null);
         }

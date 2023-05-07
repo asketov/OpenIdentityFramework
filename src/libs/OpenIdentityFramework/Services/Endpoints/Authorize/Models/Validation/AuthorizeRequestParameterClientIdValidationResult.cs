@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
-using OpenIdentityFramework.Constants.Response.Authorize;
+using OpenIdentityFramework.Constants.Response.Errors;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 
@@ -11,23 +11,23 @@ public class AuthorizeRequestParameterClientIdValidationResult<TClient, TClientS
     where TClientSecret : AbstractSecret
 {
     public static readonly AuthorizeRequestParameterClientIdValidationResult<TClient, TClientSecret> ClientIdIsMissing = new(new ProtocolError(
-        Errors.InvalidRequest,
+        AuthorizeErrors.InvalidRequest,
         "\"client_id\" is missing"));
 
     public static readonly AuthorizeRequestParameterClientIdValidationResult<TClient, TClientSecret> MultipleClientIdValuesNotAllowed = new(new ProtocolError(
-        Errors.InvalidRequest,
+        AuthorizeErrors.InvalidRequest,
         "Multiple \"client_id\" values are present, but only one is allowed"));
 
     public static readonly AuthorizeRequestParameterClientIdValidationResult<TClient, TClientSecret> ClientIdIsTooLong = new(new ProtocolError(
-        Errors.InvalidRequest,
+        AuthorizeErrors.InvalidRequest,
         "\"client_id\" is too long"));
 
     public static readonly AuthorizeRequestParameterClientIdValidationResult<TClient, TClientSecret> InvalidClientIdSyntax = new(new ProtocolError(
-        Errors.InvalidRequest,
+        AuthorizeErrors.InvalidRequest,
         "Invalid \"client_id\" syntax"));
 
     public static readonly AuthorizeRequestParameterClientIdValidationResult<TClient, TClientSecret> UnknownOrDisabledClient = new(new ProtocolError(
-        Errors.UnauthorizedClient,
+        AuthorizeErrors.UnauthorizedClient,
         "Unknown or disabled client"));
 
     public AuthorizeRequestParameterClientIdValidationResult(ProtocolError error)

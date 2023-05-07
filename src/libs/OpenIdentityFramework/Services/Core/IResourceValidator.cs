@@ -19,6 +19,6 @@ public interface IResourceValidator<TRequestContext, TClient, TClientSecret, TSc
         TRequestContext requestContext,
         TClient client,
         IReadOnlySet<string> requestedScopes,
-        IReadOnlySet<string> allowedTokenTypesForScopes,
+        IReadOnlySet<string> tokenTypesFilter,
         CancellationToken cancellationToken);
 }

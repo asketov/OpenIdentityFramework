@@ -17,8 +17,10 @@ public abstract class AbstractClient<TClientSecret>
     public abstract bool CanRememberConsent();
     public abstract TimeSpan? GetConsentLifetime();
     public abstract TimeSpan GetAuthorizationCodeLifetime();
-    public abstract bool ShouldAlwaysIncludeUserClaimsInIdToken();
+    public abstract bool ShouldIncludeUserClaimsInIdTokenAuthorizeResponse();
+    public abstract bool ShouldIncludeUserClaimsInIdTokenTokenResponse();
     public abstract IReadOnlySet<string> GetAllowedIdTokenSigningAlgorithms();
+    public abstract IReadOnlySet<string> GetAllowedAccessTokenSigningAlgorithms();
     public abstract TimeSpan GetIdTokenLifetime();
     public abstract string GetAuthenticationMethod();
     public abstract IReadOnlyCollection<TClientSecret> GetSecrets();

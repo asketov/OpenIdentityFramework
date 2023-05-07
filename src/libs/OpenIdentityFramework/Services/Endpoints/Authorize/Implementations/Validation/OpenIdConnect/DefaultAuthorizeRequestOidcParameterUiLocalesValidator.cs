@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Configuration.Options;
-using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
@@ -39,7 +39,7 @@ public class DefaultAuthorizeRequestOidcParameterUiLocalesValidator<TRequestCont
         // For instance, the value "fr-CA fr en" represents a preference for French as spoken in Canada,
         // then French (without a region designation), followed by English (without a region designation).
         // An error SHOULD NOT result if some or all of the requested locales are not supported by the OpenID Provider.
-        if (!parameters.Raw.TryGetValue(RequestParameters.UiLocales, out var uiLocaleValues) || uiLocaleValues.Count == 0)
+        if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.UiLocales, out var uiLocaleValues) || uiLocaleValues.Count == 0)
         {
             return Task.FromResult(AuthorizeRequestOidcParameterUiLocalesValidationResult.Null);
         }

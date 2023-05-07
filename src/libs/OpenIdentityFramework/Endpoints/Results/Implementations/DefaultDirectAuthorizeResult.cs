@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 using OpenIdentityFramework.Configuration.Options;
+using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Extensions;
 
 namespace OpenIdentityFramework.Endpoints.Results.Implementations;
@@ -43,20 +44,20 @@ public class DefaultDirectAuthorizeResult : IEndpointHandlerResult
     {
         ArgumentNullException.ThrowIfNull(httpContext);
         cancellationToken.ThrowIfCancellationRequested();
-        if (ResponseMode == Constants.Request.Authorize.ResponseMode.Query)
+        if (ResponseMode == DefaultResponseMode.Query)
         {
             HandleQueryResponse(httpContext, cancellationToken);
             return;
         }
 
-        if (ResponseMode == Constants.Request.Authorize.ResponseMode.FormPost)
+        if (ResponseMode == DefaultResponseMode.FormPost)
         {
             await HandlePostResponseAsync(httpContext, cancellationToken);
             return;
         }
 
         throw new InvalidOperationException(
-            $"Unexpected response mode. Expected values are: {Constants.Request.Authorize.ResponseMode.Query}, {Constants.Request.Authorize.ResponseMode.FormPost}, but actual was: {ResponseMode}");
+            $"Unexpected response mode. Expected values are: {DefaultResponseMode.Query}, {DefaultResponseMode.FormPost}, but actual was: {ResponseMode}");
     }
 
     protected virtual void HandleQueryResponse(HttpContext httpContext, CancellationToken cancellationToken)

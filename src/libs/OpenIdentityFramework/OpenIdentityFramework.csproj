@@ -25,4 +25,8 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.29.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Services\Endpoints\Token\Validation\Flows\" />
+  </ItemGroup>
+
 </Project>

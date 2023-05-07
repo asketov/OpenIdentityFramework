@@ -11,7 +11,6 @@ public interface IKeyMaterialStorage<TRequestContext>
 {
     Task<IReadOnlyCollection<SigningCredentials>> FindAsync(
         TRequestContext requestContext,
-        string issuer,
         IReadOnlySet<string>? allowedSigningAlgorithms,
         CancellationToken cancellationToken);
 }

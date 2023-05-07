@@ -8,6 +8,7 @@ namespace OpenIdentityFramework.Services.Static.Cryptography;
 public static class Sha256Hasher
 {
     public const int Sha256BytesCount = 256 / 8;
+    public const int Sha256HexCharsCount = Sha256BytesCount * 2;
 
     public static void ComputeSha256(ReadOnlySpan<char> rawValue, Span<byte> output)
     {

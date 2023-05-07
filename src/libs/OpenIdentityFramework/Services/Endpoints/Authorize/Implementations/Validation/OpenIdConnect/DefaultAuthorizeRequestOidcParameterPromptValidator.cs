@@ -2,7 +2,8 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Constants;
+using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
@@ -28,7 +29,7 @@ public class DefaultAuthorizeRequestOidcParameterPromptValidator<TRequestContext
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.1
         // "prompt" - OPTIONAL. Space delimited, case sensitive list of ASCII string values
         // that specifies whether the Authorization Server prompts the End-User for re-authentication and consent.
-        if (!parameters.Raw.TryGetValue(RequestParameters.Prompt, out var promptValues) || promptValues.Count == 0)
+        if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.Prompt, out var promptValues) || promptValues.Count == 0)
         {
             return Task.FromResult(AuthorizeRequestOidcParameterPromptValidationResult.Null);
         }
@@ -57,7 +58,7 @@ public class DefaultAuthorizeRequestOidcParameterPromptValidator<TRequestContext
         // syntax validation
         foreach (var requestedPrompt in requestedPrompts)
         {
-            if (string.IsNullOrWhiteSpace(requestedPrompt) || (prompt != Prompt.None && prompt != Prompt.Login && prompt != Prompt.Consent && prompt != Prompt.SelectAccount))
+            if (string.IsNullOrWhiteSpace(requestedPrompt) || (prompt != DefaultPrompt.None && prompt != DefaultPrompt.Login && prompt != DefaultPrompt.Consent && prompt != DefaultPrompt.SelectAccount))
             {
                 return Task.FromResult(AuthorizeRequestOidcParameterPromptValidationResult.UnsupportedPrompt);
             }
@@ -65,7 +66,7 @@ public class DefaultAuthorizeRequestOidcParameterPromptValidator<TRequestContext
 
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.1
         // If this parameter contains "none" with any other value, an error is returned.
-        if (requestedPrompts.Contains(Prompt.None) && requestedPrompts.Count > 1)
+        if (requestedPrompts.Contains(DefaultPrompt.None) && requestedPrompts.Count > 1)
         {
             return Task.FromResult(AuthorizeRequestOidcParameterPromptValidationResult.UnsupportedPrompt);
         }

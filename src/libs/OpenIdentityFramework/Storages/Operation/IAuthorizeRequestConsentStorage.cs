@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Models;
+using OpenIdentityFramework.Models.Authentication;
 using OpenIdentityFramework.Models.Operation;
 
 namespace OpenIdentityFramework.Storages.Operation;
@@ -23,15 +24,19 @@ public interface IAuthorizeRequestConsentStorage<TRequestContext, TRequestConsen
 
     Task GrantAsync(
         TRequestContext requestContext,
+        ResourceOwnerIdentifiers resourceOwnerIdentifiers,
         string authorizeRequestId,
         IReadOnlySet<string> grantedScopes,
         bool remember,
-        DateTimeOffset? expiresAt,
+        DateTimeOffset issuedAt,
+        DateTimeOffset expiresAt,
         CancellationToken cancellationToken);
 
     Task DenyAsync(
         TRequestContext requestContext,
+        ResourceOwnerIdentifiers resourceOwnerIdentifiers,
         string authorizeRequestId,
-        DateTimeOffset? expiresAt,
+        DateTimeOffset issuedAt,
+        DateTimeOffset expiresAt,
         CancellationToken cancellationToken);
 }

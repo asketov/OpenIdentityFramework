@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using OpenIdentityFramework.Constants.Request.Authorize;
+using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
@@ -26,7 +26,7 @@ public class DefaultAuthorizeRequestOidcParameterRegistrationValidator<TRequestC
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.6
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.7.2.1
         // registration_not_supported - The OP does not support use of the registration parameter defined in Section 7.2.1.
-        if (!parameters.Raw.TryGetValue(RequestParameters.Registration, out var registrationValues) || registrationValues.Count == 0)
+        if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.Registration, out var registrationValues) || registrationValues.Count == 0)
         {
             return Task.FromResult(AuthorizeRequestOidcParameterRegistrationValidationResult.Null);
         }

@@ -15,7 +15,7 @@ using OpenIdentityFramework.Services.Endpoints.Token.Validation.Flows.RefreshTok
 
 namespace OpenIdentityFramework.Services.Endpoints.Token.Implementations.Validation.Flows.RefreshToken;
 
-public class DefaultTokenRequestRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken>
+public class DefaultTokenRequestRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken, TGrantedConsent>
     : ITokenRequestRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken>
     where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
@@ -24,6 +24,7 @@ public class DefaultTokenRequestRefreshTokenValidator<TRequestContext, TClient, 
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
     where TRefreshToken : AbstractRefreshToken
+    where TGrantedConsent : AbstractGrantedConsent
 {
     protected static readonly TokenRequestRefreshTokenValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken> UnauthorizedClient =
         new(new ProtocolError(TokenErrors.UnauthorizedClient, "The authenticated client is not authorized to use this authorization grant type"));
@@ -34,19 +35,23 @@ public class DefaultTokenRequestRefreshTokenValidator<TRequestContext, TClient, 
     public DefaultTokenRequestRefreshTokenValidator(
         ITokenRequestRefreshTokenParameterRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TRefreshToken> refreshTokenValidator,
         ITokenRequestCommonParameterScopeValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> scopeValidator,
-        IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret> resourceOwnerProfile)
+        IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret> resourceOwnerProfile,
+        IGrantedConsentService<TRequestContext, TClient, TClientSecret, TGrantedConsent> grantedConsents)
     {
         ArgumentNullException.ThrowIfNull(refreshTokenValidator);
         ArgumentNullException.ThrowIfNull(scopeValidator);
         ArgumentNullException.ThrowIfNull(resourceOwnerProfile);
+        ArgumentNullException.ThrowIfNull(grantedConsents);
         RefreshTokenValidator = refreshTokenValidator;
         ScopeValidator = scopeValidator;
         ResourceOwnerProfile = resourceOwnerProfile;
+        GrantedConsents = grantedConsents;
     }
 
     protected ITokenRequestRefreshTokenParameterRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TRefreshToken> RefreshTokenValidator { get; }
     protected ITokenRequestCommonParameterScopeValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> ScopeValidator { get; }
     protected IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret> ResourceOwnerProfile { get; }
+    protected IGrantedConsentService<TRequestContext, TClient, TClientSecret, TGrantedConsent> GrantedConsents { get; }
 
     public virtual async Task<TokenRequestRefreshTokenValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken>> ValidateAsync(
         TRequestContext requestContext,
@@ -67,6 +72,17 @@ public class DefaultTokenRequestRefreshTokenValidator<TRequestContext, TClient, 
         }
 
         var refreshTokenScopes = refreshTokenValidation.RefreshToken.GetGrantedScopes();
+        var grantedConsent = await GrantedConsents.FindAsync(
+            requestContext,
+            refreshTokenValidation.RefreshToken.GetEssentialResourceOwnerClaims().Identifiers.SubjectId,
+            client,
+            cancellationToken);
+
+        if (grantedConsent == null || !grantedConsent.GetGrantedScopes().IsSupersetOf(refreshTokenScopes))
+        {
+            return UnauthorizedClient;
+        }
+
         var scopeValidation = await ScopeValidator.ValidateScopeAsync(requestContext, form, client, refreshTokenScopes, cancellationToken);
         if (scopeValidation.HasError)
         {

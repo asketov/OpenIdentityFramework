@@ -15,7 +15,7 @@ using OpenIdentityFramework.Services.Endpoints.Token.Validation.Flows.Authorizat
 
 namespace OpenIdentityFramework.Services.Endpoints.Token.Implementations.Validation.Flows.AuthorizationCode;
 
-public class DefaultTokenRequestAuthorizationCodeValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode>
+public class DefaultTokenRequestAuthorizationCodeValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TGrantedConsent>
     : ITokenRequestAuthorizationCodeValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode>
     where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
@@ -24,6 +24,7 @@ public class DefaultTokenRequestAuthorizationCodeValidator<TRequestContext, TCli
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
     where TAuthorizationCode : AbstractAuthorizationCode
+    where TGrantedConsent : AbstractGrantedConsent
 {
     protected static readonly TokenRequestAuthorizationCodeValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode> UnauthorizedClient =
         new(new ProtocolError(TokenErrors.UnauthorizedClient, "The authenticated client is not authorized to use this authorization grant type"));
@@ -35,24 +36,26 @@ public class DefaultTokenRequestAuthorizationCodeValidator<TRequestContext, TCli
     protected static readonly TokenRequestAuthorizationCodeValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode> DisabledUser =
         new(new ProtocolError(TokenErrors.InvalidGrant, "User account for provided authorization code has been disabled"));
 
-
     public DefaultTokenRequestAuthorizationCodeValidator(
         ITokenRequestAuthorizationCodeParameterCodeValidator<TRequestContext, TClient, TClientSecret, TAuthorizationCode> codeValidator,
         ITokenRequestAuthorizationCodeParameterCodeVerifierValidator<TRequestContext, TClient, TClientSecret, TAuthorizationCode> codeVerifierValidator,
         ITokenRequestAuthorizationCodeParameterRedirectUriValidator<TRequestContext, TClient, TClientSecret, TAuthorizationCode> redirectUriValidator,
         ITokenRequestCommonParameterScopeValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> scopeValidator,
-        IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret> resourceOwnerProfile)
+        IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret> resourceOwnerProfile,
+        IGrantedConsentService<TRequestContext, TClient, TClientSecret, TGrantedConsent> grantedConsents)
     {
         ArgumentNullException.ThrowIfNull(codeValidator);
         ArgumentNullException.ThrowIfNull(codeVerifierValidator);
         ArgumentNullException.ThrowIfNull(redirectUriValidator);
         ArgumentNullException.ThrowIfNull(scopeValidator);
         ArgumentNullException.ThrowIfNull(resourceOwnerProfile);
+        ArgumentNullException.ThrowIfNull(grantedConsents);
         CodeValidator = codeValidator;
         CodeVerifierValidator = codeVerifierValidator;
         RedirectUriValidator = redirectUriValidator;
         ScopeValidator = scopeValidator;
         ResourceOwnerProfile = resourceOwnerProfile;
+        GrantedConsents = grantedConsents;
     }
 
     protected ITokenRequestAuthorizationCodeParameterCodeValidator<TRequestContext, TClient, TClientSecret, TAuthorizationCode> CodeValidator { get; }
@@ -60,6 +63,7 @@ public class DefaultTokenRequestAuthorizationCodeValidator<TRequestContext, TCli
     protected ITokenRequestAuthorizationCodeParameterRedirectUriValidator<TRequestContext, TClient, TClientSecret, TAuthorizationCode> RedirectUriValidator { get; }
     protected ITokenRequestCommonParameterScopeValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> ScopeValidator { get; }
     protected IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret> ResourceOwnerProfile { get; }
+    protected IGrantedConsentService<TRequestContext, TClient, TClientSecret, TGrantedConsent> GrantedConsents { get; }
 
     public virtual async Task<TokenRequestAuthorizationCodeValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode>> ValidateAsync(
         TRequestContext requestContext,
@@ -98,7 +102,19 @@ public class DefaultTokenRequestAuthorizationCodeValidator<TRequestContext, TCli
             return new(redirectUriValidation.Error);
         }
 
-        var scopeValidation = await ScopeValidator.ValidateScopeAsync(requestContext, form, client, codeValidation.AuthorizationCode.GetGrantedScopes(), cancellationToken);
+        var codeScopes = codeValidation.AuthorizationCode.GetGrantedScopes();
+        var grantedConsent = await GrantedConsents.FindAsync(
+            requestContext,
+            codeValidation.AuthorizationCode.GetEssentialResourceOwnerClaims().Identifiers.SubjectId,
+            client,
+            cancellationToken);
+
+        if (grantedConsent == null || !grantedConsent.GetGrantedScopes().IsSupersetOf(codeScopes))
+        {
+            return UnauthorizedClient;
+        }
+
+        var scopeValidation = await ScopeValidator.ValidateScopeAsync(requestContext, form, client, codeScopes, cancellationToken);
         if (scopeValidation.HasError)
         {
             return new(scopeValidation.Error);

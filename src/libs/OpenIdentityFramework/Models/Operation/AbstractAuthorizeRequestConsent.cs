@@ -1,17 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using OpenIdentityFramework.Models.Authentication;
+using OpenIdentityFramework.Models.Operation.AuthorizeRequestConsent;
 
 namespace OpenIdentityFramework.Models.Operation;
 
 public abstract class AbstractAuthorizeRequestConsent
 {
-    public abstract ResourceOwnerIdentifiers GetResourceOwnerIdentifiers();
+    public abstract ResourceOwnerIdentifiers GetAuthorIdentifiers();
 
-    public abstract bool HasGranted(
-        [NotNullWhen(false)] out ProtocolError? error,
-        [NotNullWhen(true)] out (IReadOnlySet<string> AllowedScopes, bool Remember)? consent);
+    public abstract bool TryGetGrantedConsent(
+        [NotNullWhen(true)] out AuthorizeRequestConsentGranted? grantedConsent,
+        [NotNullWhen(false)] out AuthorizeRequestConsentDenied? deniedConsent);
 
-    public abstract DateTimeOffset? GetExpirationDate();
+    public abstract DateTimeOffset GetCreationDate();
+    public abstract DateTimeOffset GetExpirationDate();
 }

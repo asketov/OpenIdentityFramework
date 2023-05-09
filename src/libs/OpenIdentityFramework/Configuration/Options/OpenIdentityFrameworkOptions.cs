@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 
 namespace OpenIdentityFramework.Configuration.Options;
 
@@ -22,6 +21,4 @@ public class OpenIdentityFrameworkOptions
 
     public bool EmitStaticAudienceClaim { get; set; }
     public string AccessTokenJwtType { get; set; } = "at+jwt";
-
-    public TimeSpan UserConsentApprovalLifetime { get; set; }
 }

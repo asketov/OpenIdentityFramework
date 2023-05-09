@@ -25,4 +25,10 @@ public interface IGrantedConsentService<TRequestContext, TClient, TClientSecret,
         TClient client,
         IReadOnlySet<string> grantedScopes,
         CancellationToken cancellationToken);
+
+    Task DeleteAsync(
+        TRequestContext requestContext,
+        string subjectId,
+        TClient client,
+        CancellationToken cancellationToken);
 }

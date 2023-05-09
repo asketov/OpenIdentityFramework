@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Authentication;
@@ -7,32 +6,19 @@ using OpenIdentityFramework.Models.Operation;
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize;
 
-public interface IAuthorizeRequestConsentService<TRequestContext, TRequestConsent>
+public interface IAuthorizeRequestConsentService<TRequestContext, TAuthorizeRequestConsent>
     where TRequestContext : class, IRequestContext
-    where TRequestConsent : AbstractAuthorizeRequestConsent
+    where TAuthorizeRequestConsent : AbstractAuthorizeRequestConsent
 {
-    Task GrantAsync(
+    Task<TAuthorizeRequestConsent?> FindAsync(
         TRequestContext requestContext,
-        ResourceOwnerIdentifiers resourceOwnerIdentifiers,
         string authorizeRequestId,
-        IReadOnlySet<string> grantedScopes,
-        bool remember,
-        CancellationToken cancellationToken);
-
-    Task DenyAsync(
-        TRequestContext requestContext,
-        ResourceOwnerIdentifiers resourceOwnerIdentifiers,
-        string authorizeRequestId,
-        CancellationToken cancellationToken);
-
-    Task<TRequestConsent?> ReadAsync(
-        TRequestContext requestContext,
-        ResourceOwnerIdentifiers resourceOwnerIdentifiers,
-        string authorizeRequestId,
+        ResourceOwnerIdentifiers authorIdentifiers,
         CancellationToken cancellationToken);
 
     Task DeleteAsync(
         TRequestContext requestContext,
         string authorizeRequestId,
+        ResourceOwnerIdentifiers authorIdentifiers,
         CancellationToken cancellationToken);
 }

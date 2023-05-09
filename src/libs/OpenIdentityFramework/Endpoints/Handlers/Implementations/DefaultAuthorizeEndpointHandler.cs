@@ -25,7 +25,7 @@ using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRespons
 
 namespace OpenIdentityFramework.Endpoints.Handlers.Implementations;
 
-public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent, TAuthorizeRequestParameters>
+public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizeRequest, TAuthorizeRequestConsent>
     : IAuthorizeEndpointHandler<TRequestContext>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
@@ -33,8 +33,8 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
-    where TRequestConsent : AbstractAuthorizeRequestConsent
-    where TAuthorizeRequestParameters : AbstractAuthorizeRequestParameters
+    where TAuthorizeRequest : AbstractAuthorizeRequest
+    where TAuthorizeRequestConsent : AbstractAuthorizeRequestConsent
 {
     public DefaultAuthorizeEndpointHandler(
         OpenIdentityFrameworkOptions frameworkOptions,
@@ -44,8 +44,8 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
         HtmlEncoder htmlEncoder,
         IErrorService<TRequestContext> errorService,
         IResourceOwnerAuthenticationService<TRequestContext> resourceOwnerAuthentication,
-        IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent> interactionService,
-        IAuthorizeRequestParametersService<TRequestContext, TAuthorizeRequestParameters> authorizeRequestParameters,
+        IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizeRequestConsent> interactionService,
+        IAuthorizeRequestService<TRequestContext, TAuthorizeRequest> authorizeRequest,
         IAuthorizeResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> responseGenerator)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
@@ -56,7 +56,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
         ArgumentNullException.ThrowIfNull(errorService);
         ArgumentNullException.ThrowIfNull(resourceOwnerAuthentication);
         ArgumentNullException.ThrowIfNull(interactionService);
-        ArgumentNullException.ThrowIfNull(authorizeRequestParameters);
+        ArgumentNullException.ThrowIfNull(authorizeRequest);
         ArgumentNullException.ThrowIfNull(responseGenerator);
         FrameworkOptions = frameworkOptions;
         SystemClock = systemClock;
@@ -66,7 +66,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
         ErrorService = errorService;
         ResourceOwnerAuthentication = resourceOwnerAuthentication;
         InteractionService = interactionService;
-        AuthorizeRequestParameters = authorizeRequestParameters;
+        AuthorizeRequest = authorizeRequest;
         ResponseGenerator = responseGenerator;
     }
 
@@ -77,9 +77,10 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
     protected HtmlEncoder HtmlEncoder { get; }
     protected IErrorService<TRequestContext> ErrorService { get; }
     protected IResourceOwnerAuthenticationService<TRequestContext> ResourceOwnerAuthentication { get; }
-    protected IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent> InteractionService { get; }
-    protected IAuthorizeRequestParametersService<TRequestContext, TAuthorizeRequestParameters> AuthorizeRequestParameters { get; }
+    protected IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizeRequestConsent> InteractionService { get; }
+    protected IAuthorizeRequestService<TRequestContext, TAuthorizeRequest> AuthorizeRequest { get; }
     protected IAuthorizeResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> ResponseGenerator { get; }
+
 
     public virtual async Task<IEndpointHandlerResult> HandleAsync(TRequestContext requestContext, CancellationToken cancellationToken)
     {
@@ -198,13 +199,13 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
         cancellationToken.ThrowIfCancellationRequested();
         if (requiredInteraction == DefaultInteractionResult.Login)
         {
-            var authorizeRequestId = await AuthorizeRequestParameters.SaveAsync(requestContext, authorizeRequest.InitialRequestDate, authorizeRequest.Raw, cancellationToken);
+            var authorizeRequestId = await AuthorizeRequest.SaveAsync(requestContext, authorizeRequest.InitialRequestDate, authorizeRequest.Raw, cancellationToken);
             return new DefaultLoginUserPageResult(FrameworkOptions, authorizeRequestId);
         }
 
         if (requiredInteraction == DefaultInteractionResult.Consent)
         {
-            var authorizeRequestId = await AuthorizeRequestParameters.SaveAsync(requestContext, authorizeRequest.InitialRequestDate, authorizeRequest.Raw, cancellationToken);
+            var authorizeRequestId = await AuthorizeRequest.SaveAsync(requestContext, authorizeRequest.InitialRequestDate, authorizeRequest.Raw, cancellationToken);
             return new DefaultConsentPageResult(FrameworkOptions, authorizeRequestId);
         }
 

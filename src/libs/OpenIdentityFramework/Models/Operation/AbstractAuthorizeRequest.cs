@@ -4,7 +4,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace OpenIdentityFramework.Models.Operation;
 
-public abstract class AbstractAuthorizeRequestParameters
+public abstract class AbstractAuthorizeRequest
 {
     public abstract DateTimeOffset GetInitialRequestDate();
     public abstract IReadOnlyDictionary<string, StringValues> GetAuthorizeRequestParameters();

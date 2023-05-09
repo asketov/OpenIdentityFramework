@@ -15,15 +15,15 @@ using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequest
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations;
 
-public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent, TGrantedConsent>
-    : IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent>
+public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizeRequestConsent, TGrantedConsent>
+    : IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizeRequestConsent>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
-    where TRequestConsent : AbstractAuthorizeRequestConsent
+    where TAuthorizeRequestConsent : AbstractAuthorizeRequestConsent
     where TGrantedConsent : AbstractGrantedConsent
 {
     public DefaultAuthorizeRequestInteractionService(
@@ -43,15 +43,15 @@ public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient,
         TRequestContext requestContext,
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
         ResourceOwnerAuthentication? resourceOwnerAuthentication,
-        TRequestConsent? authorizeRequestConsent,
+        TAuthorizeRequestConsent? authorizeRequestConsent,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(authorizeRequest);
         cancellationToken.ThrowIfCancellationRequested();
         // special case when user without authentication issued an error prior to authenticating
-        if (resourceOwnerAuthentication == null && authorizeRequestConsent != null && !authorizeRequestConsent.HasGranted(out var error, out _))
+        if (resourceOwnerAuthentication == null && authorizeRequestConsent != null && !authorizeRequestConsent.TryGetGrantedConsent(out _, out var denied))
         {
-            return ErrorDeniedConsent(error);
+            return ErrorDeniedConsent(denied.Error);
         }
 
         var isPromptNone = authorizeRequest.Prompt?.Contains(DefaultPrompt.None) == true;
@@ -121,7 +121,7 @@ public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient,
         TRequestContext requestContext,
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
         ResourceOwnerAuthentication resourceOwnerAuthentication,
-        TRequestConsent? authorizeRequestConsent,
+        TAuthorizeRequestConsent? authorizeRequestConsent,
         bool isPromptNone,
         CancellationToken cancellationToken)
     {
@@ -143,12 +143,12 @@ public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient,
                 return ConsentErrorOrInteractionRequired(isPromptNone);
             }
 
-            if (!authorizeRequestConsent.HasGranted(out var error, out var grant))
+            if (!authorizeRequestConsent.TryGetGrantedConsent(out var granted, out var denied))
             {
-                return ErrorDeniedConsent(error);
+                return ErrorDeniedConsent(denied.Error);
             }
 
-            var (grantedScopes, shouldRemember) = grant.Value;
+            var (grantedScopes, shouldRemember) = granted;
             if (!authorizeRequest.RequestedResources.IsRequiredScopesCoveredBy(grantedScopes))
             {
                 return ErrorAccessDenied();
@@ -176,7 +176,15 @@ public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient,
             return LoginErrorOrInteractionRequired(isPromptNone);
         }
 
-        await Consents.UpsertAsync(requestContext, resourceOwnerAuthentication.EssentialClaims.Identifiers.SubjectId, authorizeRequest.Client, scopesToPersist, cancellationToken);
+        if (scopesToPersist.Count > 0)
+        {
+            await Consents.UpsertAsync(requestContext, resourceOwnerAuthentication.EssentialClaims.Identifiers.SubjectId, authorizeRequest.Client, scopesToPersist, cancellationToken);
+        }
+        else
+        {
+            await Consents.DeleteAsync(requestContext, resourceOwnerAuthentication.EssentialClaims.Identifiers.SubjectId, authorizeRequest.Client, cancellationToken);
+        }
+
         return new(new ValidAuthorizeRequestInteraction<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
             authorizeRequest,
             grantedResources,
@@ -264,18 +272,15 @@ public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient,
 
     #region Errors
 
-    protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret> ErrorDeniedConsent(ProtocolError protocolError)
+    protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret> ErrorDeniedConsent(ProtocolError? protocolError)
     {
-        ArgumentNullException.ThrowIfNull(protocolError);
-        if (protocolError.Error == AuthorizeErrors.LoginRequired
-            || protocolError.Error == AuthorizeErrors.ConsentRequired
-            || protocolError.Error == AuthorizeErrors.InteractionRequired
-            || protocolError.Error == AuthorizeErrors.AccountSelectionRequired)
-        {
-            return ErrorProtocol(protocolError);
-        }
-
-        return ErrorAccessDenied();
+        return protocolError?.Error
+            is AuthorizeErrors.LoginRequired
+            or AuthorizeErrors.ConsentRequired
+            or AuthorizeErrors.InteractionRequired
+            or AuthorizeErrors.AccountSelectionRequired
+            ? ErrorProtocol(protocolError)
+            : ErrorAccessDenied();
     }
 
     protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret> ErrorProtocol(ProtocolError protocolError)

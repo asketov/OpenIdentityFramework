@@ -11,14 +11,14 @@ using OpenIdentityFramework.Storages.Operation;
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations;
 
-public class DefaultAuthorizeRequestParametersService<TRequestContext, TAuthorizeRequestParameters>
-    : IAuthorizeRequestParametersService<TRequestContext, TAuthorizeRequestParameters>
+public class DefaultAuthorizeRequestService<TRequestContext, TAuthorizeRequest>
+    : IAuthorizeRequestService<TRequestContext, TAuthorizeRequest>
     where TRequestContext : class, IRequestContext
-    where TAuthorizeRequestParameters : AbstractAuthorizeRequestParameters
+    where TAuthorizeRequest : AbstractAuthorizeRequest
 {
-    public DefaultAuthorizeRequestParametersService(
+    public DefaultAuthorizeRequestService(
         OpenIdentityFrameworkOptions frameworkOptions,
-        IAuthorizeRequestParametersStorage<TRequestContext, TAuthorizeRequestParameters> storage,
+        IAuthorizeRequestStorage<TRequestContext, TAuthorizeRequest> storage,
         ISystemClock systemClock)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
@@ -30,7 +30,7 @@ public class DefaultAuthorizeRequestParametersService<TRequestContext, TAuthoriz
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
-    protected IAuthorizeRequestParametersStorage<TRequestContext, TAuthorizeRequestParameters> Storage { get; }
+    protected IAuthorizeRequestStorage<TRequestContext, TAuthorizeRequest> Storage { get; }
     protected ISystemClock SystemClock { get; }
 
     public virtual async Task<string> SaveAsync(
@@ -50,7 +50,7 @@ public class DefaultAuthorizeRequestParametersService<TRequestContext, TAuthoriz
         return await Storage.SaveAsync(requestContext, initialRequestDate, parameters, createdAt, expiresAt, cancellationToken);
     }
 
-    public virtual async Task<TAuthorizeRequestParameters?> ReadAsync(
+    public virtual async Task<TAuthorizeRequest?> FindAsync(
         TRequestContext requestContext,
         string authorizeRequestId,
         CancellationToken cancellationToken)

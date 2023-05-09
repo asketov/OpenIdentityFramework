@@ -8,9 +8,9 @@ using OpenIdentityFramework.Models.Operation;
 
 namespace OpenIdentityFramework.Storages.Operation;
 
-public interface IAuthorizeRequestParametersStorage<TRequestContext, TAuthorizeRequestParameters>
+public interface IAuthorizeRequestStorage<TRequestContext, TAuthorizeRequest>
     where TRequestContext : class, IRequestContext
-    where TAuthorizeRequestParameters : AbstractAuthorizeRequestParameters
+    where TAuthorizeRequest : AbstractAuthorizeRequest
 {
     Task<string> SaveAsync(
         TRequestContext requestContext,
@@ -20,10 +20,11 @@ public interface IAuthorizeRequestParametersStorage<TRequestContext, TAuthorizeR
         DateTimeOffset? expiresAt,
         CancellationToken cancellationToken);
 
-    Task<TAuthorizeRequestParameters?> FindAsync(
+    Task<TAuthorizeRequest?> FindAsync(
         TRequestContext requestContext,
         string authorizeRequestId,
         CancellationToken cancellationToken);
+
 
     Task DeleteAsync(
         TRequestContext requestContext,

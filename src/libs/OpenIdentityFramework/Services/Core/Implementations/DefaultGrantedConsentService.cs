@@ -101,4 +101,11 @@ public class DefaultGrantedConsentService<TRequestContext, TClient, TClientSecre
             await Storage.DeleteAsync(requestContext, subjectId, client.GetClientId(), cancellationToken);
         }
     }
+
+    public virtual async Task DeleteAsync(TRequestContext requestContext, string subjectId, TClient client, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        cancellationToken.ThrowIfCancellationRequested();
+        await Storage.DeleteAsync(requestContext, subjectId, client.GetClientId(), cancellationToken);
+    }
 }

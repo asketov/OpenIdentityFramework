@@ -8,9 +8,9 @@ using OpenIdentityFramework.Models.Operation;
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize;
 
-public interface IAuthorizeRequestParametersService<TRequestContext, TAuthorizeRequestParameters>
+public interface IAuthorizeRequestService<TRequestContext, TAuthorizeRequest>
     where TRequestContext : class, IRequestContext
-    where TAuthorizeRequestParameters : AbstractAuthorizeRequestParameters
+    where TAuthorizeRequest : AbstractAuthorizeRequest
 {
     Task<string> SaveAsync(
         TRequestContext requestContext,
@@ -18,7 +18,7 @@ public interface IAuthorizeRequestParametersService<TRequestContext, TAuthorizeR
         IReadOnlyDictionary<string, StringValues> parameters,
         CancellationToken cancellationToken);
 
-    Task<TAuthorizeRequestParameters?> ReadAsync(
+    Task<TAuthorizeRequest?> FindAsync(
         TRequestContext requestContext,
         string authorizeRequestId,
         CancellationToken cancellationToken);

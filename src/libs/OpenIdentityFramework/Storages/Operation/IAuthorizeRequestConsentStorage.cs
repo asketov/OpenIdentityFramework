@@ -24,7 +24,7 @@ public interface IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequ
         ResourceOwnerIdentifiers authorIdentifiers,
         AuthorizeRequestConsentGranted grantedConsent,
         DateTimeOffset createdAt,
-        DateTimeOffset? expiresAt,
+        DateTimeOffset expiresAt,
         CancellationToken cancellationToken);
 
     Task DenyAsync(
@@ -33,7 +33,7 @@ public interface IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequ
         ResourceOwnerIdentifiers authorIdentifiers,
         AuthorizeRequestConsentDenied deniedConsent,
         DateTimeOffset createdAt,
-        DateTimeOffset? expiresAt,
+        DateTimeOffset expiresAt,
         CancellationToken cancellationToken);
 
     Task DeleteAsync(

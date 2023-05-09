@@ -20,7 +20,7 @@ namespace OpenIdentityFramework.Configuration.DependencyInjection.Extensions;
 public static class EndpointRouteBuilderExtensions
 {
     public static IEndpointRouteBuilder MapOpenIdentityFrameworkEndpoints<TRequestContext>(this IEndpointRouteBuilder builder)
-        where TRequestContext : AbstractRequestContext
+        where TRequestContext : class, IRequestContext
     {
         ArgumentNullException.ThrowIfNull(builder);
         var frameworkOptions = builder.ServiceProvider.GetRequiredService<OpenIdentityFrameworkOptions>();
@@ -70,7 +70,7 @@ public static class EndpointRouteBuilderExtensions
         this IEndpointRouteBuilder builder,
         string path,
         HttpMethodMetadata metadata)
-        where TRequestContext : AbstractRequestContext
+        where TRequestContext : class, IRequestContext
         where THandler : class, IEndpointHandler<TRequestContext>
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -95,7 +95,7 @@ public static class EndpointRouteBuilderExtensions
         IRequestContextFactory<TRequestContext> contextFactory,
         THandler handler,
         CancellationToken cancellationToken)
-        where TRequestContext : AbstractRequestContext
+        where TRequestContext : class, IRequestContext
         where THandler : class, IEndpointHandler<TRequestContext>
     {
         ArgumentNullException.ThrowIfNull(httpContext);

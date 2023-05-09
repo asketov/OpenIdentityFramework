@@ -12,7 +12,7 @@ namespace OpenIdentityFramework.Services.Core.Implementations;
 
 public class DefaultGrantedConsentService<TRequestContext, TClient, TClientSecret, TGrantedConsent>
     : IGrantedConsentService<TRequestContext, TClient, TClientSecret, TGrantedConsent>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TGrantedConsent : AbstractGrantedConsent

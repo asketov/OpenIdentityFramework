@@ -13,7 +13,7 @@ namespace OpenIdentityFramework.Endpoints.Handlers.Implementations;
 
 public class DefaultJwksEndpointHandler<TRequestContext>
     : IJwksEndpointHandler<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
 {
     public DefaultJwksEndpointHandler(OpenIdentityFrameworkOptions frameworkOptions, IJwksResponseGenerator<TRequestContext> jwksResponseGenerator)
     {

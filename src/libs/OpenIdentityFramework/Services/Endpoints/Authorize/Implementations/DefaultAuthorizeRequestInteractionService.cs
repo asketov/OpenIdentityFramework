@@ -17,7 +17,7 @@ namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations;
 
 public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent, TGrantedConsent>
     : IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope

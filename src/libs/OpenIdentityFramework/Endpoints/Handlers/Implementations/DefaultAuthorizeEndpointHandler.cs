@@ -27,7 +27,7 @@ namespace OpenIdentityFramework.Endpoints.Handlers.Implementations;
 
 public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestConsent, TAuthorizeRequestParameters>
     : IAuthorizeEndpointHandler<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope

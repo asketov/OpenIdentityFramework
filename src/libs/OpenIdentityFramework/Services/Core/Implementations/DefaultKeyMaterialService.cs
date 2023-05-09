@@ -11,7 +11,7 @@ using OpenIdentityFramework.Storages.Configuration;
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
 public class DefaultKeyMaterialService<TRequestContext> : IKeyMaterialService<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
 {
     public DefaultKeyMaterialService(IKeyMaterialStorage<TRequestContext> storage)
     {

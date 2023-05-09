@@ -16,7 +16,7 @@ namespace OpenIdentityFramework.Services.Endpoints.Token.Implementations.Validat
 
 public class DefaultTokenRequestAuthorizationCodeParameterCodeValidator<TRequestContext, TClient, TClientSecret, TAuthorizationCode>
     : ITokenRequestAuthorizationCodeParameterCodeValidator<TRequestContext, TClient, TClientSecret, TAuthorizationCode>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TAuthorizationCode : AbstractAuthorizationCode

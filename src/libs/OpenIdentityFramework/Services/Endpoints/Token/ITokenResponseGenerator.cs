@@ -9,7 +9,7 @@ using OpenIdentityFramework.Services.Endpoints.Token.Models.Validation.TokenRequ
 namespace OpenIdentityFramework.Services.Endpoints.Token;
 
 public interface ITokenResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope

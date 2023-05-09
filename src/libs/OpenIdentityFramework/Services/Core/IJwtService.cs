@@ -8,7 +8,7 @@ using OpenIdentityFramework.Models.Authentication;
 namespace OpenIdentityFramework.Services.Core;
 
 public interface IJwtService<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
 {
     Task<string> CreateIdTokenAsync(
         TRequestContext requestContext,

@@ -19,7 +19,7 @@ namespace OpenIdentityFramework.Endpoints.Handlers.Implementations;
 
 public class DefaultTokenEndpointHandler<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken>
     : ITokenEndpointHandler<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope

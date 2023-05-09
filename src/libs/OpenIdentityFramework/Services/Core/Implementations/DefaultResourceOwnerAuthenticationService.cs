@@ -14,7 +14,7 @@ namespace OpenIdentityFramework.Services.Core.Implementations;
 
 public class DefaultResourceOwnerAuthenticationService<TRequestContext>
     : IResourceOwnerAuthenticationService<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
 {
     public DefaultResourceOwnerAuthenticationService(
         OpenIdentityFrameworkOptions frameworkOptions,

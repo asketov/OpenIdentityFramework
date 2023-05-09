@@ -9,7 +9,7 @@ using OpenIdentityFramework.Models.Operation;
 namespace OpenIdentityFramework.Services.Endpoints.Authorize;
 
 public interface IAuthorizeRequestParametersService<TRequestContext, TAuthorizeRequestParameters>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TAuthorizeRequestParameters : AbstractAuthorizeRequestParameters
 {
     Task<string> SaveAsync(

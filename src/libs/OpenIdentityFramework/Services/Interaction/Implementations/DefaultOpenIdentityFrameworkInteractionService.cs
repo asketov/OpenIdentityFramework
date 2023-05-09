@@ -12,7 +12,7 @@
 //
 // public class DefaultOpenIdentityFrameworkInteractionService<TRequestContext, TAuthorizeRequestParameters>
 //     : IOpenIdentityFrameworkInteractionService<TRequestContext, TAuthorizeRequestParameters>
-//     where TRequestContext : AbstractRequestContext
+//     where TRequestContext : class, AbstractRequestContext
 //     where TAuthorizeRequestParameters : AbstractAuthorizeRequestParameters
 // {
 //     public DefaultOpenIdentityFrameworkInteractionService(

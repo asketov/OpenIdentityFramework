@@ -9,7 +9,7 @@ using OpenIdentityFramework.Models.Operation;
 namespace OpenIdentityFramework.Storages.Operation;
 
 public interface IAuthorizationCodeStorage<TRequestContext, TAuthorizationCode>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TAuthorizationCode : AbstractAuthorizationCode
 {
     Task<string> CreateAsync(

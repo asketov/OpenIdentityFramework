@@ -7,7 +7,7 @@ using OpenIdentityFramework.Models.Operation;
 namespace OpenIdentityFramework.Services.Interaction;
 
 public interface IOpenIdentityFrameworkInteractionService<TRequestContext, TAuthorizeRequestParameters>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TAuthorizeRequestParameters : AbstractAuthorizeRequestParameters
 {
     Task FindAuthorizationCodeAsync(HttpContext httpContext, string authorizeRequestId, CancellationToken cancellationToken);

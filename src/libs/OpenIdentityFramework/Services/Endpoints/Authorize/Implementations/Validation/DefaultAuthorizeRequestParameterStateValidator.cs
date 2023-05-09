@@ -13,7 +13,7 @@ namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations.Val
 
 public class DefaultAuthorizeRequestParameterStateValidator<TRequestContext, TClient, TClientSecret>
     : IAuthorizeRequestParameterStateValidator<TRequestContext, TClient, TClientSecret>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {

@@ -14,7 +14,7 @@ namespace OpenIdentityFramework.Services.Endpoints.Token.Implementations.Validat
 
 public class DefaultTokenRequestAuthorizationCodeParameterRedirectUriValidator<TRequestContext, TClient, TClientSecret, TAuthorizationCode>
     : ITokenRequestAuthorizationCodeParameterRedirectUriValidator<TRequestContext, TClient, TClientSecret, TAuthorizationCode>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TAuthorizationCode : AbstractAuthorizationCode

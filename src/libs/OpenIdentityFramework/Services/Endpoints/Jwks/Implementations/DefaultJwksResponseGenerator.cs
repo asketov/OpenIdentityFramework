@@ -17,7 +17,7 @@ namespace OpenIdentityFramework.Services.Endpoints.Jwks.Implementations;
 
 public class DefaultJwksResponseGenerator<TRequestContext>
     : IJwksResponseGenerator<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
 {
     public DefaultJwksResponseGenerator(
         OpenIdentityFrameworkOptions frameworkOptions,

@@ -19,7 +19,7 @@ namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations;
 [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
 public class DefaultAuthorizeRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
     : IAuthorizeRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope

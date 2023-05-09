@@ -17,7 +17,7 @@ namespace OpenIdentityFramework.Services.Endpoints.Discovery.Implementations;
 [SuppressMessage("ReSharper", "IdentifierTypo")]
 public class DefaultDiscoveryResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
     : IDiscoveryResponseGenerator<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope

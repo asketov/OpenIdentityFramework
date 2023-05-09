@@ -6,7 +6,7 @@ using OpenIdentityFramework.Models.Configuration;
 namespace OpenIdentityFramework.Services.Core;
 
 public interface IClientSecretValidator<TRequestContext, TClient, TClientSecret>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {

@@ -13,7 +13,7 @@ namespace OpenIdentityFramework.Services.Core.Implementations;
 
 public class DefaultResourceService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
     : IResourceService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope

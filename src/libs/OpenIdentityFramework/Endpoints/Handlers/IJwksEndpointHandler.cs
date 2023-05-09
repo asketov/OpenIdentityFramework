@@ -3,6 +3,6 @@
 namespace OpenIdentityFramework.Endpoints.Handlers;
 
 public interface IJwksEndpointHandler<TRequestContext> : IEndpointHandler<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
 {
 }

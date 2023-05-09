@@ -6,7 +6,7 @@ using OpenIdentityFramework.Models;
 namespace OpenIdentityFramework.Endpoints;
 
 public interface IEndpointHandler<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
 {
     Task<IEndpointHandlerResult> HandleAsync(TRequestContext requestContext, CancellationToken cancellationToken);
 }

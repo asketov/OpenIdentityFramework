@@ -9,7 +9,7 @@ using OpenIdentityFramework.Models.Operation;
 namespace OpenIdentityFramework.Storages.Operation;
 
 public interface IAuthorizeRequestConsentStorage<TRequestContext, TRequestConsent>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TRequestConsent : AbstractAuthorizeRequestConsent
 {
     Task<TRequestConsent?> FindAsync(

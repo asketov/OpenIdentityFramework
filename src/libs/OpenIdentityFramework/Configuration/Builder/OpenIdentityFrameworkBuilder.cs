@@ -11,7 +11,7 @@ namespace OpenIdentityFramework.Configuration.Builder;
 
 public class OpenIdentityFrameworkBuilder<TRequestContext>
     : IOpenIdentityFrameworkBuilder<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
 {
     public OpenIdentityFrameworkBuilder(IServiceCollection services)
     {

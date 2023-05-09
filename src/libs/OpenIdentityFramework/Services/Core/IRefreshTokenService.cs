@@ -10,7 +10,7 @@ using OpenIdentityFramework.Services.Endpoints.Token.Models.Validation.TokenRequ
 namespace OpenIdentityFramework.Services.Core;
 
 public interface IRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope

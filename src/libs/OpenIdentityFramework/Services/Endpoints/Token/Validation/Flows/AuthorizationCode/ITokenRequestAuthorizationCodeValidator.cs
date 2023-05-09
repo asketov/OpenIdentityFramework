@@ -9,7 +9,7 @@ using OpenIdentityFramework.Services.Endpoints.Token.Models.Validation.Flows.Aut
 namespace OpenIdentityFramework.Services.Endpoints.Token.Validation.Flows.AuthorizationCode;
 
 public interface ITokenRequestAuthorizationCodeValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope

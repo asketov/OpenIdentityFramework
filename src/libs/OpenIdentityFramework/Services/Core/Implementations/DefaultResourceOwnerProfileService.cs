@@ -15,7 +15,7 @@ namespace OpenIdentityFramework.Services.Core.Implementations;
 
 public class DefaultResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret>
     : IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret

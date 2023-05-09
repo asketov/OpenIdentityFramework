@@ -11,7 +11,7 @@ using OpenIdentityFramework.Services.Core.Models.ResourceService;
 namespace OpenIdentityFramework.Services.Core;
 
 public interface IAccessTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAccessToken>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope

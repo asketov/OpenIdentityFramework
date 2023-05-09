@@ -16,7 +16,7 @@ using OpenIdentityFramework.Models.Authentication;
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
 public class DefaultJwtService<TRequestContext> : IJwtService<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
 {
     public DefaultJwtService(OpenIdentityFrameworkOptions frameworkOptions)
     {

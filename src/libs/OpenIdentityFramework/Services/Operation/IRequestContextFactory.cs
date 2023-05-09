@@ -6,7 +6,7 @@ using OpenIdentityFramework.Models;
 namespace OpenIdentityFramework.Services.Operation;
 
 public interface IRequestContextFactory<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
 {
     Task<TRequestContext> CreateAsync(HttpContext httpContext, CancellationToken cancellationToken);
 }

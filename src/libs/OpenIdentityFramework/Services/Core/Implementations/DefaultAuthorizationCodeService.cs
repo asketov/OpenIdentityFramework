@@ -14,7 +14,7 @@ namespace OpenIdentityFramework.Services.Core.Implementations;
 
 public class DefaultAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode>
     : IAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TAuthorizationCode : AbstractAuthorizationCode

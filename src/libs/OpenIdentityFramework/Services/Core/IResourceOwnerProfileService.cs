@@ -9,7 +9,7 @@ using OpenIdentityFramework.Services.Core.Models.ResourceService;
 namespace OpenIdentityFramework.Services.Core;
 
 public interface IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret

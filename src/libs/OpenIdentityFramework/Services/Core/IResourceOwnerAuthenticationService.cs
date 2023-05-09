@@ -6,7 +6,7 @@ using OpenIdentityFramework.Services.Core.Models.ResourceOwnerAuthenticationServ
 namespace OpenIdentityFramework.Services.Core;
 
 public interface IResourceOwnerAuthenticationService<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
 {
     Task<ResourceOwnerAuthenticationResult> AuthenticateAsync(TRequestContext requestContext, CancellationToken cancellationToken);
 }

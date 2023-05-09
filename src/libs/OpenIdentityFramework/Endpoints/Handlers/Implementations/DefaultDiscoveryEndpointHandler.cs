@@ -14,7 +14,7 @@ namespace OpenIdentityFramework.Endpoints.Handlers.Implementations;
 
 public class DefaultDiscoveryEndpointHandler<TRequestContext>
     : IDiscoveryEndpointHandler<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
 {
     public DefaultDiscoveryEndpointHandler(
         OpenIdentityFrameworkOptions frameworkOptions,

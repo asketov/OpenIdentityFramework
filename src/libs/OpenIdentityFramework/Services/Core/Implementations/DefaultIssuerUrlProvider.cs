@@ -7,7 +7,7 @@ namespace OpenIdentityFramework.Services.Core.Implementations;
 
 public class DefaultIssuerUrlProvider<TRequestContext>
     : IIssuerUrlProvider<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
 {
     public Task<string> GetIssuerAsync(TRequestContext requestContext, CancellationToken cancellationToken)
     {

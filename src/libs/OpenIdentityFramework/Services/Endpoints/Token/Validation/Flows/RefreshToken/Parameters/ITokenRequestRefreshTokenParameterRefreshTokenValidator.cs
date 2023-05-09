@@ -9,7 +9,7 @@ using OpenIdentityFramework.Services.Endpoints.Token.Models.Validation.Flows.Ref
 namespace OpenIdentityFramework.Services.Endpoints.Token.Validation.Flows.RefreshToken.Parameters;
 
 public interface ITokenRequestRefreshTokenParameterRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TRefreshToken>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TRefreshToken : AbstractRefreshToken

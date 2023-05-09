@@ -6,7 +6,7 @@ using OpenIdentityFramework.Services.Endpoints.Discovery.Models.DiscoveryRespons
 namespace OpenIdentityFramework.Services.Endpoints.Discovery;
 
 public interface IDiscoveryResponseGenerator<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
 {
     Task<DiscoveryDocument> CreateDiscoveryDocumentAsync(
         TRequestContext requestContext,

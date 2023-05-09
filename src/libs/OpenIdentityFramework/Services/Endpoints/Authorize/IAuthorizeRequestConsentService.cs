@@ -8,7 +8,7 @@ using OpenIdentityFramework.Models.Operation;
 namespace OpenIdentityFramework.Services.Endpoints.Authorize;
 
 public interface IAuthorizeRequestConsentService<TRequestContext, TRequestConsent>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TRequestConsent : AbstractAuthorizeRequestConsent
 {
     Task GrantAsync(

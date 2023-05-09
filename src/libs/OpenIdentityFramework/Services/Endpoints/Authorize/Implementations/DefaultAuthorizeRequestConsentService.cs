@@ -13,7 +13,7 @@ namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations;
 
 public class DefaultAuthorizeRequestConsentService<TRequestContext, TRequestConsent>
     : IAuthorizeRequestConsentService<TRequestContext, TRequestConsent>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TRequestConsent : AbstractAuthorizeRequestConsent
 {
     public DefaultAuthorizeRequestConsentService(

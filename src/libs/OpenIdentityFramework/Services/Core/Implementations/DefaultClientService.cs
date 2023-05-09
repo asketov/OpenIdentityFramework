@@ -9,7 +9,7 @@ namespace OpenIdentityFramework.Services.Core.Implementations;
 
 public class DefaultClientService<TRequestContext, TClient, TClientSecret>
     : IClientService<TRequestContext, TClient, TClientSecret>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {

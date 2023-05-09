@@ -13,7 +13,7 @@ namespace OpenIdentityFramework.Services.Endpoints.Token.Implementations.Validat
 
 public class DefaultTokenRequestCommonParameterGrantTypeValidator<TRequestContext, TClient, TClientSecret>
     : ITokenRequestCommonParameterGrantTypeValidator<TRequestContext, TClient, TClientSecret>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {

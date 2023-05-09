@@ -6,7 +6,7 @@ using OpenIdentityFramework.Models;
 namespace OpenIdentityFramework.Configuration.Builder;
 
 public interface IOpenIdentityFrameworkBuilder<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
 {
     IServiceCollection Services { get; }
     IOpenIdentityFrameworkBuilder<TRequestContext> AddRequiredPlatformServices();

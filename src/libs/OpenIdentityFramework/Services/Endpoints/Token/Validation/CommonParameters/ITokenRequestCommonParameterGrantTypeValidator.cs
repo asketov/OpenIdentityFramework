@@ -8,7 +8,7 @@ using OpenIdentityFramework.Services.Endpoints.Token.Models.Validation.CommonPar
 namespace OpenIdentityFramework.Services.Endpoints.Token.Validation.CommonParameters;
 
 public interface ITokenRequestCommonParameterGrantTypeValidator<TRequestContext, TClient, TClientSecret>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {

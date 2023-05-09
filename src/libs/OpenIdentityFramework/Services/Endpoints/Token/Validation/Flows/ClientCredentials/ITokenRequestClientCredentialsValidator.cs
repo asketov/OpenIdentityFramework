@@ -8,7 +8,7 @@ using OpenIdentityFramework.Services.Endpoints.Token.Models.Validation.Flows.Cli
 namespace OpenIdentityFramework.Services.Endpoints.Token.Validation.Flows.ClientCredentials;
 
 public interface ITokenRequestClientCredentialsValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope

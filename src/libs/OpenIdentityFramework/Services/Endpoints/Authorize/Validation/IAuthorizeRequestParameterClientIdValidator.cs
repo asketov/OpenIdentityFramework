@@ -7,7 +7,7 @@ using OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
 namespace OpenIdentityFramework.Services.Endpoints.Authorize.Validation;
 
 public interface IAuthorizeRequestParameterClientIdValidator<TRequestContext, TClient, TClientSecret>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {

@@ -7,7 +7,7 @@ using OpenIdentityFramework.Services.Operation.Models;
 namespace OpenIdentityFramework.Services.Operation;
 
 public interface IUserProfileService<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
 {
     Task GetProfileAsync(
         TRequestContext requestContext,

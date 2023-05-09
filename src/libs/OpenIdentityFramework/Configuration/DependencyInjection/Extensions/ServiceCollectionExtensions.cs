@@ -13,7 +13,7 @@ public static class ServiceCollectionExtensions
     public static IOpenIdentityFrameworkBuilder<TRequestContext> AddOpenIdentityFrameworkBuilder<TRequestContext>(
         this IServiceCollection services,
         Action<OpenIdentityFrameworkOptions>? configure = null)
-        where TRequestContext : AbstractRequestContext
+        where TRequestContext : class, IRequestContext
     {
         IOpenIdentityFrameworkBuilder<TRequestContext> builder = new OpenIdentityFrameworkBuilder<TRequestContext>(services);
         return builder

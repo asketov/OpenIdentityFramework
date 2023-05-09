@@ -17,7 +17,7 @@ namespace OpenIdentityFramework.Services.Core.Implementations;
 
 public class DefaultIdTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
     : IIdTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope

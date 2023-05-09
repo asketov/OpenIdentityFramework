@@ -9,7 +9,7 @@ using OpenIdentityFramework.Models.Operation;
 namespace OpenIdentityFramework.Storages.Operation;
 
 public interface IRefreshTokenStorage<TRequestContext, TRefreshToken>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TRefreshToken : AbstractRefreshToken
 {
     Task<string> CreateAsync(

@@ -8,7 +8,7 @@ using OpenIdentityFramework.Services.Core.Models.KeyMaterialService;
 namespace OpenIdentityFramework.Services.Core;
 
 public interface IKeyMaterialService<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
 {
     Task<SigningCredentialsSearchResult> FindSigningCredentialsAsync(
         TRequestContext requestContext,

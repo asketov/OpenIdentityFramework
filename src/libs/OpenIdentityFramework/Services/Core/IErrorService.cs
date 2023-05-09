@@ -6,7 +6,7 @@ using OpenIdentityFramework.Services.Core.Models.ErrorService;
 namespace OpenIdentityFramework.Services.Core;
 
 public interface IErrorService<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
 {
     Task<string> SaveAsync(
         TRequestContext requestContext,

@@ -8,7 +8,7 @@ using OpenIdentityFramework.Models.Operation;
 namespace OpenIdentityFramework.Storages.Operation;
 
 public interface IGrantedConsentStorage<TRequestContext, TGrantedConsent>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TGrantedConsent : AbstractGrantedConsent
 {
     Task<TGrantedConsent?> FindAsync(

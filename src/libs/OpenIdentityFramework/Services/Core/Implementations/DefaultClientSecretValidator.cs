@@ -11,7 +11,7 @@ namespace OpenIdentityFramework.Services.Core.Implementations;
 
 public class DefaultClientSecretValidator<TRequestContext, TClient, TClientSecret>
     : IClientSecretValidator<TRequestContext, TClient, TClientSecret>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {

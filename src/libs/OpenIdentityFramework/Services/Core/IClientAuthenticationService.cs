@@ -9,7 +9,7 @@ using OpenIdentityFramework.Services.Core.Models.ClientAuthenticationService;
 namespace OpenIdentityFramework.Services.Core;
 
 public interface IClientAuthenticationService<TRequestContext, TClient, TClientSecret>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {

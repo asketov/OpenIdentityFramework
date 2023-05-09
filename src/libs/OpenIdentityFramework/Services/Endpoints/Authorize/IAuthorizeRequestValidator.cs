@@ -10,7 +10,7 @@ using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequest
 namespace OpenIdentityFramework.Services.Endpoints.Authorize;
 
 public interface IAuthorizeRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope

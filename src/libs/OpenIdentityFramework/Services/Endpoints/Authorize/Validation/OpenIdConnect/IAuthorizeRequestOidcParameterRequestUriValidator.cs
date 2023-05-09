@@ -8,7 +8,7 @@ using OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation.OpenI
 namespace OpenIdentityFramework.Services.Endpoints.Authorize.Validation.OpenIdConnect;
 
 public interface IAuthorizeRequestOidcParameterRequestUriValidator<TRequestContext, TClient, TClientSecret>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {

@@ -13,7 +13,7 @@ namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations;
 
 public class DefaultAuthorizeRequestParametersService<TRequestContext, TAuthorizeRequestParameters>
     : IAuthorizeRequestParametersService<TRequestContext, TAuthorizeRequestParameters>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TAuthorizeRequestParameters : AbstractAuthorizeRequestParameters
 {
     public DefaultAuthorizeRequestParametersService(

@@ -7,7 +7,7 @@ using OpenIdentityFramework.Models;
 namespace OpenIdentityFramework.Storages.Configuration;
 
 public interface IKeyMaterialStorage<TRequestContext>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
 {
     Task<IReadOnlyCollection<SigningCredentials>> GetAllAsync(
         TRequestContext requestContext,

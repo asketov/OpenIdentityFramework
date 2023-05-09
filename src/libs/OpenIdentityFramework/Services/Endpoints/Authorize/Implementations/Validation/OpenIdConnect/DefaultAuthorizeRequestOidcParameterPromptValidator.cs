@@ -14,7 +14,7 @@ namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations.Val
 
 public class DefaultAuthorizeRequestOidcParameterPromptValidator<TRequestContext, TClient, TClientSecret>
     : IAuthorizeRequestOidcParameterPromptValidator<TRequestContext, TClient, TClientSecret>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
 {

@@ -8,7 +8,7 @@ using OpenIdentityFramework.Models.Operation;
 namespace OpenIdentityFramework.Services.Core;
 
 public interface IGrantedConsentService<TRequestContext, TClient, TClientSecret, TGrantedConsent>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TGrantedConsent : AbstractGrantedConsent

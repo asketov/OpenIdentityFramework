@@ -10,7 +10,7 @@ using OpenIdentityFramework.Services.Core.Models.ResourceService;
 namespace OpenIdentityFramework.Services.Core;
 
 public interface IIdTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope

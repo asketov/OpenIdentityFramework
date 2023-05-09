@@ -9,7 +9,7 @@ using OpenIdentityFramework.Models.Operation;
 namespace OpenIdentityFramework.Storages.Operation;
 
 public interface IAuthorizeRequestParametersStorage<TRequestContext, TAuthorizeRequestParameters>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TAuthorizeRequestParameters : AbstractAuthorizeRequestParameters
 {
     Task<string> SaveAsync(

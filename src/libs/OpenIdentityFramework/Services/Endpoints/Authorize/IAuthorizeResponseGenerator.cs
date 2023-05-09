@@ -8,7 +8,7 @@ using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRespons
 namespace OpenIdentityFramework.Services.Endpoints.Authorize;
 
 public interface IAuthorizeResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
-    where TRequestContext : AbstractRequestContext
+    where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope

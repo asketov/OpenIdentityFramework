@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.IdentityModel.Tokens;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Services.Core.Models.KeyMaterialService;
 
@@ -12,6 +13,10 @@ public interface IKeyMaterialService<TRequestContext>
     Task<SigningCredentialsSearchResult> FindSigningCredentialsAsync(
         TRequestContext requestContext,
         IReadOnlySet<string>? allowedSigningAlgorithms,
+        CancellationToken cancellationToken);
+
+    Task<IReadOnlyCollection<SigningCredentials>> GetAllAsync(
+        TRequestContext requestContext,
         CancellationToken cancellationToken);
 
     Task<IReadOnlySet<string>> GetAllSigningCredentialsAlgorithmsAsync(

@@ -31,6 +31,12 @@ public class DefaultKeyMaterialService<TRequestContext> : IKeyMaterialService<TR
         return GetSigningCredentials(credentials, allowedSigningAlgorithms);
     }
 
+    public virtual async Task<IReadOnlyCollection<SigningCredentials>> GetAllAsync(TRequestContext requestContext, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return await Storage.GetAllAsync(requestContext, cancellationToken);
+    }
+
     public virtual async Task<IReadOnlySet<string>> GetAllSigningCredentialsAlgorithmsAsync(
         TRequestContext requestContext,
         CancellationToken cancellationToken)

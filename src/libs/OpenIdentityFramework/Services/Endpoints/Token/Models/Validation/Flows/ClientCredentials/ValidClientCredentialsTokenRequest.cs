@@ -1,5 +1,5 @@
 ﻿using OpenIdentityFramework.Models.Configuration;
-using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
+using OpenIdentityFramework.Services.Core.Models.ResourceService;
 
 namespace OpenIdentityFramework.Services.Endpoints.Token.Models.Validation.Flows.ClientCredentials;
 

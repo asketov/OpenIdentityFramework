@@ -18,5 +18,7 @@ public abstract class AbstractScope
 
     public abstract bool IsRequired();
 
+    public abstract bool ShowInDiscoveryEndpoint();
+
     public abstract IReadOnlySet<string> GetUserClaimTypes();
 }

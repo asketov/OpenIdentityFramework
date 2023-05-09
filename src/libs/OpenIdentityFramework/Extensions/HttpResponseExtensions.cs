@@ -17,6 +17,37 @@ public static class HttpResponseExtensions
         response.Headers["Pragma"] = "no-cache";
     }
 
+    public static void SetCache(this HttpResponse response, TimeSpan maxAge)
+    {
+        ArgumentNullException.ThrowIfNull(response);
+        var durationInSeconds = maxAge.Ticks / TimeSpan.TicksPerSecond;
+        if (durationInSeconds <= 0)
+        {
+            SetNoCache(response);
+            return;
+        }
+
+        if (!response.Headers.ContainsKey("Cache-Control"))
+        {
+            response.Headers["Cache-Control"] = $"max-age={durationInSeconds:D}";
+        }
+
+        string vary;
+        if (response.Headers.TryGetValue("Vary", out var existingVary))
+        {
+            var existingVaryString = existingVary.ToString();
+            vary = existingVaryString == "*"
+                ? "*"
+                : $"{existingVaryString}, Origin";
+        }
+        else
+        {
+            vary = "Origin";
+        }
+
+        response.Headers["Vary"] = vary;
+    }
+
     public static void SetNoReferrer(this HttpResponse response)
     {
         ArgumentNullException.ThrowIfNull(response);

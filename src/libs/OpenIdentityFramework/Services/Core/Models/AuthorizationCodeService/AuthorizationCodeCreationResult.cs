@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizationCodeService;
+namespace OpenIdentityFramework.Services.Core.Models.AuthorizationCodeService;
 
 public class AuthorizationCodeCreationResult
 {

@@ -3,11 +3,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
-using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
+using OpenIdentityFramework.Services.Core.Models.ResourceService;
 
 namespace OpenIdentityFramework.Services.Core;
 
-public interface IResourceValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
+public interface IResourceService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
     where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
@@ -19,6 +19,11 @@ public interface IResourceValidator<TRequestContext, TClient, TClientSecret, TSc
         TRequestContext requestContext,
         TClient client,
         IReadOnlySet<string> requestedScopes,
+        IReadOnlySet<string> tokenTypesFilter,
+        CancellationToken cancellationToken);
+
+    Task<DiscoveryEndpointResourcesSearchResult> FindDiscoveryEndpointResourcesAsync(
+        TRequestContext requestContext,
         IReadOnlySet<string> tokenTypesFilter,
         CancellationToken cancellationToken);
 }

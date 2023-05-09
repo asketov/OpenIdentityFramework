@@ -6,7 +6,7 @@ using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
-using OpenIdentityFramework.Services.Endpoints.Authorize;
+using OpenIdentityFramework.Services.Core;
 using OpenIdentityFramework.Services.Endpoints.Token.Models.Validation.Flows.AuthorizationCode.Parameters;
 using OpenIdentityFramework.Services.Endpoints.Token.Validation.Flows.AuthorizationCode.Parameters;
 using OpenIdentityFramework.Services.Static.SyntaxValidation;

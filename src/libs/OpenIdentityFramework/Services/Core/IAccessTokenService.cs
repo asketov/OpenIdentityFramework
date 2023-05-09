@@ -6,7 +6,7 @@ using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core.Models.AccessTokenService;
 using OpenIdentityFramework.Services.Core.Models.ResourceOwnerProfileService;
-using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
+using OpenIdentityFramework.Services.Core.Models.ResourceService;
 
 namespace OpenIdentityFramework.Services.Core;
 

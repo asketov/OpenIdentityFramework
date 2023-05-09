@@ -27,16 +27,16 @@ public class DefaultTokenRequestCommonParameterScopeValidator<TRequestContext, T
 {
     public DefaultTokenRequestCommonParameterScopeValidator(
         OpenIdentityFrameworkOptions frameworkOptions,
-        IResourceValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> resourceValidator)
+        IResourceService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> resourceService)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
-        ArgumentNullException.ThrowIfNull(resourceValidator);
+        ArgumentNullException.ThrowIfNull(resourceService);
         FrameworkOptions = frameworkOptions;
-        ResourceValidator = resourceValidator;
+        ResourceService = resourceService;
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
-    protected IResourceValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> ResourceValidator { get; }
+    protected IResourceService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> ResourceService { get; }
 
     public virtual async Task<TokenRequestCommonParameterScopeValidationResult<TScope, TResource, TResourceSecret>> ValidateScopeAsync(
         TRequestContext requestContext,
@@ -106,7 +106,7 @@ public class DefaultTokenRequestCommonParameterScopeValidator<TRequestContext, T
             allowedTokenTypes = DefaultTokenTypeFilters.IdTokenAccessToken;
         }
 
-        var requestedScopesValidation = await ResourceValidator.ValidateRequestedScopesAsync(requestContext, client, requestedScopes, allowedTokenTypes, cancellationToken);
+        var requestedScopesValidation = await ResourceService.ValidateRequestedScopesAsync(requestContext, client, requestedScopes, allowedTokenTypes, cancellationToken);
         if (requestedScopesValidation.HasError)
         {
             if (requestedScopesValidation.Error.HasConfigurationError)

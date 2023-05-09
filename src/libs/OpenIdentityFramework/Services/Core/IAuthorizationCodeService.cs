@@ -6,9 +6,9 @@ using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Authentication;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
-using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizationCodeService;
+using OpenIdentityFramework.Services.Core.Models.AuthorizationCodeService;
 
-namespace OpenIdentityFramework.Services.Endpoints.Authorize;
+namespace OpenIdentityFramework.Services.Core;
 
 public interface IAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode>
     where TRequestContext : AbstractRequestContext

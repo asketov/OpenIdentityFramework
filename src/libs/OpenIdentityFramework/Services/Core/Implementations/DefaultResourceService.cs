@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
-using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
+using OpenIdentityFramework.Services.Core.Models.ResourceService;
 using OpenIdentityFramework.Storages.Configuration;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultResourceValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
-    : IResourceValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
+public class DefaultResourceService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
+    : IResourceService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
     where TRequestContext : AbstractRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
@@ -20,7 +20,7 @@ public class DefaultResourceValidator<TRequestContext, TClient, TClientSecret, T
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
 {
-    public DefaultResourceValidator(IResourceStorage<TRequestContext, TScope, TResource, TResourceSecret> storage)
+    public DefaultResourceService(IResourceStorage<TRequestContext, TScope, TResource, TResourceSecret> storage)
     {
         ArgumentNullException.ThrowIfNull(storage);
         Storage = storage;
@@ -206,5 +206,17 @@ public class DefaultResourceValidator<TRequestContext, TClient, TClientSecret, T
             resultScopes,
             resultResources,
             hasOfflineAccess));
+    }
+
+    public virtual async Task<DiscoveryEndpointResourcesSearchResult> FindDiscoveryEndpointResourcesAsync(
+        TRequestContext requestContext,
+        IReadOnlySet<string> tokenTypesFilter,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var result = await Storage.FindDiscoveryEndpointResourcesAsync(requestContext, tokenTypesFilter, cancellationToken);
+        return new(
+            result.Scopes,
+            result.UserClaimTypes);
     }
 }

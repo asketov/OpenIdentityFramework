@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Models.Configuration;
 
-namespace OpenIdentityFramework.Services.Core.Models.ResourceValidator;
+namespace OpenIdentityFramework.Services.Core.Models.ResourceService;
 
 public class ValidResources<TScope, TResource, TResourceSecret>
     where TScope : AbstractScope

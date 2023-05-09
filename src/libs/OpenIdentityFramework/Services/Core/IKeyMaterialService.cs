@@ -13,4 +13,8 @@ public interface IKeyMaterialService<TRequestContext>
         TRequestContext requestContext,
         IReadOnlySet<string>? allowedSigningAlgorithms,
         CancellationToken cancellationToken);
+
+    Task<IReadOnlySet<string>> GetAllSigningCredentialsAlgorithmsAsync(
+        TRequestContext requestContext,
+        CancellationToken cancellationToken);
 }

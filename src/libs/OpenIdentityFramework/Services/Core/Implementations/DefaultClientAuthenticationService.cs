@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Threading;
@@ -34,6 +35,13 @@ public class DefaultClientAuthenticationService<TRequestContext, TClient, TClien
     protected static readonly ClientAuthenticationResult<TClient, TClientSecret> MultipleClientId = new($"Multiple \"{ClientAuthenticationParameters.ClientId}\" values are present, but only one is allowed");
     protected static readonly ClientAuthenticationResult<TClient, TClientSecret> MissingClientSecret = new($"\"{ClientAuthenticationParameters.ClientSecret}\" is missing");
     protected static readonly ClientAuthenticationResult<TClient, TClientSecret> MultipleClientSecret = new($"Multiple \"{ClientAuthenticationParameters.ClientSecret}\" values are present, but only one is allowed");
+
+    protected static readonly IReadOnlySet<string> SupportedAuthenticationMethods = new HashSet<string>(StringComparer.Ordinal)
+    {
+        DefaultClientAuthenticationMethods.ClientSecretBasic,
+        DefaultClientAuthenticationMethods.None,
+        DefaultClientAuthenticationMethods.ClientSecretPost
+    };
 
     public DefaultClientAuthenticationService(
         OpenIdentityFrameworkOptions frameworkOptions,
@@ -83,6 +91,12 @@ public class DefaultClientAuthenticationService<TRequestContext, TClient, TClien
         }
 
         return new();
+    }
+
+    public Task<IReadOnlySet<string>> GetSupportedAuthenticationMethodsAsync(TRequestContext requestContext, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(SupportedAuthenticationMethods);
     }
 
     protected virtual async Task<ClientAuthenticationResult<TClient, TClientSecret>> AuthenticateUsingHttpBasicSchemeAsync(

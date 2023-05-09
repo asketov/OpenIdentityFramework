@@ -2,7 +2,7 @@
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core.Models.ResourceOwnerAuthenticationService;
 using OpenIdentityFramework.Services.Core.Models.ResourceOwnerProfileService;
-using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
+using OpenIdentityFramework.Services.Core.Models.ResourceService;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestValidator;
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestInteractionService;

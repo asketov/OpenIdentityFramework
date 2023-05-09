@@ -17,4 +17,9 @@ public interface IResourceStorage<TRequestContext, TScope, TResource, TResourceS
         TRequestContext requestContext,
         IReadOnlySet<string> scopesToSearch,
         CancellationToken cancellationToken);
+
+    Task<DiscoveryEndpointSearchResult> FindDiscoveryEndpointResourcesAsync(
+        TRequestContext requestContext,
+        IReadOnlySet<string> tokenTypesFilter,
+        CancellationToken cancellationToken);
 }

@@ -25,16 +25,16 @@ public class DefaultAuthorizeRequestParameterScopeValidator<TRequestContext, TCl
 {
     public DefaultAuthorizeRequestParameterScopeValidator(
         OpenIdentityFrameworkOptions frameworkOptions,
-        IResourceValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> resourceValidator)
+        IResourceService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> resourceService)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
-        ArgumentNullException.ThrowIfNull(resourceValidator);
+        ArgumentNullException.ThrowIfNull(resourceService);
         FrameworkOptions = frameworkOptions;
-        ResourceValidator = resourceValidator;
+        ResourceService = resourceService;
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
-    protected IResourceValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> ResourceValidator { get; }
+    protected IResourceService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> ResourceService { get; }
 
     public virtual async Task<AuthorizeRequestParameterScopeValidationResult<TScope, TResource, TResourceSecret>> ValidateScopeParameterAsync(
         TRequestContext requestContext,
@@ -62,7 +62,7 @@ public class DefaultAuthorizeRequestParameterScopeValidator<TRequestContext, TCl
         {
             if (!parameters.IsOpenIdRequest)
             {
-                var defaultScopesValidation = await ResourceValidator.ValidateRequestedScopesAsync(
+                var defaultScopesValidation = await ResourceService.ValidateRequestedScopesAsync(
                     requestContext,
                     client,
                     client.GetAllowedScopes(),
@@ -125,7 +125,7 @@ public class DefaultAuthorizeRequestParameterScopeValidator<TRequestContext, TCl
             tokenTypeFilter = DefaultTokenTypeFilters.IdTokenAccessToken;
         }
 
-        var requestedScopesValidation = await ResourceValidator.ValidateRequestedScopesAsync(requestContext, client, requestedScopes, tokenTypeFilter, cancellationToken);
+        var requestedScopesValidation = await ResourceService.ValidateRequestedScopesAsync(requestContext, client, requestedScopes, tokenTypeFilter, cancellationToken);
         if (requestedScopesValidation.HasError)
         {
             if (requestedScopesValidation.Error.HasConfigurationError)

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Extensions;
+using OpenIdentityFramework.Services.Static.WebUtilities;
 
 namespace OpenIdentityFramework.Endpoints.Results.Implementations;
 
@@ -50,6 +51,12 @@ public class DefaultDirectAuthorizeResult : IEndpointHandlerResult
             return;
         }
 
+        if (ResponseMode == DefaultResponseMode.Fragment)
+        {
+            HandleFragmentResponse(httpContext, cancellationToken);
+            return;
+        }
+
         if (ResponseMode == DefaultResponseMode.FormPost)
         {
             await HandlePostResponseAsync(httpContext, cancellationToken);
@@ -66,6 +73,17 @@ public class DefaultDirectAuthorizeResult : IEndpointHandlerResult
         cancellationToken.ThrowIfCancellationRequested();
         httpContext.Response.SetNoCache();
         var directRedirectUri = QueryHelpers.AddQueryString(
+            RedirectUri,
+            Parameters);
+        httpContext.Response.Redirect(directRedirectUri);
+    }
+
+    protected virtual void HandleFragmentResponse(HttpContext httpContext, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(httpContext);
+        cancellationToken.ThrowIfCancellationRequested();
+        httpContext.Response.SetNoCache();
+        var directRedirectUri = FragmentHelpers.AddAnchorQueryString(
             RedirectUri,
             Parameters);
         httpContext.Response.Redirect(directRedirectUri);

@@ -24,36 +24,42 @@ public static class EndpointRouteBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(builder);
         var frameworkOptions = builder.ServiceProvider.GetRequiredService<OpenIdentityFrameworkOptions>();
-        if (frameworkOptions.Endpoints.Authorize.Enable)
-        {
-            builder.AddEndpoint<TRequestContext, IAuthorizeEndpointHandler<TRequestContext>>(
-                frameworkOptions.Endpoints.Authorize.Path,
-                new(new[]
-                {
-                    // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
-                    // The authorization server MUST support the use of the HTTP GET method Section 9.3.1 of [RFC9110] for the authorization endpoint
-                    // and MAY support the POST method (Section 9.3.3 of RFC9110) as well.
-                    HttpMethods.Get,
-                    HttpMethods.Post
-                }));
-            builder.AddEndpoint<TRequestContext, IAuthorizeEndpointCallbackHandler<TRequestContext>>(
-                frameworkOptions.Endpoints.Authorize.CallbackPath,
-                new(new[]
-                {
-                    // Internal callback may use any handler
-                    HttpMethods.Get
-                }));
-        }
+        builder.AddEndpoint<TRequestContext, IAuthorizeEndpointHandler<TRequestContext>>(
+            frameworkOptions.Endpoints.Authorize.Path,
+            new(new[]
+            {
+                // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+                // The authorization server MUST support the use of the HTTP GET method Section 9.3.1 of [RFC9110] for the authorization endpoint
+                // and MAY support the POST method (Section 9.3.3 of RFC9110) as well.
+                HttpMethods.Get,
+                HttpMethods.Post
+            }));
+        builder.AddEndpoint<TRequestContext, IAuthorizeEndpointCallbackHandler<TRequestContext>>(
+            frameworkOptions.Endpoints.Authorize.CallbackPath,
+            new(new[]
+            {
+                // Internal callback may use any handler
+                HttpMethods.Get
+            }));
 
-        if (frameworkOptions.Endpoints.Token.Enable)
+        builder.AddEndpoint<TRequestContext, ITokenEndpointHandler<TRequestContext>>(
+            frameworkOptions.Endpoints.Token.Path,
+            new(new[]
+            {
+                // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.2
+                // The client MUST use the HTTP POST method when making access token requests.
+                HttpMethods.Post
+            }));
+
+        if (frameworkOptions.Endpoints.Discovery.Enable)
         {
-            builder.AddEndpoint<TRequestContext, ITokenEndpointHandler<TRequestContext>>(
-                frameworkOptions.Endpoints.Token.Path,
+            builder.AddEndpoint<TRequestContext, IDiscoveryEndpointHandler<TRequestContext>>(
+                frameworkOptions.Endpoints.Discovery.Path,
                 new(new[]
                 {
-                    // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.2
-                    // The client MUST use the HTTP POST method when making access token requests.
-                    HttpMethods.Post
+                    // https://openid.net/specs/openid-connect-discovery-1_0.html#rfc.section.4.1
+                    // An OpenID Provider Configuration Document MUST be queried using an HTTP GET request at the previously specified path.
+                    HttpMethods.Get
                 }));
         }
 

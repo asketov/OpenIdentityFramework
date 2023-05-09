@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using OpenIdentityFramework.Models.Configuration;
 
-namespace OpenIdentityFramework.Services.Core.Models.ResourceValidator;
+namespace OpenIdentityFramework.Services.Core.Models.ResourceService;
 
 public class ResourcesValidationError<TScope, TResource, TResourceSecret>
     where TScope : AbstractScope

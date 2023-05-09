@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.Extensions.Primitives;
 using OpenIdentityFramework.Models.Configuration;
-using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
+using OpenIdentityFramework.Services.Core.Models.ResourceService;
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestValidator;
 

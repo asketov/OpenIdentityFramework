@@ -2,7 +2,7 @@
 using OpenIdentityFramework.Constants.Response.Errors;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
-using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
+using OpenIdentityFramework.Services.Core.Models.ResourceService;
 
 namespace OpenIdentityFramework.Services.Endpoints.Token.Models.Validation.CommonParameters;
 

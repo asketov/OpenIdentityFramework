@@ -10,7 +10,7 @@ using OpenIdentityFramework.Models.Authentication;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core.Models.IdTokenService;
 using OpenIdentityFramework.Services.Core.Models.ResourceOwnerProfileService;
-using OpenIdentityFramework.Services.Core.Models.ResourceValidator;
+using OpenIdentityFramework.Services.Core.Models.ResourceService;
 using OpenIdentityFramework.Services.Cryptography;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;

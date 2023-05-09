@@ -18,4 +18,10 @@ public static class DefaultResponseType
                 { CodeIdToken, DefaultResponseMode.Fragment }
             }
             .AsReadOnly();
+
+    public static readonly IReadOnlySet<string> Supported = new HashSet<string>
+    {
+        Code,
+        CodeIdToken
+    };
 }

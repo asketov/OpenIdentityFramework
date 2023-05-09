@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Models;
@@ -15,5 +16,9 @@ public interface IClientAuthenticationService<TRequestContext, TClient, TClientS
     Task<ClientAuthenticationResult<TClient, TClientSecret>> AuthenticateAsync(
         TRequestContext requestContext,
         IFormCollection form,
+        CancellationToken cancellationToken);
+
+    Task<IReadOnlySet<string>> GetSupportedAuthenticationMethodsAsync(
+        TRequestContext requestContext,
         CancellationToken cancellationToken);
 }

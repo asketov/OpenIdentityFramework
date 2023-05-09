@@ -7,10 +7,10 @@ using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Authentication;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
-using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizationCodeService;
+using OpenIdentityFramework.Services.Core.Models.AuthorizationCodeService;
 using OpenIdentityFramework.Storages.Operation;
 
-namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations;
+namespace OpenIdentityFramework.Services.Core.Implementations;
 
 public class DefaultAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode>
     : IAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode>

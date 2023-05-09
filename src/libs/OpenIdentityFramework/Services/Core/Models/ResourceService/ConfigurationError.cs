@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using OpenIdentityFramework.Models.Configuration;
 
-namespace OpenIdentityFramework.Services.Core.Models.ResourceValidator;
+namespace OpenIdentityFramework.Services.Core.Models.ResourceService;
 
 public class ConfigurationError<TScope, TResource, TResourceSecret>
     where TScope : AbstractScope

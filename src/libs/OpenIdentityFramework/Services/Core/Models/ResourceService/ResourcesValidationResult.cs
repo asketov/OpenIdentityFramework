@@ -2,7 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using OpenIdentityFramework.Models.Configuration;
 
-namespace OpenIdentityFramework.Services.Core.Models.ResourceValidator;
+namespace OpenIdentityFramework.Services.Core.Models.ResourceService;
 
 public class ResourcesValidationResult<TScope, TResource, TResourceSecret>
     where TScope : AbstractScope

@@ -4,6 +4,7 @@ public static class JwksResponseParameters
 {
     public const string Keys = "keys";
 
+    // https://datatracker.ietf.org/doc/html/rfc7517#section-4
     public const string KeyType = "kty";
     public const string PublicKeyUse = "use";
     public const string Algorithm = "alg";

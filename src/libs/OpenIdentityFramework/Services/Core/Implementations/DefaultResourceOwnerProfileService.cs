@@ -9,46 +9,51 @@ using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core.Models.ResourceOwnerProfileService;
 using OpenIdentityFramework.Services.Core.Models.ResourceService;
 using OpenIdentityFramework.Services.Operation;
-using OpenIdentityFramework.Services.Operation.Models;
+using OpenIdentityFramework.Services.Operation.Models.UserProfileService;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret>
-    : IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret>
+public class DefaultResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    : IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
-    public DefaultResourceOwnerProfileService(IUserProfileService<TRequestContext> userProfile)
+    public DefaultResourceOwnerProfileService(IUserProfileService<TRequestContext, TResourceOwnerIdentifiers> userProfile)
     {
         ArgumentNullException.ThrowIfNull(userProfile);
         UserProfile = userProfile;
     }
 
-    protected IUserProfileService<TRequestContext> UserProfile { get; }
+    protected IUserProfileService<TRequestContext, TResourceOwnerIdentifiers> UserProfile { get; }
 
-    public virtual async Task<ResourceOwnerProfileResult> GetResourceOwnerProfileAsync(
+    public virtual async Task<ResourceOwnerProfileResult<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>> GetResourceOwnerProfileAsync(
         TRequestContext requestContext,
-        EssentialResourceOwnerClaims essentialClaims,
+        TResourceOwnerEssentialClaims essentialClaims,
         ValidResources<TScope, TResource, TResourceSecret> grantedResources,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(essentialClaims);
         cancellationToken.ThrowIfCancellationRequested();
         var profileClaimTypes = GetProfileClaimTypes(grantedResources);
-        var profileContext = new UserProfileContext(essentialClaims.Identifiers, profileClaimTypes);
+        var profileContext = new UserProfileContext<TResourceOwnerIdentifiers>(essentialClaims.GetResourceOwnerIdentifiers(), profileClaimTypes);
         await UserProfile.GetProfileAsync(requestContext, profileContext, cancellationToken);
         if (!profileContext.IsActive)
         {
             return new();
         }
 
-        var profile = new ResourceOwnerProfile(essentialClaims, profileContext.Claims);
+        var profile = new ResourceOwnerProfile<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>(essentialClaims, profileContext.Claims);
         return new(profile);
     }
 
-    public virtual async Task<bool> IsActiveAsync(TRequestContext requestContext, ResourceOwnerIdentifiers resourceOwnerIdentifiers, CancellationToken cancellationToken)
+    public virtual async Task<bool> IsActiveAsync(
+        TRequestContext requestContext,
+        TResourceOwnerIdentifiers resourceOwnerIdentifiers,
+        CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         return await UserProfile.IsActiveAsync(requestContext, resourceOwnerIdentifiers, cancellationToken);

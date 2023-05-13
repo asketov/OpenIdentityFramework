@@ -15,14 +15,16 @@ using OpenIdentityFramework.Services.Cryptography;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultIdTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
-    : IIdTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
+public class DefaultIdTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    : IIdTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
     public DefaultIdTokenService(
         IKeyMaterialService<TRequestContext> keyMaterialService,
@@ -48,7 +50,7 @@ public class DefaultIdTokenService<TRequestContext, TClient, TClientSecret, TSco
         string? authorizationCodeHandle,
         string? accessTokenHandle,
         string? nonce,
-        ResourceOwnerProfile resourceOwnerProfile,
+        ResourceOwnerProfile<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> resourceOwnerProfile,
         ValidResources<TScope, TResource, TResourceSecret> grantedResources,
         DateTimeOffset issuedAt,
         CancellationToken cancellationToken)
@@ -139,9 +141,9 @@ public class DefaultIdTokenService<TRequestContext, TClient, TClientSecret, TSco
             issuedAtClaimValue,
             ClaimValueTypes.Integer64));
 
-        foreach (var subjectClaim in GetSubjectClaims(resourceOwnerProfile.EssentialClaims))
+        foreach (var essentialClaim in GetEssentialClaims(resourceOwnerProfile.EssentialClaims))
         {
-            result.Add(subjectClaim);
+            result.Add(essentialClaim);
         }
 
         if (grantedResources.HasOpenId)
@@ -183,27 +185,27 @@ public class DefaultIdTokenService<TRequestContext, TClient, TClientSecret, TSco
         return Task.FromResult(audiences);
     }
 
-    protected virtual IEnumerable<LightweightClaim> GetSubjectClaims(EssentialResourceOwnerClaims essentialClaims)
+    protected virtual IEnumerable<LightweightClaim> GetEssentialClaims(TResourceOwnerEssentialClaims essentialClaims)
     {
         ArgumentNullException.ThrowIfNull(essentialClaims);
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.2
         // sub - REQUIRED. Subject Identifier. A locally unique and never reassigned identifier within the Issuer for the End-User, which is intended to be consumed by the Client, e.g., 24400320 or AItOawmwtWwcT0k51BayewNvutrJUqsvl6qs7A4.
         // It MUST NOT exceed 255 ASCII characters in length. The sub value is a case sensitive string.
-        yield return new(DefaultJwtClaimTypes.Subject, essentialClaims.Identifiers.SubjectId);
+        yield return new(DefaultJwtClaimTypes.Subject, essentialClaims.GetResourceOwnerIdentifiers().GetSubjectId());
 
         // https://openid.net/specs/openid-connect-backchannel-1_0.html#rfc.section.2.1
         // The sid (session ID) Claim used in ID Tokens and as a Logout Token parameter has the following definition
         // sid - OPTIONAL. Session ID - String identifier for a Session. This represents a Session of a User Agent or device for a logged-in End-User at an RP.
         // Different sid values are used to identify distinct sessions at an OP. The sid value need only be unique in the context of a particular issuer.
         // Its contents are opaque to the RP. Its syntax is the same as an OAuth 2.0 Client Identifier.
-        yield return new(DefaultJwtClaimTypes.SessionId, essentialClaims.Identifiers.SessionId);
+        yield return new(DefaultJwtClaimTypes.SessionId, essentialClaims.GetResourceOwnerIdentifiers().GetSessionId());
 
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.2
         // auth_time - Time when the End-User authentication occurred. Its value is a JSON number representing the number of seconds from 1970-01-01T0:0:0Z as measured in UTC until the date/time.
         // When a max_age request is made or when auth_time is requested as an Essential Claim, then this Claim is REQUIRED; otherwise, its inclusion is OPTIONAL.
         yield return new(
             DefaultJwtClaimTypes.AuthenticationTime,
-            essentialClaims.AuthenticatedAt.ToUnixTimeSeconds().ToString("D", CultureInfo.InvariantCulture),
+            essentialClaims.GetAuthenticationDate().ToUnixTimeSeconds().ToString("D", CultureInfo.InvariantCulture),
             ClaimValueTypes.Integer64);
     }
 

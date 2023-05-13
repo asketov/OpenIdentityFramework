@@ -12,14 +12,16 @@ using OpenIdentityFramework.Storages.Operation;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode>
-    : IAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode>
+public class DefaultAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    : IAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
-    where TAuthorizationCode : AbstractAuthorizationCode
+    where TAuthorizationCode : AbstractAuthorizationCode<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
-    public DefaultAuthorizationCodeService(IAuthorizationCodeStorage<TRequestContext, TAuthorizationCode> storage, ISystemClock systemClock)
+    public DefaultAuthorizationCodeService(IAuthorizationCodeStorage<TRequestContext, TAuthorizationCode, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> storage, ISystemClock systemClock)
     {
         ArgumentNullException.ThrowIfNull(storage);
         ArgumentNullException.ThrowIfNull(systemClock);
@@ -27,13 +29,13 @@ public class DefaultAuthorizationCodeService<TRequestContext, TClient, TClientSe
         SystemClock = systemClock;
     }
 
-    protected IAuthorizationCodeStorage<TRequestContext, TAuthorizationCode> Storage { get; }
+    protected IAuthorizationCodeStorage<TRequestContext, TAuthorizationCode, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> Storage { get; }
     protected ISystemClock SystemClock { get; }
 
     public virtual async Task<AuthorizationCodeCreationResult> CreateAsync(
         TRequestContext requestContext,
         TClient client,
-        EssentialResourceOwnerClaims essentialClaims,
+        TResourceOwnerEssentialClaims essentialClaims,
         IReadOnlySet<string> grantedScopes,
         string? authorizeRequestRedirectUri,
         string codeChallenge,

@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Models;
@@ -18,43 +19,49 @@ using OpenIdentityFramework.Storages.Operation;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultAccessTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAccessToken>
-    : IAccessTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAccessToken>
+public class DefaultAccessTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAccessToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    : IAccessTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAccessToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
-    where TAccessToken : AbstractAccessToken
+    where TAccessToken : AbstractAccessToken<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
     public DefaultAccessTokenService(
         OpenIdentityFrameworkOptions frameworkOptions,
+        ISystemClock systemClock,
         IKeyMaterialService<TRequestContext> keyMaterial,
         IJwtService<TRequestContext> jwtService,
-        IAccessTokenStorage<TRequestContext, TAccessToken> accessTokenStorage)
+        IAccessTokenStorage<TRequestContext, TAccessToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> accessTokenStorage)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
+        ArgumentNullException.ThrowIfNull(systemClock);
         ArgumentNullException.ThrowIfNull(keyMaterial);
         ArgumentNullException.ThrowIfNull(jwtService);
         ArgumentNullException.ThrowIfNull(accessTokenStorage);
         FrameworkOptions = frameworkOptions;
+        SystemClock = systemClock;
         KeyMaterial = keyMaterial;
         JwtService = jwtService;
         AccessTokenStorage = accessTokenStorage;
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
+    protected ISystemClock SystemClock { get; }
     protected IKeyMaterialService<TRequestContext> KeyMaterial { get; }
     protected IJwtService<TRequestContext> JwtService { get; }
-    protected IAccessTokenStorage<TRequestContext, TAccessToken> AccessTokenStorage { get; }
+    protected IAccessTokenStorage<TRequestContext, TAccessToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> AccessTokenStorage { get; }
 
-    public virtual async Task<AccessTokenCreationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>> CreateAccessTokenAsync(
+    public virtual async Task<AccessTokenCreationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>> CreateAccessTokenAsync(
         TRequestContext requestContext,
         TClient client,
         string issuer,
         string grantType,
-        ResourceOwnerProfile? resourceOwnerProfile,
+        ResourceOwnerProfile<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>? resourceOwnerProfile,
         ValidResources<TScope, TResource, TResourceSecret> grantedResources,
         DateTimeOffset issuedAt,
         CancellationToken cancellationToken)
@@ -112,7 +119,7 @@ public class DefaultAccessTokenService<TRequestContext, TClient, TClientSecret, 
             return new("Unsupported access token format");
         }
 
-        var createdAccessToken = new CreatedAccessToken<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
+        var createdAccessToken = new CreatedAccessToken<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>(
             accessTokenFormat,
             accessTokenHandle,
             client,
@@ -122,6 +129,34 @@ public class DefaultAccessTokenService<TRequestContext, TClient, TClientSecret, 
             roundExpiresAt);
         return new(createdAccessToken);
     }
+
+    public virtual async Task<TAccessToken?> FindAsync(
+        TRequestContext requestContext,
+        string clientId,
+        string accessTokenHandle,
+        CancellationToken cancellationToken)
+    {
+        var accessToken = await AccessTokenStorage.FindAsync(requestContext, accessTokenHandle, cancellationToken);
+        if (accessToken == null)
+        {
+            return null;
+        }
+
+        if (accessToken.GetClientId() == clientId)
+        {
+            var expiresAt = accessToken.GetExpirationDate();
+            if (SystemClock.UtcNow > expiresAt)
+            {
+                await AccessTokenStorage.DeleteAsync(requestContext, accessTokenHandle, cancellationToken);
+                return null;
+            }
+
+            return accessToken;
+        }
+
+        return null;
+    }
+
 
     public virtual async Task DeleteAsync(
         TRequestContext requestContext,
@@ -137,7 +172,7 @@ public class DefaultAccessTokenService<TRequestContext, TClient, TClientSecret, 
         TClient client,
         string issuer,
         string grantType,
-        ResourceOwnerProfile? resourceOwnerProfile,
+        ResourceOwnerProfile<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>? resourceOwnerProfile,
         ValidResources<TScope, TResource, TResourceSecret> grantedResources,
         DateTimeOffset issuedAt,
         DateTimeOffset expiresAt,
@@ -192,9 +227,9 @@ public class DefaultAccessTokenService<TRequestContext, TClient, TClientSecret, 
 
         if (resourceOwnerProfile is not null)
         {
-            foreach (var subjectClaim in GetSubjectClaims(resourceOwnerProfile.EssentialClaims))
+            foreach (var essentialClaim in GetEssentialClaims(resourceOwnerProfile.EssentialClaims))
             {
-                result.Add(subjectClaim);
+                result.Add(essentialClaim);
             }
 
             var profileClaimTypes = GetAccessTokenProfileClaimTypes(grantedResources);
@@ -243,27 +278,27 @@ public class DefaultAccessTokenService<TRequestContext, TClient, TClientSecret, 
         return Task.FromResult(result);
     }
 
-    protected virtual IEnumerable<LightweightClaim> GetSubjectClaims(EssentialResourceOwnerClaims essentialClaims)
+    protected virtual IEnumerable<LightweightClaim> GetEssentialClaims(TResourceOwnerEssentialClaims essentialClaims)
     {
         ArgumentNullException.ThrowIfNull(essentialClaims);
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.2
         // sub - REQUIRED. Subject Identifier. A locally unique and never reassigned identifier within the Issuer for the End-User, which is intended to be consumed by the Client, e.g., 24400320 or AItOawmwtWwcT0k51BayewNvutrJUqsvl6qs7A4.
         // It MUST NOT exceed 255 ASCII characters in length. The sub value is a case sensitive string.
-        yield return new(DefaultJwtClaimTypes.Subject, essentialClaims.Identifiers.SubjectId);
+        yield return new(DefaultJwtClaimTypes.Subject, essentialClaims.GetResourceOwnerIdentifiers().GetSubjectId());
 
         // https://openid.net/specs/openid-connect-backchannel-1_0.html#rfc.section.2.1
         // The sid (session ID) Claim used in ID Tokens and as a Logout Token parameter has the following definition
         // sid - OPTIONAL. Session ID - String identifier for a Session. This represents a Session of a User Agent or device for a logged-in End-User at an RP.
         // Different sid values are used to identify distinct sessions at an OP. The sid value need only be unique in the context of a particular issuer.
         // Its contents are opaque to the RP. Its syntax is the same as an OAuth 2.0 Client Identifier.
-        yield return new(DefaultJwtClaimTypes.SessionId, essentialClaims.Identifiers.SessionId);
+        yield return new(DefaultJwtClaimTypes.SessionId, essentialClaims.GetResourceOwnerIdentifiers().GetSessionId());
 
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.2
         // auth_time - Time when the End-User authentication occurred. Its value is a JSON number representing the number of seconds from 1970-01-01T0:0:0Z as measured in UTC until the date/time.
         // When a max_age request is made or when auth_time is requested as an Essential Claim, then this Claim is REQUIRED; otherwise, its inclusion is OPTIONAL.
         yield return new(
             DefaultJwtClaimTypes.AuthenticationTime,
-            essentialClaims.AuthenticatedAt.ToUnixTimeSeconds().ToString("D", CultureInfo.InvariantCulture),
+            essentialClaims.GetAuthenticationDate().ToUnixTimeSeconds().ToString("D", CultureInfo.InvariantCulture),
             ClaimValueTypes.Integer64);
     }
 

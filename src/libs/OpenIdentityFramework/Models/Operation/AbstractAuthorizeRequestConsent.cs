@@ -5,9 +5,10 @@ using OpenIdentityFramework.Models.Operation.AuthorizeRequestConsent;
 
 namespace OpenIdentityFramework.Models.Operation;
 
-public abstract class AbstractAuthorizeRequestConsent
+public abstract class AbstractAuthorizeRequestConsent<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
-    public abstract ResourceOwnerIdentifiers GetAuthorIdentifiers();
+    public abstract TResourceOwnerIdentifiers GetAuthorIdentifiers();
 
     public abstract bool TryGetGrantedConsent(
         [NotNullWhen(true)] out AuthorizeRequestConsentGranted? grantedConsent,

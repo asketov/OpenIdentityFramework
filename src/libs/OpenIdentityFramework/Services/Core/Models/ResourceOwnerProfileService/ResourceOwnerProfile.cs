@@ -4,9 +4,11 @@ using OpenIdentityFramework.Models.Authentication;
 
 namespace OpenIdentityFramework.Services.Core.Models.ResourceOwnerProfileService;
 
-public class ResourceOwnerProfile
+public class ResourceOwnerProfile<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
-    public ResourceOwnerProfile(EssentialResourceOwnerClaims essentialClaims, IReadOnlySet<LightweightClaim> profileClaims)
+    public ResourceOwnerProfile(TResourceOwnerEssentialClaims essentialClaims, IReadOnlySet<LightweightClaim> profileClaims)
     {
         ArgumentNullException.ThrowIfNull(essentialClaims);
         ArgumentNullException.ThrowIfNull(profileClaims);
@@ -14,6 +16,6 @@ public class ResourceOwnerProfile
         ProfileClaims = profileClaims;
     }
 
-    public EssentialResourceOwnerClaims EssentialClaims { get; }
+    public TResourceOwnerEssentialClaims EssentialClaims { get; }
     public IReadOnlySet<LightweightClaim> ProfileClaims { get; }
 }

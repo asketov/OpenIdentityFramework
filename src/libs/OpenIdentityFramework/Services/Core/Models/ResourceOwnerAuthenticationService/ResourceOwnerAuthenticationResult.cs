@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using OpenIdentityFramework.Models.Authentication;
 
 namespace OpenIdentityFramework.Services.Core.Models.ResourceOwnerAuthenticationService;
 
-public class ResourceOwnerAuthenticationResult
+public class ResourceOwnerAuthenticationResult<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
-    public ResourceOwnerAuthenticationResult(ResourceOwnerAuthentication authentication)
+    public ResourceOwnerAuthenticationResult(ResourceOwnerAuthentication<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> authentication)
     {
         ArgumentNullException.ThrowIfNull(authentication);
         IsAuthenticated = true;
@@ -34,7 +37,7 @@ public class ResourceOwnerAuthenticationResult
     [MemberNotNullWhen(true, nameof(Authentication))]
     public bool IsAuthenticated { get; }
 
-    public ResourceOwnerAuthentication? Authentication { get; }
+    public ResourceOwnerAuthentication<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>? Authentication { get; }
 
     [MemberNotNullWhen(true, nameof(ErrorDescription))]
     public bool HasError { get; }

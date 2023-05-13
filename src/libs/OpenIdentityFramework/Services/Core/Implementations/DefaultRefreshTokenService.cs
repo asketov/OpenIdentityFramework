@@ -17,20 +17,22 @@ using OpenIdentityFramework.Storages.Operation;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken>
-    : IRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken>
+public class DefaultRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    : IRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
-    where TRefreshToken : AbstractRefreshToken
+    where TRefreshToken : AbstractRefreshToken<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
     public DefaultRefreshTokenService(
         OpenIdentityFrameworkOptions frameworkOptions,
         ISystemClock systemClock,
-        IRefreshTokenStorage<TRequestContext, TRefreshToken> storage)
+        IRefreshTokenStorage<TRequestContext, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> storage)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
         ArgumentNullException.ThrowIfNull(systemClock);
@@ -42,13 +44,13 @@ public class DefaultRefreshTokenService<TRequestContext, TClient, TClientSecret,
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
     protected ISystemClock SystemClock { get; }
-    protected IRefreshTokenStorage<TRequestContext, TRefreshToken> Storage { get; }
+    protected IRefreshTokenStorage<TRequestContext, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> Storage { get; }
 
     public virtual async Task<RefreshTokenCreationResult> CreateAsync(
         TRequestContext requestContext,
         string issuer,
-        ValidRefreshToken<TRefreshToken>? previousRefreshToken,
-        CreatedAccessToken<TClient, TClientSecret, TScope, TResource, TResourceSecret> createdAccessToken,
+        ValidRefreshToken<TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>? previousRefreshToken,
+        CreatedAccessToken<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> createdAccessToken,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(createdAccessToken);
@@ -56,10 +58,15 @@ public class DefaultRefreshTokenService<TRequestContext, TClient, TClientSecret,
         var referenceAccessTokenHandle = createdAccessToken.AccessTokenFormat == DefaultAccessTokenFormat.Reference
             ? createdAccessToken.Handle
             : null;
+        if (createdAccessToken.ResourceOwnerProfile is null)
+        {
+            return new("Can't create refresh token. Resource Owner data is missing.");
+        }
+
         return await CreateRefreshTokenAsync(
             requestContext,
             createdAccessToken.Client,
-            createdAccessToken.ResourceOwnerProfile?.EssentialClaims,
+            createdAccessToken.ResourceOwnerProfile.EssentialClaims,
             createdAccessToken.GrantedResources,
             createdAccessToken.ActualIssuedAt,
             referenceAccessTokenHandle,
@@ -112,11 +119,11 @@ public class DefaultRefreshTokenService<TRequestContext, TClient, TClientSecret,
     protected virtual async Task<RefreshTokenCreationResult> CreateRefreshTokenAsync(
         TRequestContext requestContext,
         TClient client,
-        EssentialResourceOwnerClaims? essentialClaims,
+        TResourceOwnerEssentialClaims essentialClaims,
         ValidResources<TScope, TResource, TResourceSecret> grantedResources,
         DateTimeOffset issuedAt,
         string? referenceAccessTokenHandle,
-        ValidRefreshToken<TRefreshToken>? previousRefreshToken,
+        ValidRefreshToken<TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>? previousRefreshToken,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(client);
@@ -189,7 +196,7 @@ public class DefaultRefreshTokenService<TRequestContext, TClient, TClientSecret,
     protected virtual bool HasAbsoluteExpirationDate(
         TClient client,
         DateTimeOffset currentExpiresAt,
-        ValidRefreshToken<TRefreshToken>? previousRefreshToken,
+        ValidRefreshToken<TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>? previousRefreshToken,
         [NotNullWhen(true)] out DateTimeOffset? absoluteExpirationDate)
     {
         ArgumentNullException.ThrowIfNull(client);

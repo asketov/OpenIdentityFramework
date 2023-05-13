@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Constants.Response.Errors;
 using OpenIdentityFramework.Models;
+using OpenIdentityFramework.Models.Authentication;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core;
@@ -15,27 +16,29 @@ using OpenIdentityFramework.Services.Endpoints.Token.Validation.Flows.RefreshTok
 
 namespace OpenIdentityFramework.Services.Endpoints.Token.Implementations.Validation.Flows.RefreshToken;
 
-public class DefaultTokenRequestRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken, TGrantedConsent>
-    : ITokenRequestRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken>
+public class DefaultTokenRequestRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers, TGrantedConsent>
+    : ITokenRequestRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
-    where TRefreshToken : AbstractRefreshToken
+    where TRefreshToken : AbstractRefreshToken<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
     where TGrantedConsent : AbstractGrantedConsent
 {
-    protected static readonly TokenRequestRefreshTokenValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken> UnauthorizedClient =
+    protected static readonly TokenRequestRefreshTokenValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> UnauthorizedClient =
         new(new ProtocolError(TokenErrors.UnauthorizedClient, "The authenticated client is not authorized to use this authorization grant type"));
 
-    protected static readonly TokenRequestRefreshTokenValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken> DisabledUser =
+    protected static readonly TokenRequestRefreshTokenValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> DisabledUser =
         new(new ProtocolError(TokenErrors.InvalidGrant, "User account for provided refresh token has been disabled"));
 
     public DefaultTokenRequestRefreshTokenValidator(
-        ITokenRequestRefreshTokenParameterRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TRefreshToken> refreshTokenValidator,
+        ITokenRequestRefreshTokenParameterRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> refreshTokenValidator,
         ITokenRequestCommonParameterScopeValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> scopeValidator,
-        IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret> resourceOwnerProfile,
+        IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> resourceOwnerProfile,
         IGrantedConsentService<TRequestContext, TClient, TClientSecret, TGrantedConsent> grantedConsents)
     {
         ArgumentNullException.ThrowIfNull(refreshTokenValidator);
@@ -48,12 +51,12 @@ public class DefaultTokenRequestRefreshTokenValidator<TRequestContext, TClient, 
         GrantedConsents = grantedConsents;
     }
 
-    protected ITokenRequestRefreshTokenParameterRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TRefreshToken> RefreshTokenValidator { get; }
+    protected ITokenRequestRefreshTokenParameterRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> RefreshTokenValidator { get; }
     protected ITokenRequestCommonParameterScopeValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> ScopeValidator { get; }
-    protected IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret> ResourceOwnerProfile { get; }
+    protected IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> ResourceOwnerProfile { get; }
     protected IGrantedConsentService<TRequestContext, TClient, TClientSecret, TGrantedConsent> GrantedConsents { get; }
 
-    public virtual async Task<TokenRequestRefreshTokenValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken>> ValidateAsync(
+    public virtual async Task<TokenRequestRefreshTokenValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>> ValidateAsync(
         TRequestContext requestContext,
         IFormCollection form,
         TClient client,
@@ -74,7 +77,7 @@ public class DefaultTokenRequestRefreshTokenValidator<TRequestContext, TClient, 
         var refreshTokenScopes = refreshTokenValidation.RefreshToken.GetGrantedScopes();
         var grantedConsent = await GrantedConsents.FindAsync(
             requestContext,
-            refreshTokenValidation.RefreshToken.GetEssentialResourceOwnerClaims().Identifiers.SubjectId,
+            refreshTokenValidation.RefreshToken.GetEssentialResourceOwnerClaims().GetResourceOwnerIdentifiers().GetSubjectId(),
             client,
             cancellationToken);
 
@@ -100,7 +103,7 @@ public class DefaultTokenRequestRefreshTokenValidator<TRequestContext, TClient, 
             return DisabledUser;
         }
 
-        return new(new ValidRefreshTokenTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken>(
+        return new(new ValidRefreshTokenTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>(
             client,
             scopeValidation.AllowedResources,
             refreshTokenValidation.Handle,

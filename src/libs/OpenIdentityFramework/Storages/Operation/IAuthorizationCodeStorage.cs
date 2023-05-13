@@ -8,14 +8,17 @@ using OpenIdentityFramework.Models.Operation;
 
 namespace OpenIdentityFramework.Storages.Operation;
 
-public interface IAuthorizationCodeStorage<TRequestContext, TAuthorizationCode>
+public interface IAuthorizationCodeStorage<TRequestContext, TAuthorizationCode, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
-    where TAuthorizationCode : AbstractAuthorizationCode
+    where TAuthorizationCode : AbstractAuthorizationCode<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
+
 {
     Task<string> CreateAsync(
         TRequestContext requestContext,
         string clientId,
-        EssentialResourceOwnerClaims essentialClaims,
+        TResourceOwnerEssentialClaims essentialClaims,
         IReadOnlySet<string> grantedScopes,
         string? authorizeRequestRedirectUri,
         string codeChallenge,

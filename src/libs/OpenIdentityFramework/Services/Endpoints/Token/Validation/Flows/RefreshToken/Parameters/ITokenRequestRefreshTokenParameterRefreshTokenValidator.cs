@@ -2,19 +2,22 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Models;
+using OpenIdentityFramework.Models.Authentication;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Endpoints.Token.Models.Validation.Flows.RefreshToken.Parameters;
 
 namespace OpenIdentityFramework.Services.Endpoints.Token.Validation.Flows.RefreshToken.Parameters;
 
-public interface ITokenRequestRefreshTokenParameterRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TRefreshToken>
+public interface ITokenRequestRefreshTokenParameterRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
-    where TRefreshToken : AbstractRefreshToken
+    where TRefreshToken : AbstractRefreshToken<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
-    Task<TokenRequestRefreshTokenParameterRefreshTokenValidationResult<TRefreshToken>> ValidateRefreshTokenAsync(
+    Task<TokenRequestRefreshTokenParameterRefreshTokenValidationResult<TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>> ValidateRefreshTokenAsync(
         TRequestContext requestContext,
         IFormCollection form,
         TClient client,

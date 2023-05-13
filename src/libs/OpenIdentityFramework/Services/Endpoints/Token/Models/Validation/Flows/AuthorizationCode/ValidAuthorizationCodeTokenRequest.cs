@@ -1,19 +1,27 @@
-﻿using OpenIdentityFramework.Models.Configuration;
+﻿using OpenIdentityFramework.Models.Authentication;
+using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core.Models.ResourceOwnerProfileService;
 using OpenIdentityFramework.Services.Core.Models.ResourceService;
 
 namespace OpenIdentityFramework.Services.Endpoints.Token.Models.Validation.Flows.AuthorizationCode;
 
-public class ValidAuthorizationCodeTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode>
+public class ValidAuthorizationCodeTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
-    where TAuthorizationCode : AbstractAuthorizationCode
+    where TAuthorizationCode : AbstractAuthorizationCode<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
-    public ValidAuthorizationCodeTokenRequest(TClient client, ValidResources<TScope, TResource, TResourceSecret> allowedResources, string authorizationCodeHandle, TAuthorizationCode authorizationCode, ResourceOwnerProfile resourceOwnerProfile)
+    public ValidAuthorizationCodeTokenRequest(
+        TClient client,
+        ValidResources<TScope, TResource, TResourceSecret> allowedResources,
+        string authorizationCodeHandle,
+        TAuthorizationCode authorizationCode,
+        ResourceOwnerProfile<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> resourceOwnerProfile)
     {
         Client = client;
         AllowedResources = allowedResources;
@@ -26,5 +34,5 @@ public class ValidAuthorizationCodeTokenRequest<TClient, TClientSecret, TScope, 
     public ValidResources<TScope, TResource, TResourceSecret> AllowedResources { get; }
     public string AuthorizationCodeHandle { get; }
     public TAuthorizationCode AuthorizationCode { get; }
-    public ResourceOwnerProfile ResourceOwnerProfile { get; }
+    public ResourceOwnerProfile<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> ResourceOwnerProfile { get; }
 }

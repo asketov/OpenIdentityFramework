@@ -8,12 +8,13 @@ using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequest
 
 namespace OpenIdentityFramework.Services.Interaction;
 
-public interface IOpenIdentityFrameworkInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret>
+public interface IOpenIdentityFrameworkInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerIdentifiers>
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
     Task<ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>?> GetAuthorizeRequestInformationAsync(
         HttpContext httpContext,
@@ -23,14 +24,14 @@ public interface IOpenIdentityFrameworkInteractionService<TClient, TClientSecret
     Task GrantAsync(
         HttpContext httpContext,
         string authorizeRequestId,
-        ResourceOwnerIdentifiers authorIdentifiers,
+        TResourceOwnerIdentifiers authorIdentifiers,
         AuthorizeRequestConsentGranted grantedConsent,
         CancellationToken cancellationToken);
 
     Task DenyAsync(
         HttpContext httpContext,
         string authorizeRequestId,
-        ResourceOwnerIdentifiers authorIdentifiers,
+        TResourceOwnerIdentifiers authorIdentifiers,
         AuthorizeRequestConsentDenied deniedConsent,
         CancellationToken cancellationToken);
 }

@@ -8,20 +8,21 @@ using OpenIdentityFramework.Models.Operation.AuthorizeRequestConsent;
 
 namespace OpenIdentityFramework.Storages.Operation;
 
-public interface IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequestConsent>
+public interface IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequestConsent, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
-    where TAuthorizeRequestConsent : AbstractAuthorizeRequestConsent
+    where TAuthorizeRequestConsent : AbstractAuthorizeRequestConsent<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
     Task<TAuthorizeRequestConsent?> FindAsync(
         TRequestContext requestContext,
         string authorizeRequestId,
-        ResourceOwnerIdentifiers authorIdentifiers,
+        TResourceOwnerIdentifiers authorIdentifiers,
         CancellationToken cancellationToken);
 
     Task GrantAsync(
         TRequestContext requestContext,
         string authorizeRequestId,
-        ResourceOwnerIdentifiers authorIdentifiers,
+        TResourceOwnerIdentifiers authorIdentifiers,
         AuthorizeRequestConsentGranted grantedConsent,
         DateTimeOffset createdAt,
         DateTimeOffset expiresAt,
@@ -30,7 +31,7 @@ public interface IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequ
     Task DenyAsync(
         TRequestContext requestContext,
         string authorizeRequestId,
-        ResourceOwnerIdentifiers authorIdentifiers,
+        TResourceOwnerIdentifiers authorIdentifiers,
         AuthorizeRequestConsentDenied deniedConsent,
         DateTimeOffset createdAt,
         DateTimeOffset expiresAt,
@@ -39,6 +40,6 @@ public interface IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequ
     Task DeleteAsync(
         TRequestContext requestContext,
         string authorizeRequestId,
-        ResourceOwnerIdentifiers authorIdentifiers,
+        TResourceOwnerIdentifiers authorIdentifiers,
         CancellationToken cancellationToken);
 }

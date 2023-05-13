@@ -4,9 +4,11 @@ using OpenIdentityFramework.Models.Authentication;
 
 namespace OpenIdentityFramework.Services.Core.Models.ResourceOwnerAuthenticationService;
 
-public class ResourceOwnerAuthentication
+public class ResourceOwnerAuthentication<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
-    public ResourceOwnerAuthentication(EssentialResourceOwnerClaims essentialClaims, AuthenticationTicket authenticationTicket)
+    public ResourceOwnerAuthentication(TResourceOwnerEssentialClaims essentialClaims, AuthenticationTicket authenticationTicket)
     {
         ArgumentNullException.ThrowIfNull(essentialClaims);
         ArgumentNullException.ThrowIfNull(authenticationTicket);
@@ -14,6 +16,6 @@ public class ResourceOwnerAuthentication
         AuthenticationTicket = authenticationTicket;
     }
 
-    public EssentialResourceOwnerClaims EssentialClaims { get; }
+    public TResourceOwnerEssentialClaims EssentialClaims { get; }
     public AuthenticationTicket AuthenticationTicket { get; }
 }

@@ -4,10 +4,12 @@ using OpenIdentityFramework.Models.Authentication;
 
 namespace OpenIdentityFramework.Models.Operation;
 
-public abstract class AbstractRefreshToken
+public abstract class AbstractRefreshToken<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
     public abstract string GetClientId();
-    public abstract EssentialResourceOwnerClaims GetEssentialResourceOwnerClaims();
+    public abstract TResourceOwnerEssentialClaims GetEssentialResourceOwnerClaims();
     public abstract IReadOnlySet<string> GetGrantedScopes();
     public abstract string? GetReferenceAccessTokenHandle();
     public abstract string? GetParentRefreshTokenHandle();

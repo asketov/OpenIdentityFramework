@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Constants.Response.Errors;
 using OpenIdentityFramework.Models;
+using OpenIdentityFramework.Models.Authentication;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core;
@@ -15,19 +16,21 @@ using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequest
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations;
 
-public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizeRequestConsent, TGrantedConsent>
-    : IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizeRequestConsent>
+public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizeRequestConsent, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers, TGrantedConsent>
+    : IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizeRequestConsent, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
-    where TAuthorizeRequestConsent : AbstractAuthorizeRequestConsent
+    where TAuthorizeRequestConsent : AbstractAuthorizeRequestConsent<TResourceOwnerIdentifiers>
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
     where TGrantedConsent : AbstractGrantedConsent
 {
     public DefaultAuthorizeRequestInteractionService(
-        IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret> resourceOwnerProfile,
+        IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> resourceOwnerProfile,
         IGrantedConsentService<TRequestContext, TClient, TClientSecret, TGrantedConsent> consents)
     {
         ArgumentNullException.ThrowIfNull(resourceOwnerProfile);
@@ -36,13 +39,13 @@ public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient,
         Consents = consents;
     }
 
-    protected IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret> ResourceOwnerProfile { get; }
+    protected IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> ResourceOwnerProfile { get; }
     protected IGrantedConsentService<TRequestContext, TClient, TClientSecret, TGrantedConsent> Consents { get; }
 
-    public virtual async Task<AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>> ProcessInteractionRequirementsAsync(
+    public virtual async Task<AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>> ProcessInteractionRequirementsAsync(
         TRequestContext requestContext,
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
-        ResourceOwnerAuthentication? resourceOwnerAuthentication,
+        ResourceOwnerAuthentication<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>? resourceOwnerAuthentication,
         TAuthorizeRequestConsent? authorizeRequestConsent,
         CancellationToken cancellationToken)
     {
@@ -69,17 +72,17 @@ public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient,
         return await HandleConsentAsync(requestContext, authorizeRequest, resourceOwnerAuthentication, authorizeRequestConsent, isPromptNone, cancellationToken);
     }
 
-    protected virtual async Task<AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>?> HandleAuthenticationAsync(
+    protected virtual async Task<AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>?> HandleAuthenticationAsync(
         TRequestContext requestContext,
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
-        ResourceOwnerAuthentication resourceOwnerAuthentication,
+        ResourceOwnerAuthentication<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> resourceOwnerAuthentication,
         bool isPromptNone,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(authorizeRequest);
         ArgumentNullException.ThrowIfNull(resourceOwnerAuthentication);
         cancellationToken.ThrowIfCancellationRequested();
-        var isActive = await ResourceOwnerProfile.IsActiveAsync(requestContext, resourceOwnerAuthentication.EssentialClaims.Identifiers, cancellationToken);
+        var isActive = await ResourceOwnerProfile.IsActiveAsync(requestContext, resourceOwnerAuthentication.EssentialClaims.GetResourceOwnerIdentifiers(), cancellationToken);
         if (!isActive)
         {
             return LoginErrorOrInteractionRequired(isPromptNone);
@@ -90,7 +93,7 @@ public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient,
         {
             if (authorizeRequest.MaxAge.Value > 0)
             {
-                var absoluteMaxAge = resourceOwnerAuthentication.EssentialClaims.AuthenticatedAt.AddSeconds(authorizeRequest.MaxAge.Value);
+                var absoluteMaxAge = resourceOwnerAuthentication.EssentialClaims.GetAuthenticationDate().AddSeconds(authorizeRequest.MaxAge.Value);
                 if (authorizeRequest.InitialRequestDate > absoluteMaxAge)
                 {
                     return LoginErrorOrInteractionRequired(isPromptNone);
@@ -117,10 +120,10 @@ public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient,
         return null;
     }
 
-    protected virtual async Task<AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>> HandleConsentAsync(
+    protected virtual async Task<AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>> HandleConsentAsync(
         TRequestContext requestContext,
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
-        ResourceOwnerAuthentication resourceOwnerAuthentication,
+        ResourceOwnerAuthentication<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> resourceOwnerAuthentication,
         TAuthorizeRequestConsent? authorizeRequestConsent,
         bool isPromptNone,
         CancellationToken cancellationToken)
@@ -178,21 +181,21 @@ public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient,
 
         if (scopesToPersist.Count > 0)
         {
-            await Consents.UpsertAsync(requestContext, resourceOwnerAuthentication.EssentialClaims.Identifiers.SubjectId, authorizeRequest.Client, scopesToPersist, cancellationToken);
+            await Consents.UpsertAsync(requestContext, resourceOwnerAuthentication.EssentialClaims.GetResourceOwnerIdentifiers().GetSubjectId(), authorizeRequest.Client, scopesToPersist, cancellationToken);
         }
         else
         {
-            await Consents.DeleteAsync(requestContext, resourceOwnerAuthentication.EssentialClaims.Identifiers.SubjectId, authorizeRequest.Client, cancellationToken);
+            await Consents.DeleteAsync(requestContext, resourceOwnerAuthentication.EssentialClaims.GetResourceOwnerIdentifiers().GetSubjectId(), authorizeRequest.Client, cancellationToken);
         }
 
-        return new(new ValidAuthorizeRequestInteraction<TClient, TClientSecret, TScope, TResource, TResourceSecret>(
+        return new(new ValidAuthorizeRequestInteraction<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>(
             authorizeRequest,
             grantedResources,
             resourceOwnerAuthentication,
             claimsResult.Profile));
     }
 
-    protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret> LoginErrorOrInteractionRequired(bool isPromptNone)
+    protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> LoginErrorOrInteractionRequired(bool isPromptNone)
     {
         if (isPromptNone)
         {
@@ -202,7 +205,7 @@ public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient,
         return InteractionLogin();
     }
 
-    protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret> ConsentErrorOrInteractionRequired(bool isPromptNone)
+    protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> ConsentErrorOrInteractionRequired(bool isPromptNone)
     {
         if (isPromptNone)
         {
@@ -215,7 +218,7 @@ public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient,
     protected virtual async Task<bool> IsConsentRequiredAsync(
         TRequestContext requestContext,
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
-        ResourceOwnerAuthentication resourceOwnerAuthentication,
+        ResourceOwnerAuthentication<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> resourceOwnerAuthentication,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(authorizeRequest);
@@ -246,7 +249,7 @@ public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient,
             return true;
         }
 
-        var grantedConsent = await Consents.FindAsync(requestContext, resourceOwnerAuthentication.EssentialClaims.Identifiers.SubjectId, authorizeRequest.Client, cancellationToken);
+        var grantedConsent = await Consents.FindAsync(requestContext, resourceOwnerAuthentication.EssentialClaims.GetResourceOwnerIdentifiers().GetSubjectId(), authorizeRequest.Client, cancellationToken);
         if (grantedConsent != null && authorizeRequest.RequestedResources.IsFullyCoveredBy(grantedConsent.GetGrantedScopes()))
         {
             return false;
@@ -257,11 +260,11 @@ public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient,
 
     protected virtual bool IsReAuthenticationAlreadyPerformed(
         ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest,
-        ResourceOwnerAuthentication resourceOwnerAuthentication)
+        ResourceOwnerAuthentication<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> resourceOwnerAuthentication)
     {
         ArgumentNullException.ThrowIfNull(authorizeRequest);
         ArgumentNullException.ThrowIfNull(resourceOwnerAuthentication);
-        return resourceOwnerAuthentication.EssentialClaims.AuthenticatedAt > authorizeRequest.InitialRequestDate;
+        return resourceOwnerAuthentication.EssentialClaims.GetAuthenticationDate() > authorizeRequest.InitialRequestDate;
     }
 
     protected virtual bool IsReAuthenticationRequired(ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> authorizeRequest)
@@ -272,7 +275,7 @@ public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient,
 
     #region Errors
 
-    protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret> ErrorDeniedConsent(ProtocolError? protocolError)
+    protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> ErrorDeniedConsent(ProtocolError? protocolError)
     {
         return protocolError?.Error
             is AuthorizeErrors.LoginRequired
@@ -283,22 +286,22 @@ public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient,
             : ErrorAccessDenied();
     }
 
-    protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret> ErrorProtocol(ProtocolError protocolError)
+    protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> ErrorProtocol(ProtocolError protocolError)
     {
         return new(protocolError);
     }
 
-    protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret> ErrorLoginRequired()
+    protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> ErrorLoginRequired()
     {
         return new(new ProtocolError(AuthorizeErrors.LoginRequired, null));
     }
 
-    protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret> ErrorAccessDenied()
+    protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> ErrorAccessDenied()
     {
         return new(new ProtocolError(AuthorizeErrors.AccessDenied, null));
     }
 
-    protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret> ErrorConsentRequired()
+    protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> ErrorConsentRequired()
     {
         return new(new ProtocolError(AuthorizeErrors.ConsentRequired, null));
     }
@@ -307,12 +310,12 @@ public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient,
 
     #region Interactions
 
-    protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret> InteractionLogin()
+    protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> InteractionLogin()
     {
         return new(DefaultInteractionResult.Login);
     }
 
-    protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret> InteractionConsent()
+    protected virtual AuthorizeRequestInteractionResult<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> InteractionConsent()
     {
         return new(DefaultInteractionResult.Consent);
     }

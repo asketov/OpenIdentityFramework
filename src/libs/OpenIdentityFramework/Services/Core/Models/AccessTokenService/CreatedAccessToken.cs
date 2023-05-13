@@ -1,23 +1,26 @@
 ﻿using System;
+using OpenIdentityFramework.Models.Authentication;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Services.Core.Models.ResourceOwnerProfileService;
 using OpenIdentityFramework.Services.Core.Models.ResourceService;
 
 namespace OpenIdentityFramework.Services.Core.Models.AccessTokenService;
 
-public class CreatedAccessToken<TClient, TClientSecret, TScope, TResource, TResourceSecret>
+public class CreatedAccessToken<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 
 {
     public CreatedAccessToken(
         string accessTokenFormat,
         string handle,
         TClient client,
-        ResourceOwnerProfile? resourceOwnerProfile,
+        ResourceOwnerProfile<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>? resourceOwnerProfile,
         ValidResources<TScope, TResource, TResourceSecret> grantedResources,
         DateTimeOffset actualIssuedAt,
         DateTimeOffset actualExpiresAt)
@@ -40,7 +43,7 @@ public class CreatedAccessToken<TClient, TClientSecret, TScope, TResource, TReso
     public string AccessTokenFormat { get; }
     public string Handle { get; }
     public TClient Client { get; }
-    public ResourceOwnerProfile? ResourceOwnerProfile { get; }
+    public ResourceOwnerProfile<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>? ResourceOwnerProfile { get; }
     public ValidResources<TScope, TResource, TResourceSecret> GrantedResources { get; }
     public DateTimeOffset ActualIssuedAt { get; }
     public long LifetimeInSeconds { get; }

@@ -8,14 +8,16 @@ using OpenIdentityFramework.Models.Operation;
 
 namespace OpenIdentityFramework.Storages.Operation;
 
-public interface IRefreshTokenStorage<TRequestContext, TRefreshToken>
+public interface IRefreshTokenStorage<TRequestContext, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
-    where TRefreshToken : AbstractRefreshToken
+    where TRefreshToken : AbstractRefreshToken<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
     Task<string> CreateAsync(
         TRequestContext requestContext,
         string clientId,
-        EssentialResourceOwnerClaims? essentialResourceOwnerClaims,
+        TResourceOwnerEssentialClaims essentialResourceOwnerClaims,
         IReadOnlySet<string> grantedScopes,
         string? referenceAccessTokenHandle,
         string? parentRefreshTokenHandle,

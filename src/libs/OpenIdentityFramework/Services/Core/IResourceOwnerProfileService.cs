@@ -8,20 +8,22 @@ using OpenIdentityFramework.Services.Core.Models.ResourceService;
 
 namespace OpenIdentityFramework.Services.Core;
 
-public interface IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret>
+public interface IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
-    Task<ResourceOwnerProfileResult> GetResourceOwnerProfileAsync(
+    Task<ResourceOwnerProfileResult<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>> GetResourceOwnerProfileAsync(
         TRequestContext requestContext,
-        EssentialResourceOwnerClaims essentialClaims,
+        TResourceOwnerEssentialClaims essentialClaims,
         ValidResources<TScope, TResource, TResourceSecret> grantedResources,
         CancellationToken cancellationToken);
 
     Task<bool> IsActiveAsync(
         TRequestContext requestContext,
-        ResourceOwnerIdentifiers resourceOwnerIdentifiers,
+        TResourceOwnerIdentifiers resourceOwnerIdentifiers,
         CancellationToken cancellationToken);
 }

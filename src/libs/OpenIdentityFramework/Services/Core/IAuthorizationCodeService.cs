@@ -10,16 +10,18 @@ using OpenIdentityFramework.Services.Core.Models.AuthorizationCodeService;
 
 namespace OpenIdentityFramework.Services.Core;
 
-public interface IAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode>
+public interface IAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
-    where TAuthorizationCode : AbstractAuthorizationCode
+    where TAuthorizationCode : AbstractAuthorizationCode<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
     Task<AuthorizationCodeCreationResult> CreateAsync(
         TRequestContext requestContext,
         TClient client,
-        EssentialResourceOwnerClaims essentialClaims,
+        TResourceOwnerEssentialClaims essentialClaims,
         IReadOnlySet<string> grantedScopes,
         string? authorizeRequestRedirectUri,
         string codeChallenge,

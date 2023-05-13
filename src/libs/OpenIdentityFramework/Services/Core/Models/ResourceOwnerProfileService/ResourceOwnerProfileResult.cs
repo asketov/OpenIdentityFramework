@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using OpenIdentityFramework.Models.Authentication;
 
 namespace OpenIdentityFramework.Services.Core.Models.ResourceOwnerProfileService;
 
-public class ResourceOwnerProfileResult
+public class ResourceOwnerProfileResult<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
-    public ResourceOwnerProfileResult(ResourceOwnerProfile profile)
+    public ResourceOwnerProfileResult(ResourceOwnerProfile<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> profile)
     {
         ArgumentNullException.ThrowIfNull(profile);
         Profile = profile;
@@ -17,7 +20,7 @@ public class ResourceOwnerProfileResult
         IsActive = false;
     }
 
-    public ResourceOwnerProfile? Profile { get; }
+    public ResourceOwnerProfile<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>? Profile { get; }
 
     [MemberNotNullWhen(true, nameof(Profile))]
     public bool IsActive { get; }

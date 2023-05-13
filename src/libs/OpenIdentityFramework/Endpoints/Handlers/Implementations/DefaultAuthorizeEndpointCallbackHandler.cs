@@ -13,6 +13,7 @@ using OpenIdentityFramework.Constants.Response.Errors;
 using OpenIdentityFramework.Endpoints.Results;
 using OpenIdentityFramework.Endpoints.Results.Implementations;
 using OpenIdentityFramework.Models;
+using OpenIdentityFramework.Models.Authentication;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core;
@@ -23,7 +24,7 @@ using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRespons
 
 namespace OpenIdentityFramework.Endpoints.Handlers.Implementations;
 
-public class DefaultAuthorizeEndpointCallbackHandler<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizeRequest, TAuthorizeRequestConsent>
+public class DefaultAuthorizeEndpointCallbackHandler<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers, TAuthorizeRequest, TAuthorizeRequestConsent>
     : IAuthorizeEndpointCallbackHandler<TRequestContext>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
@@ -31,8 +32,10 @@ public class DefaultAuthorizeEndpointCallbackHandler<TRequestContext, TClient, T
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
     where TAuthorizeRequest : AbstractAuthorizeRequest
-    where TAuthorizeRequestConsent : AbstractAuthorizeRequestConsent
+    where TAuthorizeRequestConsent : AbstractAuthorizeRequestConsent<TResourceOwnerIdentifiers>
 {
     public DefaultAuthorizeEndpointCallbackHandler(
         OpenIdentityFrameworkOptions frameworkOptions,
@@ -40,11 +43,11 @@ public class DefaultAuthorizeEndpointCallbackHandler<TRequestContext, TClient, T
         IAuthorizeRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> requestValidator,
         HtmlEncoder htmlEncoder,
         IErrorService<TRequestContext> errorService,
-        IResourceOwnerAuthenticationService<TRequestContext> resourceOwnerAuthentication,
+        IResourceOwnerAuthenticationService<TRequestContext, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> resourceOwnerAuthentication,
         IAuthorizeRequestService<TRequestContext, TAuthorizeRequest> authorizeRequest,
-        IAuthorizeRequestConsentService<TRequestContext, TAuthorizeRequestConsent> authorizeRequestConsent,
-        IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizeRequestConsent> interactionService,
-        IAuthorizeResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> responseGenerator)
+        IAuthorizeRequestConsentService<TRequestContext, TAuthorizeRequestConsent, TResourceOwnerIdentifiers> authorizeRequestConsent,
+        IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizeRequestConsent, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> interactionService,
+        IAuthorizeResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> responseGenerator)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
         ArgumentNullException.ThrowIfNull(issuerUrlProvider);
@@ -73,11 +76,11 @@ public class DefaultAuthorizeEndpointCallbackHandler<TRequestContext, TClient, T
     protected IAuthorizeRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> RequestValidator { get; }
     protected HtmlEncoder HtmlEncoder { get; }
     protected IErrorService<TRequestContext> ErrorService { get; }
-    protected IResourceOwnerAuthenticationService<TRequestContext> ResourceOwnerAuthentication { get; }
+    protected IResourceOwnerAuthenticationService<TRequestContext, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> ResourceOwnerAuthentication { get; }
     protected IAuthorizeRequestService<TRequestContext, TAuthorizeRequest> AuthorizeRequest { get; }
-    protected IAuthorizeRequestConsentService<TRequestContext, TAuthorizeRequestConsent> AuthorizeRequestConsent { get; }
-    protected IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizeRequestConsent> InteractionService { get; }
-    protected IAuthorizeResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> ResponseGenerator { get; }
+    protected IAuthorizeRequestConsentService<TRequestContext, TAuthorizeRequestConsent, TResourceOwnerIdentifiers> AuthorizeRequestConsent { get; }
+    protected IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizeRequestConsent, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> InteractionService { get; }
+    protected IAuthorizeResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> ResponseGenerator { get; }
 
     public virtual async Task<IEndpointHandlerResult> HandleAsync(TRequestContext requestContext, CancellationToken cancellationToken)
     {
@@ -123,7 +126,7 @@ public class DefaultAuthorizeEndpointCallbackHandler<TRequestContext, TClient, T
         TAuthorizeRequestConsent? requestConsent = null;
         if (authenticationResult.IsAuthenticated)
         {
-            requestConsent = await AuthorizeRequestConsent.FindAsync(requestContext, requestReadResult.RequestId, authenticationResult.Authentication.EssentialClaims.Identifiers, cancellationToken);
+            requestConsent = await AuthorizeRequestConsent.FindAsync(requestContext, requestReadResult.RequestId, authenticationResult.Authentication.EssentialClaims.GetResourceOwnerIdentifiers(), cancellationToken);
         }
 
         var interactionResult = await InteractionService.ProcessInteractionRequirementsAsync(

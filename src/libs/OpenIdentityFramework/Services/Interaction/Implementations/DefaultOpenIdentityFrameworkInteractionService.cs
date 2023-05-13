@@ -16,22 +16,23 @@ using OpenIdentityFramework.Storages.Operation;
 
 namespace OpenIdentityFramework.Services.Interaction.Implementations;
 
-public class DefaultOpenIdentityFrameworkInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TRequestContext, TAuthorizeRequest, TAuthorizeRequestConsent>
-    : IOpenIdentityFrameworkInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret>
+public class DefaultOpenIdentityFrameworkInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerIdentifiers, TRequestContext, TAuthorizeRequest, TAuthorizeRequestConsent>
+    : IOpenIdentityFrameworkInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerIdentifiers>
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
     where TRequestContext : class, IRequestContext
     where TAuthorizeRequest : AbstractAuthorizeRequest
-    where TAuthorizeRequestConsent : AbstractAuthorizeRequestConsent
+    where TAuthorizeRequestConsent : AbstractAuthorizeRequestConsent<TResourceOwnerIdentifiers>
 {
     public DefaultOpenIdentityFrameworkInteractionService(
         IIssuerUrlProvider<TRequestContext> issuerUrlProvider,
         IAuthorizeRequestService<TRequestContext, TAuthorizeRequest> authorizeRequest,
         IAuthorizeRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> requestValidator,
-        IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequestConsent> authorizeRequestConsentStorage)
+        IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequestConsent, TResourceOwnerIdentifiers> authorizeRequestConsentStorage)
     {
         ArgumentNullException.ThrowIfNull(issuerUrlProvider);
         ArgumentNullException.ThrowIfNull(authorizeRequest);
@@ -46,7 +47,7 @@ public class DefaultOpenIdentityFrameworkInteractionService<TClient, TClientSecr
     protected IIssuerUrlProvider<TRequestContext> IssuerUrlProvider { get; }
     protected IAuthorizeRequestService<TRequestContext, TAuthorizeRequest> AuthorizeRequest { get; }
     protected IAuthorizeRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> RequestValidator { get; }
-    protected IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequestConsent> AuthorizeRequestConsentStorage { get; }
+    protected IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequestConsent, TResourceOwnerIdentifiers> AuthorizeRequestConsentStorage { get; }
 
     public virtual async Task<ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>?> GetAuthorizeRequestInformationAsync(
         HttpContext httpContext,
@@ -75,7 +76,7 @@ public class DefaultOpenIdentityFrameworkInteractionService<TClient, TClientSecr
     public virtual async Task GrantAsync(
         HttpContext httpContext,
         string authorizeRequestId,
-        ResourceOwnerIdentifiers authorIdentifiers,
+        TResourceOwnerIdentifiers authorIdentifiers,
         AuthorizeRequestConsentGranted grantedConsent,
         CancellationToken cancellationToken)
     {
@@ -98,7 +99,7 @@ public class DefaultOpenIdentityFrameworkInteractionService<TClient, TClientSecr
     public virtual async Task DenyAsync(
         HttpContext httpContext,
         string authorizeRequestId,
-        ResourceOwnerIdentifiers authorIdentifiers,
+        TResourceOwnerIdentifiers authorIdentifiers,
         AuthorizeRequestConsentDenied deniedConsent,
         CancellationToken cancellationToken)
     {
@@ -149,7 +150,7 @@ public class DefaultOpenIdentityFrameworkInteractionService<TClient, TClientSecr
     protected virtual async Task GrantAsync(
         TRequestContext requestContext,
         string authorizeRequestId,
-        ResourceOwnerIdentifiers authorIdentifiers,
+        TResourceOwnerIdentifiers authorIdentifiers,
         AuthorizeRequestConsentGranted grantedConsent,
         CancellationToken cancellationToken)
     {
@@ -168,7 +169,7 @@ public class DefaultOpenIdentityFrameworkInteractionService<TClient, TClientSecr
     protected virtual async Task DenyAsync(
         TRequestContext requestContext,
         string authorizeRequestId,
-        ResourceOwnerIdentifiers authorIdentifiers,
+        TResourceOwnerIdentifiers authorIdentifiers,
         AuthorizeRequestConsentDenied deniedConsent,
         CancellationToken cancellationToken)
     {

@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
@@ -9,27 +6,34 @@ using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Authentication;
 using OpenIdentityFramework.Services.Core.Models.ResourceOwnerAuthenticationService;
+using OpenIdentityFramework.Services.Operation;
 
 namespace OpenIdentityFramework.Services.Core.Implementations;
 
-public class DefaultResourceOwnerAuthenticationService<TRequestContext>
-    : IResourceOwnerAuthenticationService<TRequestContext>
+public class DefaultResourceOwnerAuthenticationService<TRequestContext, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    : IResourceOwnerAuthenticationService<TRequestContext, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
     public DefaultResourceOwnerAuthenticationService(
         OpenIdentityFrameworkOptions frameworkOptions,
-        IAuthenticationSchemeProvider schemeProvider)
+        IAuthenticationSchemeProvider schemeProvider,
+        IResourceOwnerEssentialClaimsFactory<TRequestContext, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> essentialClaimsFactory)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
         ArgumentNullException.ThrowIfNull(schemeProvider);
+        ArgumentNullException.ThrowIfNull(essentialClaimsFactory);
         FrameworkOptions = frameworkOptions;
         SchemeProvider = schemeProvider;
+        EssentialClaimsFactory = essentialClaimsFactory;
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
     protected IAuthenticationSchemeProvider SchemeProvider { get; }
+    protected IResourceOwnerEssentialClaimsFactory<TRequestContext, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> EssentialClaimsFactory { get; }
 
-    public virtual async Task<ResourceOwnerAuthenticationResult> AuthenticateAsync(TRequestContext requestContext, CancellationToken cancellationToken)
+    public virtual async Task<ResourceOwnerAuthenticationResult<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>> AuthenticateAsync(TRequestContext requestContext, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(requestContext);
         cancellationToken.ThrowIfCancellationRequested();
@@ -53,7 +57,7 @@ public class DefaultResourceOwnerAuthenticationService<TRequestContext>
         return await HandleAuthenticateResultAsync(requestContext, authenticationResult, cancellationToken);
     }
 
-    protected virtual Task<ResourceOwnerAuthenticationResult> HandleAuthenticateResultAsync(
+    protected virtual async Task<ResourceOwnerAuthenticationResult<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>> HandleAuthenticateResultAsync(
         TRequestContext requestContext,
         AuthenticateResult? authenticateResult,
         CancellationToken cancellationToken)
@@ -61,54 +65,15 @@ public class DefaultResourceOwnerAuthenticationService<TRequestContext>
         cancellationToken.ThrowIfCancellationRequested();
         if (authenticateResult is null || !authenticateResult.Succeeded || authenticateResult.Ticket.Principal.Identity?.IsAuthenticated != true)
         {
-            return Task.FromResult(new ResourceOwnerAuthenticationResult());
+            return new();
         }
 
-        if (!TryGetSingleClaimValue(authenticateResult.Ticket.Principal, FrameworkOptions.Authentication.SubjectIdClaimType, out var subjectId))
+        var claimsResult = await EssentialClaimsFactory.CreateAsync(requestContext, authenticateResult.Ticket, cancellationToken);
+        if (claimsResult.HasError)
         {
-            return Task.FromResult(new ResourceOwnerAuthenticationResult($"Can't read \"{FrameworkOptions.Authentication.SubjectIdClaimType}\" claim"));
+            return new(claimsResult.ErrorDescription);
         }
 
-        if (!TryGetSingleClaimValue(authenticateResult.Ticket.Principal, FrameworkOptions.Authentication.SessionIdClaimType, out var sessionId))
-        {
-            return Task.FromResult(new ResourceOwnerAuthenticationResult($"Can't read \"{FrameworkOptions.Authentication.SessionIdClaimType}\" claim"));
-        }
-
-        if (!TryGetAuthenticationDate(authenticateResult.Ticket, out var authenticatedAt))
-        {
-            return Task.FromResult(new ResourceOwnerAuthenticationResult($"Can't read \"{typeof(AuthenticationTicket).Namespace}.{nameof(AuthenticationTicket)}.{nameof(AuthenticationTicket.Properties)}.{nameof(AuthenticationProperties.IssuedUtc)}\" authentication property"));
-        }
-
-        var identifiers = new ResourceOwnerIdentifiers(subjectId, sessionId);
-        var essentialClaims = new EssentialResourceOwnerClaims(identifiers, authenticatedAt.Value);
-        var authentication = new ResourceOwnerAuthentication(essentialClaims, authenticateResult.Ticket);
-        return Task.FromResult(new ResourceOwnerAuthenticationResult(authentication));
-    }
-
-    protected virtual bool TryGetSingleClaimValue(ClaimsPrincipal principal, string claimType, [NotNullWhen(true)] out string? value)
-    {
-        ArgumentNullException.ThrowIfNull(principal);
-        var claim = principal.Claims.SingleOrDefault(x => x.Type == claimType);
-        if (claim is not null && !string.IsNullOrEmpty(claim.Value))
-        {
-            value = claim.Value;
-            return true;
-        }
-
-        value = null;
-        return false;
-    }
-
-    protected virtual bool TryGetAuthenticationDate(AuthenticationTicket? authenticationTicket, [NotNullWhen(true)] out DateTimeOffset? value)
-    {
-        var issuedAt = authenticationTicket?.Properties.IssuedUtc;
-        if (issuedAt.HasValue)
-        {
-            value = issuedAt.Value;
-            return true;
-        }
-
-        value = null;
-        return false;
+        return new(new ResourceOwnerAuthentication<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>(claimsResult.EssentialClaims, authenticateResult.Ticket));
     }
 }

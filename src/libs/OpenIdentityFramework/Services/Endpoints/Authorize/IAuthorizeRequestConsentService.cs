@@ -6,19 +6,20 @@ using OpenIdentityFramework.Models.Operation;
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize;
 
-public interface IAuthorizeRequestConsentService<TRequestContext, TAuthorizeRequestConsent>
+public interface IAuthorizeRequestConsentService<TRequestContext, TAuthorizeRequestConsent, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
-    where TAuthorizeRequestConsent : AbstractAuthorizeRequestConsent
+    where TAuthorizeRequestConsent : AbstractAuthorizeRequestConsent<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
     Task<TAuthorizeRequestConsent?> FindAsync(
         TRequestContext requestContext,
         string authorizeRequestId,
-        ResourceOwnerIdentifiers authorIdentifiers,
+        TResourceOwnerIdentifiers authorIdentifiers,
         CancellationToken cancellationToken);
 
     Task DeleteAsync(
         TRequestContext requestContext,
         string authorizeRequestId,
-        ResourceOwnerIdentifiers authorIdentifiers,
+        TResourceOwnerIdentifiers authorIdentifiers,
         CancellationToken cancellationToken);
 }

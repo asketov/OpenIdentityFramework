@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Constants.Request;
 using OpenIdentityFramework.Models;
+using OpenIdentityFramework.Models.Authentication;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core;
@@ -13,19 +14,21 @@ using OpenIdentityFramework.Services.Endpoints.Token.Validation.Flows.RefreshTok
 
 namespace OpenIdentityFramework.Services.Endpoints.Token.Implementations.Validation.Flows.RefreshToken.Parameters;
 
-public class DefaultTokenRequestRefreshTokenParameterRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken>
-    : ITokenRequestRefreshTokenParameterRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TRefreshToken>
+public class DefaultTokenRequestRefreshTokenParameterRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    : ITokenRequestRefreshTokenParameterRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
     where TClientSecret : AbstractSecret
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
-    where TRefreshToken : AbstractRefreshToken
+    where TRefreshToken : AbstractRefreshToken<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+    where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
     public DefaultTokenRequestRefreshTokenParameterRefreshTokenValidator(
         OpenIdentityFrameworkOptions frameworkOptions,
-        IRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken> refreshTokens)
+        IRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> refreshTokens)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
         ArgumentNullException.ThrowIfNull(refreshTokens);
@@ -34,10 +37,10 @@ public class DefaultTokenRequestRefreshTokenParameterRefreshTokenValidator<TRequ
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
-    protected IRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken> RefreshTokens { get; }
+    protected IRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> RefreshTokens { get; }
 
 
-    public virtual async Task<TokenRequestRefreshTokenParameterRefreshTokenValidationResult<TRefreshToken>> ValidateRefreshTokenAsync(
+    public virtual async Task<TokenRequestRefreshTokenParameterRefreshTokenValidationResult<TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>> ValidateRefreshTokenAsync(
         TRequestContext requestContext,
         IFormCollection form,
         TClient client,
@@ -53,14 +56,14 @@ public class DefaultTokenRequestRefreshTokenParameterRefreshTokenValidator<TRequ
         // This section defines the behaviors for OpenID Connect Authorization Servers when Refresh Tokens are used.
         if (!form.TryGetValue(TokenRequestParameters.RefreshToken, out var refreshTokenValues))
         {
-            return TokenRequestRefreshTokenParameterRefreshTokenValidationResult<TRefreshToken>.RefreshTokenIsMissing;
+            return TokenRequestRefreshTokenParameterRefreshTokenValidationResult<TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>.RefreshTokenIsMissing;
         }
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
         // Request and response parameters defined by this specification MUST NOT be included more than once.
         if (refreshTokenValues.Count != 1)
         {
-            return TokenRequestRefreshTokenParameterRefreshTokenValidationResult<TRefreshToken>.MultipleRefreshTokenValuesNotAllowed;
+            return TokenRequestRefreshTokenParameterRefreshTokenValidationResult<TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>.MultipleRefreshTokenValuesNotAllowed;
         }
 
         var refreshTokenHandle = refreshTokenValues.ToString();
@@ -68,12 +71,12 @@ public class DefaultTokenRequestRefreshTokenParameterRefreshTokenValidator<TRequ
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
         if (string.IsNullOrEmpty(refreshTokenHandle))
         {
-            return TokenRequestRefreshTokenParameterRefreshTokenValidationResult<TRefreshToken>.RefreshTokenIsMissing;
+            return TokenRequestRefreshTokenParameterRefreshTokenValidationResult<TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>.RefreshTokenIsMissing;
         }
 
         if (refreshTokenHandle.Length > FrameworkOptions.InputLengthRestrictions.RefreshToken)
         {
-            return TokenRequestRefreshTokenParameterRefreshTokenValidationResult<TRefreshToken>.RefreshTokenIsTooLong;
+            return TokenRequestRefreshTokenParameterRefreshTokenValidationResult<TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>.RefreshTokenIsTooLong;
         }
 
         var refreshToken = await RefreshTokens.FindAsync(requestContext, client, refreshTokenHandle, cancellationToken);
@@ -82,6 +85,6 @@ public class DefaultTokenRequestRefreshTokenParameterRefreshTokenValidator<TRequ
             return new(refreshTokenHandle, refreshToken);
         }
 
-        return TokenRequestRefreshTokenParameterRefreshTokenValidationResult<TRefreshToken>.UnknownRefreshToken;
+        return TokenRequestRefreshTokenParameterRefreshTokenValidationResult<TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>.UnknownRefreshToken;
     }
 }

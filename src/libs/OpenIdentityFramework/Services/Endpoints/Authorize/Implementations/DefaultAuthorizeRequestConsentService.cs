@@ -8,24 +8,25 @@ using OpenIdentityFramework.Storages.Operation;
 
 namespace OpenIdentityFramework.Services.Endpoints.Authorize.Implementations;
 
-public class DefaultAuthorizeRequestConsentService<TRequestContext, TAuthorizeRequestConsent>
-    : IAuthorizeRequestConsentService<TRequestContext, TAuthorizeRequestConsent>
+public class DefaultAuthorizeRequestConsentService<TRequestContext, TAuthorizeRequestConsent, TResourceOwnerIdentifiers>
+    : IAuthorizeRequestConsentService<TRequestContext, TAuthorizeRequestConsent, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
-    where TAuthorizeRequestConsent : AbstractAuthorizeRequestConsent
+    where TAuthorizeRequestConsent : AbstractAuthorizeRequestConsent<TResourceOwnerIdentifiers>
+    where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
-    public DefaultAuthorizeRequestConsentService(IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequestConsent> storage, ISystemClock systemClock)
+    public DefaultAuthorizeRequestConsentService(IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequestConsent, TResourceOwnerIdentifiers> storage, ISystemClock systemClock)
     {
         Storage = storage;
         SystemClock = systemClock;
     }
 
-    protected IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequestConsent> Storage { get; }
+    protected IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequestConsent, TResourceOwnerIdentifiers> Storage { get; }
     protected ISystemClock SystemClock { get; }
 
     public virtual async Task<TAuthorizeRequestConsent?> FindAsync(
         TRequestContext requestContext,
         string authorizeRequestId,
-        ResourceOwnerIdentifiers authorIdentifiers,
+        TResourceOwnerIdentifiers authorIdentifiers,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -49,7 +50,7 @@ public class DefaultAuthorizeRequestConsentService<TRequestContext, TAuthorizeRe
     public virtual async Task DeleteAsync(
         TRequestContext requestContext,
         string authorizeRequestId,
-        ResourceOwnerIdentifiers authorIdentifiers,
+        TResourceOwnerIdentifiers authorIdentifiers,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();

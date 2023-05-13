@@ -1,4 +1,6 @@
-﻿using System.Threading;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using OpenIdentityFramework.Models;
@@ -14,14 +16,22 @@ public class DefaultAuthorizeRequestConsentService<TRequestContext, TAuthorizeRe
     where TAuthorizeRequestConsent : AbstractAuthorizeRequestConsent<TResourceOwnerIdentifiers>
     where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
-    public DefaultAuthorizeRequestConsentService(IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequestConsent, TResourceOwnerIdentifiers> storage, ISystemClock systemClock)
+    public DefaultAuthorizeRequestConsentService(
+        IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequestConsent, TResourceOwnerIdentifiers> storage,
+        ISystemClock systemClock,
+        IEqualityComparer<TResourceOwnerIdentifiers> equalityComparer)
     {
+        ArgumentNullException.ThrowIfNull(storage);
+        ArgumentNullException.ThrowIfNull(systemClock);
+        ArgumentNullException.ThrowIfNull(equalityComparer);
         Storage = storage;
         SystemClock = systemClock;
+        EqualityComparer = equalityComparer;
     }
 
     protected IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequestConsent, TResourceOwnerIdentifiers> Storage { get; }
     protected ISystemClock SystemClock { get; }
+    protected IEqualityComparer<TResourceOwnerIdentifiers> EqualityComparer { get; }
 
     public virtual async Task<TAuthorizeRequestConsent?> FindAsync(
         TRequestContext requestContext,
@@ -31,7 +41,7 @@ public class DefaultAuthorizeRequestConsentService<TRequestContext, TAuthorizeRe
     {
         cancellationToken.ThrowIfCancellationRequested();
         var consent = await Storage.FindAsync(requestContext, authorizeRequestId, authorIdentifiers, cancellationToken);
-        if (consent != null && consent.GetAuthorIdentifiers().Equals(authorIdentifiers))
+        if (consent != null && EqualityComparer.Equals(consent.GetAuthorIdentifiers(), authorIdentifiers))
         {
             var currentDate = SystemClock.UtcNow;
             var expirationDate = consent.GetExpirationDate();

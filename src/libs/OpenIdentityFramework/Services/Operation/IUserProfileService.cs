@@ -12,7 +12,7 @@ public interface IUserProfileService<TRequestContext, TResourceOwnerIdentifiers>
 {
     Task GetProfileAsync(
         TRequestContext requestContext,
-        UserProfileContext<TResourceOwnerIdentifiers> context,
+        UserProfileContext<TResourceOwnerIdentifiers> resultContext,
         CancellationToken cancellationToken);
 
     Task<bool> IsActiveAsync(

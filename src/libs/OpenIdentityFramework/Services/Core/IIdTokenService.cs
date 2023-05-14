@@ -28,6 +28,7 @@ public interface IIdTokenService<TRequestContext, TClient, TClientSecret, TScope
         string? accessTokenHandle,
         string? nonce,
         ResourceOwnerProfile<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> resourceOwnerProfile,
+        bool includeProfileClaims,
         ValidResources<TScope, TResource, TResourceSecret> grantedResources,
         DateTimeOffset issuedAt,
         CancellationToken cancellationToken);

@@ -8,5 +8,6 @@ public abstract class AbstractGrantedConsent
     public abstract string GetSubjectId();
     public abstract string GetClientId();
     public abstract IReadOnlySet<string> GetGrantedScopes();
+    public abstract DateTimeOffset GetCreationDate();
     public abstract DateTimeOffset? GetExpirationDate();
 }

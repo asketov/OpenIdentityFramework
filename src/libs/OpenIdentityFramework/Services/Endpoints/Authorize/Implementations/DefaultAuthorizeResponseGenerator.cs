@@ -75,6 +75,7 @@ public class DefaultAuthorizeResponseGenerator<TRequestContext, TClient, TClient
                 null,
                 request.AuthorizeRequest.Nonce,
                 request.ResourceOwnerProfile,
+                request.AuthorizeRequest.Client.ShouldIncludeUserClaimsInIdTokenAuthorizeResponse(),
                 request.GrantedResources,
                 idTokenIssuedAt,
                 cancellationToken);

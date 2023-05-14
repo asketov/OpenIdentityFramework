@@ -8,7 +8,7 @@ using OpenIdentityFramework.MySql.Models;
 using OpenIdentityFramework.MySql.Services.MySql;
 using OpenIdentityFramework.Services.Operation;
 
-namespace OpenIdentityFramework.MySql.Services.Operation;
+namespace OpenIdentityFramework.MySql.Services.Operation.RequestContextFactory;
 
 public class MySqlRequestContextFactory : IRequestContextFactory<MySqlRequestContext>
 {

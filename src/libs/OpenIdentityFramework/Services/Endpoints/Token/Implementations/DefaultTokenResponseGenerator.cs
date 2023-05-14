@@ -114,6 +114,7 @@ public class DefaultTokenResponseGenerator<TRequestContext, TClient, TClientSecr
         string issuer,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(authorizationCode);
         ArgumentNullException.ThrowIfNull(grantedResources);
         ArgumentNullException.ThrowIfNull(resourceOwnerProfile);
@@ -143,6 +144,7 @@ public class DefaultTokenResponseGenerator<TRequestContext, TClient, TClientSecr
                 accessTokenResult.AccessToken.Handle,
                 null,
                 resourceOwnerProfile,
+                client.ShouldIncludeUserClaimsInIdTokenTokenResponse(),
                 grantedResources,
                 accessTokenResult.AccessToken.ActualIssuedAt,
                 cancellationToken);
@@ -227,6 +229,7 @@ public class DefaultTokenResponseGenerator<TRequestContext, TClient, TClientSecr
         string issuer,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(grantedResources);
         cancellationToken.ThrowIfCancellationRequested();
         var accessTokenResult = await AccessTokenService.CreateAccessTokenAsync(
@@ -259,6 +262,7 @@ public class DefaultTokenResponseGenerator<TRequestContext, TClient, TClientSecr
                 accessTokenResult.AccessToken.Handle,
                 null,
                 resourceOwnerProfile,
+                client.ShouldIncludeUserClaimsInIdTokenTokenResponse(),
                 grantedResources,
                 accessTokenResult.AccessToken.ActualIssuedAt,
                 cancellationToken);

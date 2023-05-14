@@ -1,6 +1,6 @@
 ﻿using System.Data;
 
-namespace OpenIdentityFramework.MySql.Services.Operation;
+namespace OpenIdentityFramework.MySql.Services.Operation.RequestContextFactory;
 
 public class MySqlRequestContextFactoryOptions
 {

@@ -163,7 +163,7 @@ public class DefaultClientAuthenticationService<TRequestContext, TClient, TClien
             return UnknownOrDisabledClient;
         }
 
-        if (client.GetAuthenticationMethod() != DefaultClientAuthenticationMethods.ClientSecretBasic)
+        if (client.GetClientAuthenticationMethod() != DefaultClientAuthenticationMethods.ClientSecretBasic)
         {
             return InvalidAuthenticationMethod;
         }
@@ -315,7 +315,7 @@ public class DefaultClientAuthenticationService<TRequestContext, TClient, TClien
         // If the Client is a Confidential Client, then it MUST authenticate to the Token Endpoint using the authentication method registered for its client_id.
         // => Non public clients should perform authentication
         var clientType = client.GetClientType();
-        var clientAuthenticationMethod = client.GetAuthenticationMethod();
+        var clientAuthenticationMethod = client.GetClientAuthenticationMethod();
         if (clientType == DefaultClientTypes.Public)
         {
             if (clientAuthenticationMethod == DefaultClientAuthenticationMethods.None)

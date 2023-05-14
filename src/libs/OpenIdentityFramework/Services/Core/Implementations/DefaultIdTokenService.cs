@@ -51,6 +51,7 @@ public class DefaultIdTokenService<TRequestContext, TClient, TClientSecret, TSco
         string? accessTokenHandle,
         string? nonce,
         ResourceOwnerProfile<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> resourceOwnerProfile,
+        bool includeProfileClaims,
         ValidResources<TScope, TResource, TResourceSecret> grantedResources,
         DateTimeOffset issuedAt,
         CancellationToken cancellationToken)

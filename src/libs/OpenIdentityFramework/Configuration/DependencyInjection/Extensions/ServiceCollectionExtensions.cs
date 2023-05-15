@@ -5,18 +5,80 @@ using Microsoft.Extensions.DependencyInjection;
 using OpenIdentityFramework.Configuration.Builder;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Models;
+using OpenIdentityFramework.Models.Authentication;
+using OpenIdentityFramework.Models.Configuration;
+using OpenIdentityFramework.Models.Operation;
 
 namespace OpenIdentityFramework.Configuration.DependencyInjection.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IOpenIdentityFrameworkBuilder<TRequestContext> AddOpenIdentityFrameworkBuilder<TRequestContext>(
-        this IServiceCollection services,
-        Action<OpenIdentityFrameworkOptions>? configure = null)
+    public static IOpenIdentityFrameworkBuilder<
+            TRequestContext,
+            TClient,
+            TClientSecret,
+            TScope,
+            TResource,
+            TResourceSecret,
+            TAuthorizeRequestError,
+            TResourceOwnerEssentialClaims,
+            TResourceOwnerIdentifiers,
+            TAuthorizeRequest,
+            TAuthorizeRequestConsent,
+            TGrantedConsent,
+            TAuthorizationCode,
+            TAccessToken,
+            TRefreshToken>
+        AddOpenIdentityFrameworkBuilder<
+            TRequestContext,
+            TClient,
+            TClientSecret,
+            TScope,
+            TResource,
+            TResourceSecret,
+            TAuthorizeRequestError,
+            TResourceOwnerEssentialClaims,
+            TResourceOwnerIdentifiers,
+            TAuthorizeRequest,
+            TAuthorizeRequestConsent,
+            TGrantedConsent,
+            TAuthorizationCode,
+            TAccessToken,
+            TRefreshToken>(
+            this IServiceCollection services,
+            Action<OpenIdentityFrameworkOptions>? configure = null)
         where TRequestContext : class, IRequestContext
+        where TClient : AbstractClient<TClientSecret>
+        where TClientSecret : AbstractSecret
+        where TScope : AbstractScope
+        where TResource : AbstractResource<TResourceSecret>
+        where TResourceSecret : AbstractSecret
+        where TAuthorizeRequestError : AbstractAuthorizeRequestError
+        where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
+        where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
+        where TAuthorizeRequest : AbstractAuthorizeRequest
+        where TAuthorizeRequestConsent : AbstractAuthorizeRequestConsent<TResourceOwnerIdentifiers>
+        where TGrantedConsent : AbstractGrantedConsent
+        where TAuthorizationCode : AbstractAuthorizationCode<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+        where TAccessToken : AbstractAccessToken<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+        where TRefreshToken : AbstractRefreshToken<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     {
-        IOpenIdentityFrameworkBuilder<TRequestContext> builder = new OpenIdentityFrameworkBuilder<TRequestContext>(services);
-        return builder
+        return new OpenIdentityFrameworkBuilder<
+                TRequestContext,
+                TClient,
+                TClientSecret,
+                TScope,
+                TResource,
+                TResourceSecret,
+                TAuthorizeRequestError,
+                TResourceOwnerEssentialClaims,
+                TResourceOwnerIdentifiers,
+                TAuthorizeRequest,
+                TAuthorizeRequestConsent,
+                TGrantedConsent,
+                TAuthorizationCode,
+                TAccessToken,
+                TRefreshToken>(services)
             .AddRequiredPlatformServices()
             .AddCoreServices(configure)
             .AddDefaultEndpointHandlers();

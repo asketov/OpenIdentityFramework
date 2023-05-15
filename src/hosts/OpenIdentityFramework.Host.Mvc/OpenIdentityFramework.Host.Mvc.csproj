@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\libs\OpenIdentityFramework.InMemory\OpenIdentityFramework.InMemory.csproj" />
     <ProjectReference Include="..\..\libs\OpenIdentityFramework\OpenIdentityFramework.csproj" />
   </ItemGroup>
 

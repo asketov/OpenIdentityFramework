@@ -15,13 +15,13 @@ public interface IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequ
 {
     Task<TAuthorizeRequestConsent?> FindAsync(
         TRequestContext requestContext,
-        string authorizeRequestId,
+        string authorizeRequestHandle,
         TResourceOwnerIdentifiers authorIdentifiers,
         CancellationToken cancellationToken);
 
     Task GrantAsync(
         TRequestContext requestContext,
-        string authorizeRequestId,
+        string authorizeRequestHandle,
         TResourceOwnerIdentifiers authorIdentifiers,
         AuthorizeRequestConsentGranted grantedConsent,
         DateTimeOffset createdAt,
@@ -30,7 +30,7 @@ public interface IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequ
 
     Task DenyAsync(
         TRequestContext requestContext,
-        string authorizeRequestId,
+        string authorizeRequestHandle,
         TResourceOwnerIdentifiers authorIdentifiers,
         AuthorizeRequestConsentDenied deniedConsent,
         DateTimeOffset createdAt,
@@ -39,7 +39,7 @@ public interface IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequ
 
     Task DeleteAsync(
         TRequestContext requestContext,
-        string authorizeRequestId,
+        string authorizeRequestHandle,
         TResourceOwnerIdentifiers authorIdentifiers,
         CancellationToken cancellationToken);
 }

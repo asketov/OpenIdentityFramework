@@ -40,12 +40,7 @@ public class DefaultAuthorizeRequestService<TRequestContext, TAuthorizeRequest>
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        DateTimeOffset? expiresAt = null;
-        if (FrameworkOptions.Endpoints.Authorize.AuthorizeRequestLifetime.HasValue)
-        {
-            expiresAt = initialRequestDate.Add(FrameworkOptions.Endpoints.Authorize.AuthorizeRequestLifetime.Value);
-        }
-
+        var expiresAt = initialRequestDate.Add(FrameworkOptions.Endpoints.Authorize.AuthorizeRequestLifetime);
         var createdAt = DateTimeOffset.FromUnixTimeSeconds(SystemClock.UtcNow.ToUnixTimeSeconds());
         return await Storage.SaveAsync(requestContext, initialRequestDate, parameters, createdAt, expiresAt, cancellationToken);
     }

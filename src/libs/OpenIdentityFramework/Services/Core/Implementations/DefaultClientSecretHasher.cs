@@ -9,6 +9,8 @@ public class DefaultClientSecretHasher : IClientSecretHasher
 {
     protected const int IterationsCount = 10_000;
 
+    public static readonly IClientSecretHasher Instance = new DefaultClientSecretHasher();
+
     public virtual byte[] ComputeHash(string rawClientSecret)
     {
         const int maxStackallocBytesCount = 1024;

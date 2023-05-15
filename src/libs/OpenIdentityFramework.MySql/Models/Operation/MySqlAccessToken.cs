@@ -10,7 +10,7 @@ public class MySqlAccessToken : AbstractAccessToken<MySqlResourceOwnerEssentialC
 {
     public MySqlAccessToken(
         string clientId,
-        MySqlResourceOwnerEssentialClaims essentialResourceOwnerClaims,
+        MySqlResourceOwnerEssentialClaims? essentialResourceOwnerClaims,
         IReadOnlySet<string> grantedScopes,
         IReadOnlySet<LightweightClaim> claims,
         DateTimeOffset issuedAt,
@@ -23,7 +23,6 @@ public class MySqlAccessToken : AbstractAccessToken<MySqlResourceOwnerEssentialC
 
         ArgumentNullException.ThrowIfNull(claims);
         ArgumentNullException.ThrowIfNull(grantedScopes);
-        ArgumentNullException.ThrowIfNull(essentialResourceOwnerClaims);
 
         ClientId = clientId;
         EssentialResourceOwnerClaims = essentialResourceOwnerClaims;

@@ -19,14 +19,13 @@ using OpenIdentityFramework.Models.Authentication;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
 using OpenIdentityFramework.Services.Core;
-using OpenIdentityFramework.Services.Core.Models.ErrorService;
 using OpenIdentityFramework.Services.Endpoints.Authorize;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeRequestValidator;
 using OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeResponseGenerator;
 
 namespace OpenIdentityFramework.Endpoints.Handlers.Implementations;
 
-public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers, TAuthorizeRequest, TAuthorizeRequestConsent>
+public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizeRequestError, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers, TAuthorizeRequest, TAuthorizeRequestConsent>
     : IAuthorizeEndpointHandler<TRequestContext>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
@@ -34,6 +33,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
     where TResourceSecret : AbstractSecret
+    where TAuthorizeRequestError : AbstractAuthorizeRequestError
     where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
     where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
     where TAuthorizeRequest : AbstractAuthorizeRequest
@@ -45,7 +45,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
         IIssuerUrlProvider<TRequestContext> issuerUrlProvider,
         IAuthorizeRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> requestValidator,
         HtmlEncoder htmlEncoder,
-        IErrorService<TRequestContext> errorService,
+        IAuthorizeRequestErrorService<TRequestContext, TAuthorizeRequestError> errorService,
         IResourceOwnerAuthenticationService<TRequestContext, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> resourceOwnerAuthentication,
         IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizeRequestConsent, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> interactionService,
         IAuthorizeRequestService<TRequestContext, TAuthorizeRequest> authorizeRequest,
@@ -78,7 +78,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
     protected IIssuerUrlProvider<TRequestContext> IssuerUrlProvider { get; }
     protected IAuthorizeRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> RequestValidator { get; }
     protected HtmlEncoder HtmlEncoder { get; }
-    protected IErrorService<TRequestContext> ErrorService { get; }
+    protected IAuthorizeRequestErrorService<TRequestContext, TAuthorizeRequestError> ErrorService { get; }
     protected IResourceOwnerAuthenticationService<TRequestContext, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> ResourceOwnerAuthentication { get; }
     protected IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizeRequestConsent, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> InteractionService { get; }
     protected IAuthorizeRequestService<TRequestContext, TAuthorizeRequest> AuthorizeRequest { get; }
@@ -187,8 +187,15 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
                 validationError.ResponseMode);
         }
 
-        var errorToSave = new UnredirectableError(validationError.ProtocolError, validationError.Client?.GetClientId(), validationError.RedirectUri, validationError.ResponseMode, validationError.Issuer);
-        var errorId = await ErrorService.SaveAsync(requestContext, errorToSave, cancellationToken);
+        var errorId = await ErrorService.CreateAsync(
+            requestContext,
+            validationError.ProtocolError,
+            validationError.Client?.GetClientId(),
+            validationError.RedirectUri,
+            validationError.ResponseMode,
+            validationError.State,
+            validationError.Issuer,
+            cancellationToken);
         return new DefaultErrorPageResult(FrameworkOptions, errorId);
     }
 
@@ -233,8 +240,15 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
                 authorizeRequest.ResponseMode);
         }
 
-        var errorToSave = new UnredirectableError(protocolError, authorizeRequest.Client.GetClientId(), authorizeRequest.RedirectUriToUse, authorizeRequest.ResponseMode, authorizeRequest.Issuer);
-        var errorId = await ErrorService.SaveAsync(requestContext, errorToSave, cancellationToken);
+        var errorId = await ErrorService.CreateAsync(
+            requestContext,
+            protocolError,
+            authorizeRequest.Client.GetClientId(),
+            authorizeRequest.RedirectUriToUse,
+            authorizeRequest.ResponseMode,
+            authorizeRequest.State,
+            authorizeRequest.Issuer,
+            cancellationToken);
         return new DefaultErrorPageResult(FrameworkOptions, errorId);
     }
 

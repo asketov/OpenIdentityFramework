@@ -23,7 +23,8 @@ public interface IRefreshTokenStorage<TRequestContext, TRefreshToken, TResourceO
         string? parentRefreshTokenHandle,
         DateTimeOffset issuedAt,
         DateTimeOffset expiresAt,
-        DateTimeOffset? absoluteExpiresAt);
+        DateTimeOffset? absoluteExpiresAt,
+        CancellationToken cancellationToken);
 
     Task<TRefreshToken?> FindAsync(
         TRequestContext requestContext,

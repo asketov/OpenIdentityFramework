@@ -61,6 +61,14 @@ public static class EndpointRouteBuilderExtensions
                     // An OpenID Provider Configuration Document MUST be queried using an HTTP GET request at the previously specified path.
                     HttpMethods.Get
                 }));
+            builder.AddEndpoint<TRequestContext, IJwksEndpointHandler<TRequestContext>>(
+                frameworkOptions.Endpoints.Jwks.Path,
+                new(new[]
+                {
+                    // https://openid.net/specs/openid-connect-discovery-1_0.html#rfc.section.4.1
+                    // An OpenID Provider Configuration Document MUST be queried using an HTTP GET request at the previously specified path.
+                    HttpMethods.Get
+                }));
         }
 
         return builder;

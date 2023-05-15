@@ -28,6 +28,7 @@ public interface IGrantedConsentStorage<TRequestContext, TGrantedConsent>
         string subjectId,
         string clientId,
         IReadOnlySet<string> grantedScopes,
+        DateTimeOffset createdAt,
         DateTimeOffset? expiresAt,
         CancellationToken cancellationToken);
 }

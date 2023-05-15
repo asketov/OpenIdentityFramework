@@ -29,11 +29,11 @@ public interface IAuthorizationCodeStorage<TRequestContext, TAuthorizationCode, 
 
     Task<TAuthorizationCode?> FindAsync(
         TRequestContext requestContext,
-        string authorizationCode,
+        string authorizationCodeHandle,
         CancellationToken cancellationToken);
 
     Task DeleteAsync(
         TRequestContext requestContext,
-        string authorizationCode,
+        string authorizationCodeHandle,
         CancellationToken cancellationToken);
 }

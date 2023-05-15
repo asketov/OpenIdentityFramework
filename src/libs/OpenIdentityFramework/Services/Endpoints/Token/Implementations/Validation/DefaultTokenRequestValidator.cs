@@ -101,7 +101,7 @@ public class DefaultTokenRequestValidator<TRequestContext, TClient, TClientSecre
             }
 
             var validRequest = new ValidTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>(
-                DefaultGrantTypes.AuthorizationCode,
+                DefaultGrantTypes.ClientCredentials,
                 client,
                 result.ValidTokenRequest.AllowedResources,
                 null,
@@ -123,7 +123,7 @@ public class DefaultTokenRequestValidator<TRequestContext, TClient, TClientSecre
                 result.ValidTokenRequest.RefreshTokenHandle,
                 result.ValidTokenRequest.RefreshToken);
             var validRequest = new ValidTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>(
-                DefaultGrantTypes.AuthorizationCode,
+                DefaultGrantTypes.RefreshToken,
                 client,
                 result.ValidTokenRequest.AllowedResources,
                 result.ValidTokenRequest.ResourceOwnerProfile,

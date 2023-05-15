@@ -160,7 +160,8 @@ public class DefaultRefreshTokenService<TRequestContext, TClient, TClientSecret,
             previousRefreshToken?.Handle,
             roundIssuedAt,
             roundExpiresAt,
-            absoluteExpirationDate);
+            absoluteExpirationDate,
+            cancellationToken);
         var createdRefreshToken = new CreatedRefreshToken(refreshTokenHandle);
         return new(createdRefreshToken);
     }

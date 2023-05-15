@@ -17,17 +17,17 @@ public interface IAuthorizeRequestStorage<TRequestContext, TAuthorizeRequest>
         DateTimeOffset initialRequestDate,
         IReadOnlyDictionary<string, StringValues> parameters,
         DateTimeOffset createdAt,
-        DateTimeOffset? expiresAt,
+        DateTimeOffset expiresAt,
         CancellationToken cancellationToken);
 
     Task<TAuthorizeRequest?> FindAsync(
         TRequestContext requestContext,
-        string authorizeRequestId,
+        string authorizeRequestHandle,
         CancellationToken cancellationToken);
 
 
     Task DeleteAsync(
         TRequestContext requestContext,
-        string authorizeRequestId,
+        string authorizeRequestHandle,
         CancellationToken cancellationToken);
 }

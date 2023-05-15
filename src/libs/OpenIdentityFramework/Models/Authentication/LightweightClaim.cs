@@ -51,6 +51,12 @@ public class LightweightClaim : IEquatable<LightweightClaim>
         return Type == other.Type && Value == other.Value && ValueType == other.ValueType;
     }
 
+    public static LightweightClaim FromClaim(Claim claim)
+    {
+        ArgumentNullException.ThrowIfNull(claim);
+        return new(claim.Type, claim.Value, claim.ValueType);
+    }
+
     public override bool Equals(object? obj)
     {
         if (ReferenceEquals(null, obj))

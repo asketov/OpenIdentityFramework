@@ -11,7 +11,7 @@ public class MySqlAuthorizationCode : AbstractAuthorizationCode<MySqlResourceOwn
         string clientId,
         MySqlResourceOwnerEssentialClaims essentialResourceOwnerClaims,
         IReadOnlySet<string> grantedScopes,
-        string authorizeRequestRedirectUri,
+        string? authorizeRequestRedirectUri,
         string codeChallenge,
         string codeChallengeMethod,
         DateTimeOffset issuedAt,
@@ -20,11 +20,6 @@ public class MySqlAuthorizationCode : AbstractAuthorizationCode<MySqlResourceOwn
         if (string.IsNullOrEmpty(clientId))
         {
             throw new ArgumentException("Value cannot be null or empty.", nameof(clientId));
-        }
-
-        if (string.IsNullOrEmpty(authorizeRequestRedirectUri))
-        {
-            throw new ArgumentException("Value cannot be null or empty.", nameof(authorizeRequestRedirectUri));
         }
 
         if (string.IsNullOrEmpty(codeChallenge))

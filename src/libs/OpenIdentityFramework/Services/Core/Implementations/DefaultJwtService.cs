@@ -125,11 +125,11 @@ public class DefaultJwtService<TRequestContext> : IJwtService<TRequestContext>
         {
             if (audiences.Count == 1)
             {
-                payload.Add(DefaultJwtClaimTypes.Audience, audiences.Single());
+                payload.Add(DefaultJwtClaimTypes.Audience, audiences.Single().Value);
             }
             else
             {
-                payload.Add(DefaultJwtClaimTypes.Audience, audiences);
+                payload.Add(DefaultJwtClaimTypes.Audience, audiences.Select(x => x.Value).ToHashSet());
             }
         }
 

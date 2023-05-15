@@ -30,6 +30,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenIdentityFramework.Host.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenIdentityFramework.MySql", "libs\OpenIdentityFramework.MySql\OpenIdentityFramework.MySql.csproj", "{FB0A206C-EA5E-4B90-8523-BE2C03D0D871}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenIdentityFramework.InMemory", "libs\OpenIdentityFramework.InMemory\OpenIdentityFramework.InMemory.csproj", "{F6D8D35A-7E6E-4195-B9B0-CEAF2ECF7F34}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,6 +50,10 @@ Global
 		{FB0A206C-EA5E-4B90-8523-BE2C03D0D871}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FB0A206C-EA5E-4B90-8523-BE2C03D0D871}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FB0A206C-EA5E-4B90-8523-BE2C03D0D871}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F6D8D35A-7E6E-4195-B9B0-CEAF2ECF7F34}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F6D8D35A-7E6E-4195-B9B0-CEAF2ECF7F34}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F6D8D35A-7E6E-4195-B9B0-CEAF2ECF7F34}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F6D8D35A-7E6E-4195-B9B0-CEAF2ECF7F34}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -60,6 +66,7 @@ Global
 		{F3A375BC-E065-417F-AE03-817C132947F2} = {5BBC0E2D-53B2-42D7-B556-69D357176698}
 		{56FBE926-A7F9-4568-9A74-B09AF987AFE9} = {0756FECA-49AC-4C0B-A902-8BC81A44D6A9}
 		{FB0A206C-EA5E-4B90-8523-BE2C03D0D871} = {5BBC0E2D-53B2-42D7-B556-69D357176698}
+		{F6D8D35A-7E6E-4195-B9B0-CEAF2ECF7F34} = {5BBC0E2D-53B2-42D7-B556-69D357176698}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FAAB9E1F-0588-4372-BAAD-2F2C114682AC}

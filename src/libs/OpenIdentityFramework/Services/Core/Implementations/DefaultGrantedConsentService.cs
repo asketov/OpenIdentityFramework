@@ -87,14 +87,14 @@ public class DefaultGrantedConsentService<TRequestContext, TClient, TClientSecre
         if (grantedScopes.Count > 0)
         {
             var consentLifetime = client.GetConsentLifetime();
+            var currentDate = DateTimeOffset.FromUnixTimeSeconds(SystemClock.UtcNow.ToUnixTimeSeconds());
             DateTimeOffset? expiresAt = null;
             if (consentLifetime.HasValue)
             {
-                var currentDate = SystemClock.UtcNow;
                 expiresAt = currentDate.Add(consentLifetime.Value);
             }
 
-            await Storage.UpsertAsync(requestContext, subjectId, client.GetClientId(), grantedScopes, expiresAt, cancellationToken);
+            await Storage.UpsertAsync(requestContext, subjectId, client.GetClientId(), grantedScopes, currentDate, expiresAt, cancellationToken);
         }
         else
         {

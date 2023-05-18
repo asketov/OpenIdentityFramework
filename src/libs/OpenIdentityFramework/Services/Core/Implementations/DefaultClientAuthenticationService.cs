@@ -4,10 +4,8 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text;
-using System.Text.Encodings.Web;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;
 using OpenIdentityFramework.Configuration.Options;
@@ -194,7 +192,7 @@ public class DefaultClientAuthenticationService<TRequestContext, TClient, TClien
             return false;
         }
 
-        var decodedCredentialsBufferSize = (encodedCredentials.Length >> 2) * 3 + 2;
+        var decodedCredentialsBufferSize = ((encodedCredentials.Length >> 2) * 3) + 2;
         byte[]? decodedCredentialsBufferFromPool = null;
         var decodedCredentialsBuffer = decodedCredentialsBufferSize <= maxStackallocBytesCount
             ? stackalloc byte[maxStackallocBytesCount]

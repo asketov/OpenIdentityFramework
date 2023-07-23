@@ -8,7 +8,7 @@ namespace OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
 
 public class AuthorizeRequestParameterClientIdValidationResult<TClient, TClientSecret>
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
 {
     public static readonly AuthorizeRequestParameterClientIdValidationResult<TClient, TClientSecret> ClientIdIsMissing = new(new ProtocolError(
         AuthorizeErrors.InvalidRequest,

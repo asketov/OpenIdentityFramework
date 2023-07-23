@@ -4,7 +4,6 @@ using System.Globalization;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Models;
@@ -23,35 +22,35 @@ public class DefaultAccessTokenService<TRequestContext, TClient, TClientSecret, 
     : IAccessTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAccessToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
     where TAccessToken : AbstractAccessToken<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
     where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
     public DefaultAccessTokenService(
         OpenIdentityFrameworkOptions frameworkOptions,
-        ISystemClock systemClock,
+        TimeProvider timeProvider,
         IKeyMaterialService<TRequestContext> keyMaterial,
         IJwtService<TRequestContext> jwtService,
         IAccessTokenStorage<TRequestContext, TAccessToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> accessTokenStorage)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
-        ArgumentNullException.ThrowIfNull(systemClock);
+        ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(keyMaterial);
         ArgumentNullException.ThrowIfNull(jwtService);
         ArgumentNullException.ThrowIfNull(accessTokenStorage);
         FrameworkOptions = frameworkOptions;
-        SystemClock = systemClock;
+        TimeProvider = timeProvider;
         KeyMaterial = keyMaterial;
         JwtService = jwtService;
         AccessTokenStorage = accessTokenStorage;
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
-    protected ISystemClock SystemClock { get; }
+    protected TimeProvider TimeProvider { get; }
     protected IKeyMaterialService<TRequestContext> KeyMaterial { get; }
     protected IJwtService<TRequestContext> JwtService { get; }
     protected IAccessTokenStorage<TRequestContext, TAccessToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> AccessTokenStorage { get; }
@@ -69,14 +68,14 @@ public class DefaultAccessTokenService<TRequestContext, TClient, TClientSecret, 
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(grantedResources);
         cancellationToken.ThrowIfCancellationRequested();
-        var accessTokenFormat = client.GetAccessTokenFormat();
-        if (accessTokenFormat != DefaultAccessTokenFormat.Jwt && accessTokenFormat != DefaultAccessTokenFormat.Reference)
+        var accessTokenStrategy = client.GetAccessTokenStrategy();
+        if (accessTokenStrategy != DefaultAccessTokenStrategy.Jwt && accessTokenStrategy != DefaultAccessTokenStrategy.Opaque)
         {
             return new("Unsupported access token format");
         }
 
         var roundIssuedAt = DateTimeOffset.FromUnixTimeSeconds(issuedAt.ToUnixTimeSeconds());
-        var roundExpiresAt = DateTimeOffset.FromUnixTimeSeconds(roundIssuedAt.Add(client.GetAccessTokenLifetime()).ToUnixTimeSeconds());
+        var roundExpiresAt = DateTimeOffset.FromUnixTimeSeconds(roundIssuedAt.Add(TimeSpan.FromSeconds(client.GetAccessTokenLifetime())).ToUnixTimeSeconds());
         var accessTokenClaims = await GetAccessTokenClaimsAsync(
             requestContext,
             client,
@@ -88,9 +87,19 @@ public class DefaultAccessTokenService<TRequestContext, TClient, TClientSecret, 
             roundExpiresAt,
             cancellationToken);
         string accessTokenHandle;
-        if (accessTokenFormat == DefaultAccessTokenFormat.Jwt)
+        if (accessTokenStrategy == DefaultAccessTokenStrategy.Jwt)
         {
-            var keyMaterialSearchResult = await KeyMaterial.FindSigningCredentialsAsync(requestContext, client.GetAllowedAccessTokenSigningAlgorithms(), cancellationToken);
+            HashSet<string>? accessTokenSignedResponseAlgorithms = null;
+            string? accessTokenSignedResponseAlg;
+            if (!string.IsNullOrEmpty(accessTokenSignedResponseAlg = client.GetAccessTokenSignedResponseAlg()))
+            {
+                accessTokenSignedResponseAlgorithms = new(StringComparer.Ordinal)
+                {
+                    accessTokenSignedResponseAlg
+                };
+            }
+
+            var keyMaterialSearchResult = await KeyMaterial.FindSigningCredentialsAsync(requestContext, accessTokenSignedResponseAlgorithms, cancellationToken);
             if (keyMaterialSearchResult.HasError)
             {
                 return new(keyMaterialSearchResult.ErrorDescription);
@@ -102,7 +111,7 @@ public class DefaultAccessTokenService<TRequestContext, TClient, TClientSecret, 
                 accessTokenClaims,
                 cancellationToken);
         }
-        else if (accessTokenFormat == DefaultAccessTokenFormat.Reference)
+        else if (accessTokenStrategy == DefaultAccessTokenStrategy.Opaque)
         {
             accessTokenHandle = await AccessTokenStorage.CreateAsync(
                 requestContext,
@@ -120,7 +129,7 @@ public class DefaultAccessTokenService<TRequestContext, TClient, TClientSecret, 
         }
 
         var createdAccessToken = new CreatedAccessToken<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>(
-            accessTokenFormat,
+            accessTokenStrategy,
             accessTokenHandle,
             client,
             resourceOwnerProfile,
@@ -145,7 +154,7 @@ public class DefaultAccessTokenService<TRequestContext, TClient, TClientSecret, 
         if (accessToken.GetClientId() == clientId)
         {
             var expiresAt = accessToken.GetExpirationDate();
-            if (SystemClock.UtcNow > expiresAt)
+            if (TimeProvider.GetUtcNow() > expiresAt)
             {
                 await AccessTokenStorage.DeleteAsync(requestContext, accessTokenHandle, cancellationToken);
                 return null;
@@ -219,7 +228,7 @@ public class DefaultAccessTokenService<TRequestContext, TClient, TClientSecret, 
             issuedAtClaimValue,
             ClaimValueTypes.Integer64));
 
-        if (client.ShouldIncludeJwtIdIntoAccessToken() && client.GetAccessTokenFormat() == DefaultAccessTokenFormat.Jwt)
+        if (client.ShouldIncludeJwtIdIntoAccessToken() && client.GetAccessTokenStrategy() == DefaultAccessTokenStrategy.Jwt)
         {
             var jwtId = CryptoRandom.Create(16);
             result.Add(new(DefaultJwtClaimTypes.JwtId, jwtId));
@@ -265,7 +274,7 @@ public class DefaultAccessTokenService<TRequestContext, TClient, TClientSecret, 
         };
         foreach (var resource in grantedResources.Resources)
         {
-            audiences.Add(new(DefaultJwtClaimTypes.Audience, resource.GetProtocolName()));
+            audiences.Add(new(DefaultJwtClaimTypes.Audience, resource.GetResourceId()));
         }
 
         if (FrameworkOptions.EmitStaticAudienceClaim)

@@ -6,7 +6,7 @@ namespace OpenIdentityFramework.Services.Core.Models.ClientAuthenticationService
 
 public class ClientAuthenticationResult<TClient, TClientSecret>
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
 {
     public ClientAuthenticationResult(TClient client, string clientAuthenticationMethod)
     {

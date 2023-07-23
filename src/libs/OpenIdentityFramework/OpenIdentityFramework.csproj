@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <OutputType>Library</OutputType>
     <PackageTags>OAuth;OAuth2;OAuth2.0;OAuth2.1;OpenID;OpenIDConnect;OIDC;Identity;Open;Framework;OpenIdentity;IdentityFramework;OpenIdentityFramework;Security</PackageTags>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
@@ -22,11 +22,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.29.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Services\Endpoints\Token\Validation\Flows\" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="7.1.0-preview" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.1.0-preview" />
+    <PackageReference Include="System.Text.Encodings.Web" Version="8.0.0-preview.6.23329.7" />
+    <PackageReference Include="System.Text.Json" Version="8.0.0-preview.6.23329.7" />
   </ItemGroup>
 
 </Project>

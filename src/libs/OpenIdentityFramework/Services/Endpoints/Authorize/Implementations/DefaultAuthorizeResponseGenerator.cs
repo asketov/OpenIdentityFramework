@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
 using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Authentication;
@@ -17,25 +16,25 @@ public class DefaultAuthorizeResponseGenerator<TRequestContext, TClient, TClient
     : IAuthorizeResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
     where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
     where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
     where TAuthorizationCode : AbstractAuthorizationCode<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
 {
     public DefaultAuthorizeResponseGenerator(
-        ISystemClock systemClock,
+        TimeProvider timeProvider,
         IAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> authorizationCodeService,
         IIdTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> idTokenService)
     {
-        SystemClock = systemClock;
+        TimeProvider = timeProvider;
         AuthorizationCodeService = authorizationCodeService;
         IdTokenService = idTokenService;
     }
 
-    protected ISystemClock SystemClock { get; }
+    protected TimeProvider TimeProvider { get; }
     protected IAuthorizationCodeService<TRequestContext, TClient, TClientSecret, TAuthorizationCode, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> AuthorizationCodeService { get; }
     protected IIdTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> IdTokenService { get; }
 
@@ -47,7 +46,7 @@ public class DefaultAuthorizeResponseGenerator<TRequestContext, TClient, TClient
         ArgumentNullException.ThrowIfNull(requestContext);
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
-        var authorizationCodeIssuedAt = SystemClock.UtcNow;
+        var authorizationCodeIssuedAt = TimeProvider.GetUtcNow();
         var authorizationCodeResult = await AuthorizationCodeService.CreateAsync(
             requestContext,
             request.AuthorizeRequest.Client,
@@ -59,7 +58,7 @@ public class DefaultAuthorizeResponseGenerator<TRequestContext, TClient, TClient
             authorizationCodeIssuedAt,
             cancellationToken);
         string? idToken = null;
-        if (request.AuthorizeRequest.AuthorizationFlow == DefaultAuthorizationFlows.Hybrid)
+        if (request.AuthorizeRequest.ResponseType.SetEquals(DefaultResponseTypes.CodeIdToken))
         {
             if (string.IsNullOrEmpty(request.AuthorizeRequest.Nonce))
             {

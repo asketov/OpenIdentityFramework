@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
@@ -9,7 +10,7 @@ namespace OpenIdentityFramework.Services.Endpoints.Authorize.Validation;
 public interface IAuthorizeRequestParameterCodeChallengeValidator<TRequestContext, TClient, TClientSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
 {
     Task<AuthorizeRequestParameterCodeChallengeValidationResult> ValidateCodeChallengeParameterAsync(
         TRequestContext requestContext,

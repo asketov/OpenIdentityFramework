@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.InMemory.Models;
@@ -11,12 +11,12 @@ namespace OpenIdentityFramework.InMemory.Storages.Configuration;
 
 public class InMemoryClientStorage : IClientStorage<InMemoryRequestContext, InMemoryClient, InMemoryClientSecret>
 {
-    private readonly List<InMemoryClient> _clients;
+    private readonly FrozenDictionary<string, InMemoryClient> _clients;
 
     public InMemoryClientStorage(IEnumerable<InMemoryClient> clients)
     {
         ArgumentNullException.ThrowIfNull(clients);
-        _clients = clients.ToList();
+        _clients = clients.ToFrozenDictionary(x => x.GetClientId(), x => x, StringComparer.Ordinal);
     }
 
     public Task<InMemoryClient?> FindEnabledAsync(
@@ -25,7 +25,11 @@ public class InMemoryClientStorage : IClientStorage<InMemoryRequestContext, InMe
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var result = _clients.FirstOrDefault(x => x.ClientId == clientId);
-        return Task.FromResult(result);
+        if (_clients.TryGetValue(clientId, out var client))
+        {
+            return Task.FromResult<InMemoryClient?>(client);
+        }
+
+        return Task.FromResult<InMemoryClient?>(null);
     }
 }

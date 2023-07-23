@@ -16,10 +16,10 @@ public class DefaultTokenRequestClientCredentialsValidator<TRequestContext, TCli
     : ITokenRequestClientCredentialsValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
 {
     protected static readonly TokenRequestClientCredentialsValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret> UnauthorizedClient =
         new(new ProtocolError(TokenErrors.UnauthorizedClient, "The authenticated client is not authorized to use this authorization grant type"));
@@ -43,12 +43,12 @@ public class DefaultTokenRequestClientCredentialsValidator<TRequestContext, TCli
         ArgumentNullException.ThrowIfNull(form);
         ArgumentNullException.ThrowIfNull(client);
         cancellationToken.ThrowIfCancellationRequested();
-        if (!client.GetAllowedAuthorizationFlows().Contains(DefaultAuthorizationFlows.ClientCredentials))
+        if (!client.GetGrantTypes().Contains(DefaultGrantTypes.ClientCredentials))
         {
             return UnauthorizedClient;
         }
 
-        if (client.GetClientType() != DefaultClientTypes.Confidential)
+        if (!client.IsConfidential())
         {
             return UnauthorizedClient;
         }
@@ -58,7 +58,7 @@ public class DefaultTokenRequestClientCredentialsValidator<TRequestContext, TCli
             return UnauthorizedClient;
         }
 
-        var scopeValidation = await ScopeValidator.ValidateScopeAsync(requestContext, form, client, client.GetAllowedScopes(), cancellationToken);
+        var scopeValidation = await ScopeValidator.ValidateScopeAsync(requestContext, form, client, client.GetScopes(), cancellationToken);
         if (scopeValidation.HasError)
         {
             return new(scopeValidation.Error);

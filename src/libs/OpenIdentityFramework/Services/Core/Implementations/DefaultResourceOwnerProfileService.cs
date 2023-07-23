@@ -18,7 +18,7 @@ public class DefaultResourceOwnerProfileService<TRequestContext, TScope, TResour
     where TRequestContext : class, IRequestContext
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
     where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
     where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {

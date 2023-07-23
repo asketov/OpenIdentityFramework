@@ -11,16 +11,8 @@ public static class FragmentHelpers
         string uri,
         IEnumerable<KeyValuePair<string, string?>> anchorQueryString)
     {
-        if (uri == null)
-        {
-            throw new ArgumentNullException(nameof(uri));
-        }
-
-        if (anchorQueryString == null)
-        {
-            throw new ArgumentNullException(nameof(anchorQueryString));
-        }
-
+        ArgumentNullException.ThrowIfNull(uri);
+        ArgumentNullException.ThrowIfNull(anchorQueryString);
         var hasAnchor = uri.IndexOf('#', StringComparison.Ordinal) != -1;
         var sb = new StringBuilder();
         sb.Append(uri);

@@ -1,4 +1,6 @@
-﻿using System.Threading;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
@@ -10,12 +12,12 @@ namespace OpenIdentityFramework.Services.Endpoints.Authorize.Validation.OpenIdCo
 public interface IAuthorizeRequestOidcParameterNonceValidator<TRequestContext, TClient, TClientSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
 {
     Task<AuthorizeRequestOidcParameterNonceValidationResult> ValidateNonceOidcParameterAsync(
         TRequestContext requestContext,
         AuthorizeRequestParametersToValidate parameters,
         TClient client,
-        string authorizationFlow,
+        IReadOnlySet<string> responseType,
         CancellationToken cancellationToken);
 }

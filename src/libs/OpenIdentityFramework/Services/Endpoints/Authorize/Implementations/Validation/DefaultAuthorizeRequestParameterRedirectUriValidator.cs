@@ -17,7 +17,7 @@ public class DefaultAuthorizeRequestParameterRedirectUriValidator<TRequestContex
     : IAuthorizeRequestParameterRedirectUriValidator<TRequestContext, TClient, TClientSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
 {
     public DefaultAuthorizeRequestParameterRedirectUriValidator(OpenIdentityFrameworkOptions frameworkOptions)
     {
@@ -40,7 +40,7 @@ public class DefaultAuthorizeRequestParameterRedirectUriValidator<TRequestContex
         // Authorization servers MUST require clients to register their complete redirect URI (including the path component).
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.1
         // This URI MUST exactly match one of the Redirection URI values for the Client pre-registered at the OpenID Provider
-        var preRegisteredRedirectUris = client.GetPreRegisteredRedirectUris();
+        var preRegisteredRedirectUris = client.GetRedirectUris();
         if (preRegisteredRedirectUris.Count < 1)
         {
             return Task.FromResult(AuthorizeRequestParameterRedirectUriValidationResult.NoPreRegisteredRedirectUrisInClientConfiguration);
@@ -94,7 +94,7 @@ public class DefaultAuthorizeRequestParameterRedirectUriValidator<TRequestContex
         if (parameters.IsOpenIdRequest)
         {
             // Exact match for OIDC
-            if (preRegisteredRedirectUris.Contains(originalRedirectUri, StringComparer.Ordinal))
+            if (preRegisteredRedirectUris.Contains(typedRedirectUri))
             {
                 // http scheme only for confidential clients
                 if (typedRedirectUri.Scheme == Uri.UriSchemeHttp && !client.IsConfidential())
@@ -134,7 +134,7 @@ public class DefaultAuthorizeRequestParameterRedirectUriValidator<TRequestContex
             foreach (var preRegisteredRedirectUri in preRegisteredRedirectUris)
             {
                 // Ignore port for loopback
-                if (ClientRedirectUriSyntaxValidator.IsValid(preRegisteredRedirectUri, out var clientRedirectUri)
+                if (ClientRedirectUriSyntaxValidator.IsValid(preRegisteredRedirectUri.ToString(), out var clientRedirectUri)
                     && clientRedirectUri.IsLoopback
                     && clientRedirectUri.IsWellFormedOriginalString()
                     && clientRedirectUri.Scheme == typedRedirectUri.Scheme
@@ -153,7 +153,7 @@ public class DefaultAuthorizeRequestParameterRedirectUriValidator<TRequestContex
         // OAuth 2.1 non-loopback didn't allow http
         if (!typedRedirectUri.IsLoopback
             && typedRedirectUri.Scheme != Uri.UriSchemeHttp
-            && preRegisteredRedirectUris.Contains(originalRedirectUri, StringComparer.Ordinal))
+            && preRegisteredRedirectUris.Contains(typedRedirectUri))
         {
             return Task.FromResult(new AuthorizeRequestParameterRedirectUriValidationResult(originalRedirectUri, originalRedirectUri));
         }
@@ -161,7 +161,7 @@ public class DefaultAuthorizeRequestParameterRedirectUriValidator<TRequestContex
         return Task.FromResult(AuthorizeRequestParameterRedirectUriValidationResult.InvalidRedirectUri);
     }
 
-    protected virtual AuthorizeRequestParameterRedirectUriValidationResult InferRedirectUri(bool isOpenIdRequest, IReadOnlySet<string> clientRedirectUris)
+    protected virtual AuthorizeRequestParameterRedirectUriValidationResult InferRedirectUri(bool isOpenIdRequest, IReadOnlySet<Uri> clientRedirectUris)
     {
         ArgumentNullException.ThrowIfNull(clientRedirectUris);
         // OAuth 2.1 flow
@@ -169,7 +169,7 @@ public class DefaultAuthorizeRequestParameterRedirectUriValidator<TRequestContex
         {
             if (clientRedirectUris.Count == 1)
             {
-                return new(clientRedirectUris.Single(), null);
+                return new(clientRedirectUris.Single().ToString(), null);
             }
 
             // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-2.3.2

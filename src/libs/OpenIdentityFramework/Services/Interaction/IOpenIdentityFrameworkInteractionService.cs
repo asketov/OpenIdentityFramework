@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using OpenIdentityFramework.Models.Authentication;
@@ -10,10 +11,10 @@ namespace OpenIdentityFramework.Services.Interaction;
 
 public interface IOpenIdentityFrameworkInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerIdentifiers>
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
     where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
     Task<ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>?> GetAuthorizeRequestInformationAsync(

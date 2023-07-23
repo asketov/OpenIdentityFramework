@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <OutputType>Library</OutputType>
     <PackageTags>OAuth;OAuth2;OAuth2.0;OAuth2.1;OpenID;OpenIDConnect;OIDC;Identity;Open;Framework;OpenIdentity;IdentityFramework;OpenIdentityFramework;Security;MySql</PackageTags>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MySqlConnector" Version="2.2.6" />
+    <PackageReference Include="MySqlConnector" Version="2.2.7" />
   </ItemGroup>
 
   <ItemGroup>

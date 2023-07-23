@@ -4,7 +4,6 @@ using System.Net;
 using System.Text.Encodings.Web;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using OpenIdentityFramework.Configuration.Options;
@@ -29,10 +28,10 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
     : IAuthorizeEndpointHandler<TRequestContext>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
     where TAuthorizeRequestError : AbstractAuthorizeRequestError
     where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
     where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
@@ -41,7 +40,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
 {
     public DefaultAuthorizeEndpointHandler(
         OpenIdentityFrameworkOptions frameworkOptions,
-        ISystemClock systemClock,
+        TimeProvider timeProvider,
         IIssuerUrlProvider<TRequestContext> issuerUrlProvider,
         IAuthorizeRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> requestValidator,
         HtmlEncoder htmlEncoder,
@@ -52,7 +51,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
         IAuthorizeResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> responseGenerator)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
-        ArgumentNullException.ThrowIfNull(systemClock);
+        ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(issuerUrlProvider);
         ArgumentNullException.ThrowIfNull(requestValidator);
         ArgumentNullException.ThrowIfNull(htmlEncoder);
@@ -62,7 +61,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
         ArgumentNullException.ThrowIfNull(authorizeRequest);
         ArgumentNullException.ThrowIfNull(responseGenerator);
         FrameworkOptions = frameworkOptions;
-        SystemClock = systemClock;
+        TimeProvider = timeProvider;
         IssuerUrlProvider = issuerUrlProvider;
         RequestValidator = requestValidator;
         HtmlEncoder = htmlEncoder;
@@ -74,7 +73,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
-    protected ISystemClock SystemClock { get; }
+    protected TimeProvider TimeProvider { get; }
     protected IIssuerUrlProvider<TRequestContext> IssuerUrlProvider { get; }
     protected IAuthorizeRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> RequestValidator { get; }
     protected HtmlEncoder HtmlEncoder { get; }
@@ -89,7 +88,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
     {
         ArgumentNullException.ThrowIfNull(requestContext);
         cancellationToken.ThrowIfCancellationRequested();
-        var initialRequestDate = SystemClock.UtcNow;
+        var initialRequestDate = TimeProvider.GetUtcNow();
         IReadOnlyDictionary<string, StringValues> parameters;
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
         // The authorization server MUST support the use of the HTTP GET method Section 9.3.1 of [RFC9110] for the authorization endpoint

@@ -15,7 +15,7 @@ public class DefaultTokenRequestCommonParameterGrantTypeValidator<TRequestContex
     : ITokenRequestCommonParameterGrantTypeValidator<TRequestContext, TClient, TClientSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
 {
     public virtual Task<TokenRequestCommonParameterGrantTypeValidationResult> ValidateGrantTypeAsync(
         TRequestContext requestContext,

@@ -8,7 +8,7 @@ namespace OpenIdentityFramework.Services.Core.Models.ResourceService;
 public class ValidResources<TScope, TResource, TResourceSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
 {
     public ValidResources(IReadOnlySet<TScope> allScopes, IReadOnlySet<TResource> resources, bool hasOfflineAccess)
     {
@@ -23,7 +23,7 @@ public class ValidResources<TScope, TResource, TResourceSecret>
         var accessTokenScopes = new HashSet<TScope>();
         foreach (var scope in allScopes)
         {
-            var scopeName = scope.GetProtocolName();
+            var scopeName = scope.GetScopeId();
             var scopeTokenType = scope.GetScopeTokenType();
             rawScopes.Add(scopeName);
             if (scope.IsRequired())
@@ -91,7 +91,7 @@ public class ValidResources<TScope, TResource, TResourceSecret>
         var resources = new HashSet<TResource>(Resources.Count);
         foreach (var scope in IdTokenScopes)
         {
-            var protocolName = scope.GetProtocolName();
+            var protocolName = scope.GetScopeId();
             if (grantedScopes.Contains(protocolName))
             {
                 scopes.Add(scope);
@@ -101,7 +101,7 @@ public class ValidResources<TScope, TResource, TResourceSecret>
 
         foreach (var scope in AccessTokenScopes)
         {
-            var protocolName = scope.GetProtocolName();
+            var protocolName = scope.GetScopeId();
             if (grantedScopes.Contains(protocolName))
             {
                 scopes.Add(scope);
@@ -111,7 +111,7 @@ public class ValidResources<TScope, TResource, TResourceSecret>
 
         foreach (var resource in Resources)
         {
-            foreach (var resourceScope in resource.GetAccessTokenScopes())
+            foreach (var resourceScope in resource.GetSupportedAccessTokenScopes())
             {
                 if (scopesNames.Contains(resourceScope))
                 {

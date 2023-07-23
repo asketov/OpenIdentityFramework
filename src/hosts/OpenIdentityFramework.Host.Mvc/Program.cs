@@ -16,7 +16,6 @@ using OpenIdentityFramework.InMemory.Configuration.DependencyInjection.Extension
 using OpenIdentityFramework.InMemory.Models;
 using OpenIdentityFramework.InMemory.Models.Authentication;
 using OpenIdentityFramework.InMemory.Models.Configuration;
-using OpenIdentityFramework.Services.Core.Implementations;
 using OpenIdentityFramework.Services.Operation;
 using OpenIdentityFramework.Services.Static.Cryptography;
 
@@ -78,39 +77,10 @@ public sealed class Program
     {
         return new[]
         {
-            new InMemoryClient(
-                "client_creds",
-                new HashSet<string>(),
-                DefaultClientTypes.Confidential,
-                new HashSet<string>
-                {
-                    "api_scope1"
-                },
-                new HashSet<string>
-                {
-                    DefaultAuthorizationFlows.ClientCredentials
-                },
-                new HashSet<string>(),
-                false,
-                false,
-                null,
-                TimeSpan.FromMinutes(5),
-                true,
-                true,
-                new HashSet<string>(),
-                new HashSet<string>(),
-                TimeSpan.FromMinutes(5),
-                DefaultClientAuthenticationMethods.ClientSecretPost,
-                new HashSet<InMemoryClientSecret>
-                {
-                    new(DefaultSecretTypes.PreSharedSecret, DefaultClientSecretHasher.Instance.ComputeHash("secret"), null)
-                },
-                DefaultAccessTokenFormat.Jwt,
-                true,
-                TimeSpan.FromHours(1),
-                TimeSpan.Zero,
-                TimeSpan.FromHours(3),
-                DefaultRefreshTokenExpirationType.Sliding)
+            InMemoryClient.ClientCredentials("client_creds", "client_creds_secret", DateTimeOffset.UtcNow, new HashSet<string>
+            {
+                "api_scope1"
+            })
         };
     }
 
@@ -118,16 +88,10 @@ public sealed class Program
     {
         return new[]
         {
-            new InMemoryResource(
-                "api1",
-                new HashSet<string>
-                {
-                    "api_scope1"
-                },
-                new HashSet<InMemoryResourceSecret>
-                {
-                    new(DefaultSecretTypes.PreSharedSecret, DefaultClientSecretHasher.Instance.ComputeHash("secret"), null)
-                })
+            InMemoryResource.Create("api1", "api1_secret", DateTimeOffset.UtcNow, new HashSet<string>
+            {
+                "api_scope1"
+            })
         };
     }
 

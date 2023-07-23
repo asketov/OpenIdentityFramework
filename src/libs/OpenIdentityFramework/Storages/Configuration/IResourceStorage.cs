@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Models;
@@ -11,7 +12,7 @@ public interface IResourceStorage<TRequestContext, TScope, TResource, TResourceS
     where TRequestContext : class, IRequestContext
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
 {
     Task<ResourcesSearchResult<TScope, TResource, TResourceSecret>> FindScopesAndRelatedResourcesAsync(
         TRequestContext requestContext,

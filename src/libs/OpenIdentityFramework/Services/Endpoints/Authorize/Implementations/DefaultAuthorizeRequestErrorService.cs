@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Operation;
@@ -17,19 +16,19 @@ public class DefaultAuthorizeRequestErrorService<TRequestContext, TAuthorizeRequ
     public DefaultAuthorizeRequestErrorService(
         OpenIdentityFrameworkOptions frameworkOptions,
         IAuthorizeRequestErrorStorage<TRequestContext, TAuthorizeRequestError> storage,
-        ISystemClock systemClock)
+        TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
         ArgumentNullException.ThrowIfNull(storage);
-        ArgumentNullException.ThrowIfNull(systemClock);
+        ArgumentNullException.ThrowIfNull(timeProvider);
         FrameworkOptions = frameworkOptions;
         Storage = storage;
-        SystemClock = systemClock;
+        TimeProvider = timeProvider;
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
     protected IAuthorizeRequestErrorStorage<TRequestContext, TAuthorizeRequestError> Storage { get; }
-    protected ISystemClock SystemClock { get; }
+    protected TimeProvider TimeProvider { get; }
 
     public virtual async Task<string> CreateAsync(
         TRequestContext requestContext,
@@ -42,7 +41,7 @@ public class DefaultAuthorizeRequestErrorService<TRequestContext, TAuthorizeRequ
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var createdAt = DateTimeOffset.FromUnixTimeSeconds(SystemClock.UtcNow.ToUnixTimeSeconds());
+        var createdAt = DateTimeOffset.FromUnixTimeSeconds(TimeProvider.GetUtcNow().ToUnixTimeSeconds());
         var expiresAt = createdAt.Add(FrameworkOptions.Endpoints.Authorize.AuthorizeRequestErrorsLifetime);
         return await Storage.CreateAsync(
             requestContext,

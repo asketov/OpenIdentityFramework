@@ -20,10 +20,10 @@ public class DefaultTokenRequestCommonParameterScopeValidator<TRequestContext, T
     : ITokenRequestCommonParameterScopeValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
 {
     public DefaultTokenRequestCommonParameterScopeValidator(
         OpenIdentityFrameworkOptions frameworkOptions,

@@ -8,7 +8,7 @@ namespace OpenIdentityFramework.Services.Core.Models.ResourceService;
 public class ResourcesValidationError<TScope, TResource, TResourceSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
 {
     public ResourcesValidationError(ConfigurationError<TScope, TResource, TResourceSecret> configurationError)
     {

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
 using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Authentication;
@@ -19,10 +18,10 @@ public class DefaultTokenResponseGenerator<TRequestContext, TClient, TClientSecr
     : ITokenResponseGenerator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
     where TAuthorizationCode : AbstractAuthorizationCode<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRefreshToken : AbstractRefreshToken<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
@@ -30,7 +29,7 @@ public class DefaultTokenResponseGenerator<TRequestContext, TClient, TClientSecr
     where TAccessToken : AbstractAccessToken<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
 {
     public DefaultTokenResponseGenerator(
-        ISystemClock systemClock,
+        TimeProvider systemClock,
         IAccessTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAccessToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> accessTokenService,
         IIdTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> idTokenService,
         IRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> refreshTokenService)
@@ -39,13 +38,13 @@ public class DefaultTokenResponseGenerator<TRequestContext, TClient, TClientSecr
         ArgumentNullException.ThrowIfNull(accessTokenService);
         ArgumentNullException.ThrowIfNull(idTokenService);
         ArgumentNullException.ThrowIfNull(refreshTokenService);
-        SystemClock = systemClock;
+        TimeProvider = systemClock;
         AccessTokenService = accessTokenService;
         IdTokenService = idTokenService;
         RefreshTokenService = refreshTokenService;
     }
 
-    protected ISystemClock SystemClock { get; }
+    protected TimeProvider TimeProvider { get; }
     protected IAccessTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAccessToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> AccessTokenService { get; }
     protected IIdTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> IdTokenService { get; }
     protected IRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> RefreshTokenService { get; }
@@ -126,7 +125,7 @@ public class DefaultTokenResponseGenerator<TRequestContext, TClient, TClientSecr
             DefaultGrantTypes.AuthorizationCode,
             resourceOwnerProfile,
             grantedResources,
-            SystemClock.UtcNow,
+            TimeProvider.GetUtcNow(),
             cancellationToken);
         if (accessTokenResult.HasError)
         {
@@ -201,7 +200,7 @@ public class DefaultTokenResponseGenerator<TRequestContext, TClient, TClientSecr
             DefaultGrantTypes.ClientCredentials,
             null,
             grantedResources,
-            SystemClock.UtcNow,
+            TimeProvider.GetUtcNow(),
             cancellationToken);
         if (accessTokenResult.HasError)
         {
@@ -239,7 +238,7 @@ public class DefaultTokenResponseGenerator<TRequestContext, TClient, TClientSecr
             DefaultGrantTypes.RefreshToken,
             resourceOwnerProfile,
             grantedResources,
-            SystemClock.UtcNow,
+            TimeProvider.GetUtcNow(),
             cancellationToken);
         if (accessTokenResult.HasError)
         {

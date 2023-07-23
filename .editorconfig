@@ -299,6 +299,9 @@ dotnet_diagnostic.CA1055.severity = suggestion
 # CA1056: URI properties should not be strings
 # A type declares a string property whose name contains "uri", "Uri", "urn", "Urn", "url", or "Url".
 dotnet_diagnostic.CA1056.severity = suggestion
+# CA1200: Avoid using cref tags with a prefix
+# The cref tag in an XML documentation comment uses a prefix.
+dotnet_diagnostic.CA1200.severity = suggestion
 # CA1716: Identifiers should not match keywords
 # The name of a namespace, type, or virtual or interface member matches a reserved keyword in a programming language.
 dotnet_diagnostic.CA1716.severity = suggestion

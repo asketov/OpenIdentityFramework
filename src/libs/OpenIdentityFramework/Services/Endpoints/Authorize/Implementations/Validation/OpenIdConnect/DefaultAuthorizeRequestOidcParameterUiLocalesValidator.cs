@@ -15,7 +15,7 @@ public class DefaultAuthorizeRequestOidcParameterUiLocalesValidator<TRequestCont
     : IAuthorizeRequestOidcParameterUiLocalesValidator<TRequestContext, TClient, TClientSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
 {
     public DefaultAuthorizeRequestOidcParameterUiLocalesValidator(OpenIdentityFrameworkOptions frameworkOptions)
     {

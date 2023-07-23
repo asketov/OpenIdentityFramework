@@ -7,7 +7,7 @@ namespace OpenIdentityFramework.Services.Core.Models.ResourceService;
 public class ResourcesValidationResult<TScope, TResource, TResourceSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
 {
     public ResourcesValidationResult(ValidResources<TScope, TResource, TResourceSecret> valid)
     {

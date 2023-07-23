@@ -20,10 +20,10 @@ public class DefaultTokenRequestAuthorizationCodeValidator<TRequestContext, TCli
     : ITokenRequestAuthorizationCodeValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizationCode, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
     where TAuthorizationCode : AbstractAuthorizationCode<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TGrantedConsent : AbstractGrantedConsent
     where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
@@ -76,8 +76,8 @@ public class DefaultTokenRequestAuthorizationCodeValidator<TRequestContext, TCli
     {
         ArgumentNullException.ThrowIfNull(client);
         cancellationToken.ThrowIfCancellationRequested();
-        var clientAuthorizationFlows = client.GetAllowedAuthorizationFlows();
-        if (!clientAuthorizationFlows.Contains(DefaultAuthorizationFlows.AuthorizationCode) && !clientAuthorizationFlows.Contains(DefaultAuthorizationFlows.Hybrid))
+        var clientAuthorizationFlows = client.GetGrantTypes();
+        if (!clientAuthorizationFlows.Contains(DefaultGrantTypes.AuthorizationCode))
         {
             return UnauthorizedClient;
         }

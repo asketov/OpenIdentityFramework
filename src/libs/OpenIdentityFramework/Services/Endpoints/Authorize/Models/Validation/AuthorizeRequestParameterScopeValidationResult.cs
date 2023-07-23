@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using OpenIdentityFramework.Constants.Response.Errors;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
@@ -9,7 +10,7 @@ namespace OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
 public class AuthorizeRequestParameterScopeValidationResult<TScope, TResource, TResourceSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
 {
     public static readonly AuthorizeRequestParameterScopeValidationResult<TScope, TResource, TResourceSecret> ScopeIsMissing = new(new ProtocolError(
         AuthorizeErrors.InvalidScope,

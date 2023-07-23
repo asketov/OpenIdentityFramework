@@ -15,10 +15,10 @@ public class DefaultResourceService<TRequestContext, TClient, TClientSecret, TSc
     : IResourceService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
 {
     public DefaultResourceService(IResourceStorage<TRequestContext, TScope, TResource, TResourceSecret> storage)
     {
@@ -47,7 +47,7 @@ public class DefaultResourceService<TRequestContext, TClient, TClientSecret, TSc
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.1
         // REQUIRED. OpenID Connect requests MUST contain the "openid" scope value. If the "openid" scope value is not present, the behavior is entirely unspecified.
         // Other scope values MAY be present. Scope values used that are not understood by an implementation SHOULD be ignored.
-        var clientScopes = client.GetAllowedScopes();
+        var clientScopes = client.GetScopes();
         var filteredScopes = clientScopes.Intersect(requestedScopes).ToHashSet(StringComparer.Ordinal);
         filteredScopes.Remove(DefaultScopes.OfflineAccess); // it depends on allowed grant type and hasn't storage-related configuration
 
@@ -73,7 +73,7 @@ public class DefaultResourceService<TRequestContext, TClient, TClientSecret, TSc
         // process offline access
         if (requestedScopes.Contains(DefaultScopes.OfflineAccess))
         {
-            if (client.GetAllowedAuthorizationFlows().Contains(DefaultAuthorizationFlows.RefreshToken))
+            if (client.GetGrantTypes().Contains(DefaultGrantTypes.RefreshToken))
             {
                 hasOfflineAccess = true;
                 processedScopes.Add(DefaultScopes.OfflineAccess);
@@ -90,7 +90,7 @@ public class DefaultResourceService<TRequestContext, TClient, TClientSecret, TSc
         // processing scopes
         foreach (var scope in foundScopesAndRelatedResources.Scopes)
         {
-            var scopeName = scope.GetProtocolName();
+            var scopeName = scope.GetScopeId();
             // we got unexpected data
             if (!filteredScopes.Contains(scopeName))
             {
@@ -163,8 +163,8 @@ public class DefaultResourceService<TRequestContext, TClient, TClientSecret, TSc
         // processing resources
         foreach (var resource in foundScopesAndRelatedResources.Resources)
         {
-            var resourceName = resource.GetProtocolName();
-            var resourceScopes = resource.GetAccessTokenScopes();
+            var resourceName = resource.GetResourceId();
+            var resourceScopes = resource.GetSupportedAccessTokenScopes();
             // resource can't contain id_token scopes in allowed scopes
             if (resourceScopes.Overlaps(idTokenScopeNames))
             {

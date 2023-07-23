@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Constants;
@@ -15,7 +15,7 @@ public class DefaultAuthorizeRequestParameterResponseTypeValidator<TRequestConte
     : IAuthorizeRequestParameterResponseTypeValidator<TRequestContext, TClient, TClientSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
 {
     public virtual Task<AuthorizeRequestParameterResponseTypeValidationResult> ValidateResponseTypeParameterAsync(
         TRequestContext requestContext,
@@ -46,13 +46,20 @@ public class DefaultAuthorizeRequestParameterResponseTypeValidator<TRequestConte
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
-        var responseType = responseTypeValues.ToString();
-        if (string.IsNullOrEmpty(responseType))
+        var responseTypeString = responseTypeValues.ToString();
+        if (string.IsNullOrEmpty(responseTypeString))
         {
             return Task.FromResult(AuthorizeRequestParameterResponseTypeValidationResult.ResponseTypeIsMissing);
         }
 
-        var allowedAuthorizationFlows = client.GetAllowedAuthorizationFlows();
+        var responseTypesArray = responseTypeString.Split(' ');
+        var responseTypes = new HashSet<string>(responseTypesArray, StringComparer.Ordinal);
+        if (responseTypes.Count != responseTypesArray.Length)
+        {
+            return Task.FromResult(AuthorizeRequestParameterResponseTypeValidationResult.UnsupportedResponseType);
+        }
+
+        var allowedGrantTypes = client.GetGrantTypes();
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-4.1.1
         // This specification defines the value "code", which must be used to signal that the client wants to use the authorization code flow.
@@ -65,15 +72,14 @@ public class DefaultAuthorizeRequestParameterResponseTypeValidator<TRequestConte
         // ==================================
         // OAuth 2.1 deprecates the issuance of tokens directly from the authorization endpoint. Only 'code id_token' is compatible with OAuth 2.1 and OpenID Connect 1.0
         // OpenID Connect 1.0-specific
-        if (parameters.IsOpenIdRequest && responseType.Contains(' ', StringComparison.Ordinal))
+        if (!allowedGrantTypes.Contains(DefaultGrantTypes.AuthorizationCode))
         {
-            var multipleResponseTypes = responseType.Split(' ');
-            if (multipleResponseTypes.Except(DefaultResponseType.HybridFlow).Any())
-            {
-                return Task.FromResult(AuthorizeRequestParameterResponseTypeValidationResult.UnsupportedResponseType);
-            }
+            return Task.FromResult(AuthorizeRequestParameterResponseTypeValidationResult.UnsupportedResponseType);
+        }
 
-            if (allowedAuthorizationFlows.Contains(DefaultAuthorizationFlows.Hybrid))
+        if (parameters.IsOpenIdRequest && responseTypes.Count == DefaultResponseTypes.CodeIdToken.Count)
+        {
+            if (DefaultResponseTypes.CodeIdToken.SetEquals(responseTypes))
             {
                 return Task.FromResult(AuthorizeRequestParameterResponseTypeValidationResult.CodeIdToken);
             }
@@ -82,7 +88,7 @@ public class DefaultAuthorizeRequestParameterResponseTypeValidator<TRequestConte
         }
 
         // Both OAuth 2.1 and OpenID Connect 1.0
-        if (responseType == DefaultResponseType.Code && allowedAuthorizationFlows.Contains(DefaultAuthorizationFlows.AuthorizationCode))
+        if (DefaultResponseTypes.Code.SetEquals(responseTypes))
         {
             return Task.FromResult(AuthorizeRequestParameterResponseTypeValidationResult.Code);
         }

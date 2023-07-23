@@ -19,10 +19,10 @@ public class DefaultIdTokenService<TRequestContext, TClient, TClientSecret, TSco
     : IIdTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
     where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
     where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
@@ -60,14 +60,24 @@ public class DefaultIdTokenService<TRequestContext, TClient, TClientSecret, TSco
         ArgumentNullException.ThrowIfNull(resourceOwnerProfile);
         ArgumentNullException.ThrowIfNull(grantedResources);
         cancellationToken.ThrowIfCancellationRequested();
-        var keyMaterialSearchResult = await KeyMaterialService.FindSigningCredentialsAsync(requestContext, client.GetAllowedIdTokenSigningAlgorithms(), cancellationToken);
+        HashSet<string>? idTokenSignedResponseAlgorithms = null;
+        string? idTokenSignedResponseAlg;
+        if (!string.IsNullOrEmpty(idTokenSignedResponseAlg = client.GetIdTokenSignedResponseAlg()))
+        {
+            idTokenSignedResponseAlgorithms = new(StringComparer.Ordinal)
+            {
+                idTokenSignedResponseAlg
+            };
+        }
+
+        var keyMaterialSearchResult = await KeyMaterialService.FindSigningCredentialsAsync(requestContext, idTokenSignedResponseAlgorithms, cancellationToken);
         if (keyMaterialSearchResult.HasError)
         {
             return new(keyMaterialSearchResult.ErrorDescription);
         }
 
         var roundIssuedAt = DateTimeOffset.FromUnixTimeSeconds(issuedAt.ToUnixTimeSeconds());
-        var roundExpiresAt = DateTimeOffset.FromUnixTimeSeconds(roundIssuedAt.Add(client.GetIdTokenLifetime()).ToUnixTimeSeconds());
+        var roundExpiresAt = DateTimeOffset.FromUnixTimeSeconds(roundIssuedAt.Add(TimeSpan.FromSeconds(client.GetIdTokenLifetime())).ToUnixTimeSeconds());
         var result = new HashSet<LightweightClaim>(256, LightweightClaim.EqualityComparer)
         {
             // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.2

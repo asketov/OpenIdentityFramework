@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 using OpenIdentityFramework.Models.Operation;
@@ -14,19 +13,19 @@ public class DefaultGrantedConsentService<TRequestContext, TClient, TClientSecre
     : IGrantedConsentService<TRequestContext, TClient, TClientSecret, TGrantedConsent>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TGrantedConsent : AbstractGrantedConsent
 {
-    public DefaultGrantedConsentService(IGrantedConsentStorage<TRequestContext, TGrantedConsent> storage, ISystemClock systemClock)
+    public DefaultGrantedConsentService(IGrantedConsentStorage<TRequestContext, TGrantedConsent> storage, TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(storage);
-        ArgumentNullException.ThrowIfNull(systemClock);
+        ArgumentNullException.ThrowIfNull(timeProvider);
         Storage = storage;
-        SystemClock = systemClock;
+        TimeProvider = timeProvider;
     }
 
     protected IGrantedConsentStorage<TRequestContext, TGrantedConsent> Storage { get; }
-    protected ISystemClock SystemClock { get; }
+    protected TimeProvider TimeProvider { get; }
 
     public virtual async Task<TGrantedConsent?> FindAsync(
         TRequestContext requestContext,
@@ -55,7 +54,7 @@ public class DefaultGrantedConsentService<TRequestContext, TClient, TClientSecre
             var expirationDate = consent.GetExpirationDate();
             if (expirationDate.HasValue)
             {
-                var currentDate = SystemClock.UtcNow;
+                var currentDate = TimeProvider.GetUtcNow();
                 if (currentDate > expirationDate.Value)
                 {
                     await Storage.DeleteAsync(requestContext, subjectId, clientId, cancellationToken);
@@ -87,11 +86,11 @@ public class DefaultGrantedConsentService<TRequestContext, TClient, TClientSecre
         if (grantedScopes.Count > 0)
         {
             var consentLifetime = client.GetConsentLifetime();
-            var currentDate = DateTimeOffset.FromUnixTimeSeconds(SystemClock.UtcNow.ToUnixTimeSeconds());
+            var currentDate = DateTimeOffset.FromUnixTimeSeconds(TimeProvider.GetUtcNow().ToUnixTimeSeconds());
             DateTimeOffset? expiresAt = null;
             if (consentLifetime.HasValue)
             {
-                expiresAt = currentDate.Add(consentLifetime.Value);
+                expiresAt = currentDate.Add(TimeSpan.FromSeconds(consentLifetime.Value));
             }
 
             await Storage.UpsertAsync(requestContext, subjectId, client.GetClientId(), grantedScopes, currentDate, expiresAt, cancellationToken);

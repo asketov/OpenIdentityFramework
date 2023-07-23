@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Models;
@@ -10,7 +11,7 @@ namespace OpenIdentityFramework.Services.Core;
 public interface IGrantedConsentService<TRequestContext, TClient, TClientSecret, TGrantedConsent>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TGrantedConsent : AbstractGrantedConsent
 {
     Task<TGrantedConsent?> FindAsync(

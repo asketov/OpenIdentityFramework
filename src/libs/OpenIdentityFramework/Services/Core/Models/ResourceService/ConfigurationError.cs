@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using OpenIdentityFramework.Models.Configuration;
 
 namespace OpenIdentityFramework.Services.Core.Models.ResourceService;
@@ -6,7 +7,7 @@ namespace OpenIdentityFramework.Services.Core.Models.ResourceService;
 public class ConfigurationError<TScope, TResource, TResourceSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
 {
     public ConfigurationError(
         IReadOnlySet<string>? scopesDuplicates,

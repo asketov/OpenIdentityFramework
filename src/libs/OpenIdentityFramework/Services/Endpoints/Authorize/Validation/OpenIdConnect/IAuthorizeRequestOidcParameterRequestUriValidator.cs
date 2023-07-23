@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
@@ -10,7 +11,7 @@ namespace OpenIdentityFramework.Services.Endpoints.Authorize.Validation.OpenIdCo
 public interface IAuthorizeRequestOidcParameterRequestUriValidator<TRequestContext, TClient, TClientSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
 {
     Task<AuthorizeRequestOidcParameterRequestUriValidationResult> ValidateRequestUriOidcParameterAsync(
         TRequestContext requestContext,

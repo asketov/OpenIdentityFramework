@@ -8,10 +8,10 @@ namespace OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeReq
 
 public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
 {
     public ValidAuthorizeRequest(
         DateTimeOffset initialRequestDate,
@@ -22,8 +22,7 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
         ValidResources<TScope, TResource, TResourceSecret> requestedResources,
         string codeChallenge,
         string codeChallengeMethod,
-        string responseType,
-        string authorizationFlow,
+        IReadOnlySet<string> responseType,
         string? state,
         string responseMode,
         IReadOnlyDictionary<string, StringValues> raw)
@@ -52,15 +51,7 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(codeChallengeMethod));
         }
 
-        if (string.IsNullOrWhiteSpace(responseType))
-        {
-            throw new ArgumentException("Value cannot be null or whitespace.", nameof(responseType));
-        }
-
-        if (string.IsNullOrWhiteSpace(authorizationFlow))
-        {
-            throw new ArgumentException("Value cannot be null or whitespace.", nameof(authorizationFlow));
-        }
+        ArgumentNullException.ThrowIfNull(responseType);
 
         if (string.IsNullOrWhiteSpace(responseMode))
         {
@@ -76,7 +67,6 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
         CodeChallenge = codeChallenge;
         CodeChallengeMethod = codeChallengeMethod;
         ResponseType = responseType;
-        AuthorizationFlow = authorizationFlow;
         State = state;
         ResponseMode = responseMode;
         Raw = raw;
@@ -92,8 +82,7 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
         ValidResources<TScope, TResource, TResourceSecret> requestedResources,
         string codeChallenge,
         string codeChallengeMethod,
-        string responseType,
-        string authorizationFlow,
+        IReadOnlySet<string> responseType,
         string? state,
         string responseMode,
         string? nonce,
@@ -129,15 +118,7 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(codeChallengeMethod));
         }
 
-        if (string.IsNullOrWhiteSpace(responseType))
-        {
-            throw new ArgumentException("Value cannot be null or whitespace.", nameof(responseType));
-        }
-
-        if (string.IsNullOrWhiteSpace(authorizationFlow))
-        {
-            throw new ArgumentException("Value cannot be null or whitespace.", nameof(authorizationFlow));
-        }
+        ArgumentNullException.ThrowIfNull(responseType);
 
         if (string.IsNullOrWhiteSpace(responseMode))
         {
@@ -153,7 +134,6 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
         CodeChallenge = codeChallenge;
         CodeChallengeMethod = codeChallengeMethod;
         ResponseType = responseType;
-        AuthorizationFlow = authorizationFlow;
         State = state;
         ResponseMode = responseMode;
         Nonce = nonce;
@@ -183,13 +163,11 @@ public class ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TR
 
     public string CodeChallengeMethod { get; }
 
-    public string ResponseType { get; }
+    public IReadOnlySet<string> ResponseType { get; }
 
     public string? State { get; }
 
     public string ResponseMode { get; }
-
-    public string AuthorizationFlow { get; }
 
     public bool IsOpenIdRequest { get; }
 

@@ -16,7 +16,7 @@ public class DefaultAuthorizeRequestParameterClientIdValidator<TRequestContext, 
     : IAuthorizeRequestParameterClientIdValidator<TRequestContext, TClient, TClientSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
 {
     public DefaultAuthorizeRequestParameterClientIdValidator(
         OpenIdentityFrameworkOptions frameworkOptions,

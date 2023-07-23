@@ -6,10 +6,10 @@ namespace OpenIdentityFramework.Services.Core.Models.IdTokenService;
 
 public class CreateIdTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
 {
     public CreateIdTokenRequest(
         TClient client,

@@ -21,10 +21,10 @@ public class DefaultAuthorizeRequestValidator<TRequestContext, TClient, TClientS
     : IAuthorizeRequestValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
 {
     public DefaultAuthorizeRequestValidator(
         IAuthorizeRequestParameterClientIdValidator<TRequestContext, TClient, TClientSecret> clientIdValidator,
@@ -157,13 +157,12 @@ public class DefaultAuthorizeRequestValidator<TRequestContext, TClient, TClientS
                 codeChallengeValidation.CodeChallenge,
                 codeChallengeMethodValidation.CodeChallengeMethod,
                 coreParameters.ResponseType,
-                coreParameters.AuthorizationFlow,
                 coreParameters.State,
                 coreParameters.ResponseMode,
                 rawParameters));
         }
 
-        var nonceValidation = await NonceValidator.ValidateNonceOidcParameterAsync(requestContext, parameters, coreParameters.Client, coreParameters.AuthorizationFlow, cancellationToken);
+        var nonceValidation = await NonceValidator.ValidateNonceOidcParameterAsync(requestContext, parameters, coreParameters.Client, coreParameters.ResponseType, cancellationToken);
         if (nonceValidation.HasError)
         {
             return coreParameters.BuildError(nonceValidation.Error);
@@ -233,7 +232,6 @@ public class DefaultAuthorizeRequestValidator<TRequestContext, TClient, TClientS
             codeChallengeValidation.CodeChallenge,
             codeChallengeMethodValidation.CodeChallengeMethod,
             coreParameters.ResponseType,
-            coreParameters.AuthorizationFlow,
             coreParameters.State,
             coreParameters.ResponseMode,
             nonceValidation.Nonce,
@@ -289,7 +287,6 @@ public class DefaultAuthorizeRequestValidator<TRequestContext, TClient, TClientS
             issuer,
             clientValidation.Client,
             responseTypeValidation.ResponseType,
-            responseTypeValidation.AuthorizationFlow,
             stateValidation.State,
             responseModeValidation.ResponseMode,
             redirectUriValidation.RedirectUriToUse,
@@ -365,8 +362,7 @@ public class DefaultAuthorizeRequestValidator<TRequestContext, TClient, TClientS
             DateTimeOffset requestDate,
             string issuer,
             TClient client,
-            string responseType,
-            string authorizationFlow,
+            IReadOnlySet<string> responseType,
             string? state,
             string responseMode,
             string redirectUriToUse,
@@ -375,14 +371,12 @@ public class DefaultAuthorizeRequestValidator<TRequestContext, TClient, TClientS
             ArgumentNullException.ThrowIfNull(issuer);
             ArgumentNullException.ThrowIfNull(client);
             ArgumentNullException.ThrowIfNull(responseType);
-            ArgumentNullException.ThrowIfNull(authorizationFlow);
             ArgumentNullException.ThrowIfNull(responseMode);
             ArgumentNullException.ThrowIfNull(redirectUriToUse);
             RequestDate = requestDate;
             Issuer = issuer;
             Client = client;
             ResponseType = responseType;
-            AuthorizationFlow = authorizationFlow;
             State = state;
             ResponseMode = responseMode;
             RedirectUriToUse = redirectUriToUse;
@@ -395,9 +389,7 @@ public class DefaultAuthorizeRequestValidator<TRequestContext, TClient, TClientS
 
         public TClient Client { get; }
 
-        public string ResponseType { get; }
-
-        public string AuthorizationFlow { get; }
+        public IReadOnlySet<string> ResponseType { get; }
 
         public string? State { get; }
 

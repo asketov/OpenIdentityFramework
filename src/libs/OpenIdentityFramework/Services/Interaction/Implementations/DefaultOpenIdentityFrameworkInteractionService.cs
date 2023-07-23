@@ -19,10 +19,10 @@ namespace OpenIdentityFramework.Services.Interaction.Implementations;
 public class DefaultOpenIdentityFrameworkInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerIdentifiers, TRequestContext, TAuthorizeRequest, TAuthorizeRequestConsent>
     : IOpenIdentityFrameworkInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerIdentifiers>
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
     where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
     where TRequestContext : class, IRequestContext
     where TAuthorizeRequest : AbstractAuthorizeRequest

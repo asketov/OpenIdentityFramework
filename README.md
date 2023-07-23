@@ -1,11 +1,15 @@
 Open Identity Framework
 ==============
-Open Identity Framework is an open source framework for building your own [OAuth 2.1][oauth-2.1]/[OpenID Connect 1.0][oidc] provider that adopts the latest security standards.
+Open Identity Framework is an open source framework for building your
+own [OAuth 2.1][oauth-2.1]/[OpenID Connect 1.0][oidc] provider that adopts the latest security standards.
 
-The project is inspired by [IdentityServer4][idsrv4], developed by [Dominick Baier](https://twitter.com/leastprivilege) and [Brock Allen](https://twitter.com/brocklallen). We are grateful to them for inspiration and their help in developing the open-source .NET ecosystem.
+The project is inspired by [IdentityServer4][idsrv4], developed by [Dominick Baier](https://twitter.com/leastprivilege)
+and [Brock Allen](https://twitter.com/brocklallen). We are grateful to them for inspiration and their help in developing
+the open-source .NET ecosystem.
 
 * This project is a free alternative to [IdentityServer4][idsrv4], but not a drop-in replacement
-* The implementation only includes the part of [OpenID Connect 1.0][oidc] protocol that is compatible with [OAuth 2.1][oauth-2.1]
+* The implementation only includes the part of [OpenID Connect 1.0][oidc] protocol that is compatible
+  with [OAuth 2.1][oauth-2.1]
 
 Acknowledgements
 ----------------

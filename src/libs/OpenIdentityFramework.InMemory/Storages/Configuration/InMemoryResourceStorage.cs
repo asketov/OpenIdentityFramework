@@ -30,12 +30,12 @@ public class InMemoryResourceStorage : IResourceStorage<InMemoryRequestContext, 
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var scopes = _scopes.Where(x => scopesToSearch.Contains(x.ProtocolName)).ToHashSet();
+        var scopes = _scopes.Where(x => scopesToSearch.Contains(x.GetScopeId())).ToHashSet();
         var accessTokenScopes = scopes
-            .Where(x => x.ScopeTokenType == DefaultTokenTypes.AccessToken)
-            .Select(x => x.ProtocolName)
+            .Where(x => x.GetScopeTokenType() == DefaultTokenTypes.AccessToken)
+            .Select(x => x.GetScopeId())
             .ToHashSet(StringComparer.Ordinal);
-        var resources = _resources.Where(x => x.AccessTokenScopes.Overlaps(accessTokenScopes)).ToHashSet();
+        var resources = _resources.Where(x => x.GetSupportedAccessTokenScopes().Overlaps(accessTokenScopes)).ToHashSet();
         var result = new ResourcesSearchResult<InMemoryScope, InMemoryResource, InMemoryResourceSecret>(scopes, resources);
         return Task.FromResult(result);
     }
@@ -46,12 +46,14 @@ public class InMemoryResourceStorage : IResourceStorage<InMemoryRequestContext, 
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var scopes = _scopes.Where(x => x.ShowInDiscovery).Select(x => new
-        {
-            x.ProtocolName,
-            x.UserClaimTypes
-        }).ToList();
-        var discoveryScopes = scopes.Select(x => x.ProtocolName).ToHashSet(StringComparer.Ordinal);
+        var scopes = _scopes
+            .Where(x => x.ShowInDiscoveryEndpoint())
+            .Select(x => new
+            {
+                ScopeId = x.GetScopeId(),
+                UserClaimTypes = x.GetUserClaimTypes()
+            }).ToList();
+        var discoveryScopes = scopes.Select(x => x.ScopeId).ToHashSet(StringComparer.Ordinal);
         var discoveryUserClaimTypes = scopes.SelectMany(x => x.UserClaimTypes).ToHashSet(StringComparer.Ordinal);
         var result = new DiscoveryEndpointSearchResult(discoveryScopes, discoveryUserClaimTypes);
         return Task.FromResult(result);

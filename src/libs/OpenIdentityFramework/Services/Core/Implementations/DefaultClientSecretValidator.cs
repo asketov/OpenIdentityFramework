@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
-using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
 
@@ -13,18 +10,18 @@ public class DefaultClientSecretValidator<TRequestContext, TClient, TClientSecre
     : IClientSecretValidator<TRequestContext, TClient, TClientSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
 {
-    public DefaultClientSecretValidator(IClientSecretHasher secretHasher, ISystemClock systemClock)
+    public DefaultClientSecretValidator(IClientSecretHasher secretHasher, TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(secretHasher);
-        ArgumentNullException.ThrowIfNull(systemClock);
+        ArgumentNullException.ThrowIfNull(timeProvider);
         SecretHasher = secretHasher;
-        SystemClock = systemClock;
+        TimeProvider = timeProvider;
     }
 
     protected IClientSecretHasher SecretHasher { get; }
-    protected ISystemClock SystemClock { get; }
+    protected TimeProvider TimeProvider { get; }
 
     public virtual Task<bool> IsValidPreSharedSecret(
         TRequestContext requestContext,
@@ -40,14 +37,15 @@ public class DefaultClientSecretValidator<TRequestContext, TClient, TClientSecre
             return Task.FromResult(false);
         }
 
-        foreach (var secret in clientSecrets.Where(static x => x.GetSecretType() == DefaultSecretTypes.PreSharedSecret))
+        foreach (var secret in clientSecrets)
         {
-            if (SecretHasher.IsValid(preSharedSecret, secret.GetValue()))
+            if (SecretHasher.IsValid(preSharedSecret, secret.GetHashedValue()))
             {
-                var expirationDate = secret.GetExpirationDate();
-                if (expirationDate.HasValue)
+                var expirationDateSeconds = secret.GetExpirationDate();
+                if (expirationDateSeconds > 0)
                 {
-                    var isActive = expirationDate.Value >= SystemClock.UtcNow;
+                    var expiresAt = DateTimeOffset.FromUnixTimeSeconds(expirationDateSeconds);
+                    var isActive = expiresAt >= TimeProvider.GetUtcNow();
                     return Task.FromResult(isActive);
                 }
 

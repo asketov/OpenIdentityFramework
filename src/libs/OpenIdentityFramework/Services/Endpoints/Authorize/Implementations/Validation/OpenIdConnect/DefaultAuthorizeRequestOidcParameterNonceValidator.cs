@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Configuration.Options;
@@ -16,7 +17,7 @@ public class DefaultAuthorizeRequestOidcParameterNonceValidator<TRequestContext,
     : IAuthorizeRequestOidcParameterNonceValidator<TRequestContext, TClient, TClientSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
 {
     public DefaultAuthorizeRequestOidcParameterNonceValidator(OpenIdentityFrameworkOptions frameworkOptions)
     {
@@ -30,7 +31,7 @@ public class DefaultAuthorizeRequestOidcParameterNonceValidator<TRequestContext,
         TRequestContext requestContext,
         AuthorizeRequestParametersToValidate parameters,
         TClient client,
-        string authorizationFlow,
+        IReadOnlySet<string> responseType,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -43,7 +44,7 @@ public class DefaultAuthorizeRequestOidcParameterNonceValidator<TRequestContext,
         // nonce - Use of the "nonce" Claim is REQUIRED for this flow (hybrid).
         if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.Nonce, out var nonceValues) || nonceValues.Count == 0)
         {
-            return Task.FromResult(InferDefaultResult(authorizationFlow));
+            return Task.FromResult(InferDefaultResult(responseType));
         }
 
         // Inherit from OAuth 2.1 (because OpenID Connect 1.0 doesn't define behaviour).
@@ -59,7 +60,7 @@ public class DefaultAuthorizeRequestOidcParameterNonceValidator<TRequestContext,
         var nonce = nonceValues.ToString();
         if (string.IsNullOrEmpty(nonce))
         {
-            return Task.FromResult(InferDefaultResult(authorizationFlow));
+            return Task.FromResult(InferDefaultResult(responseType));
         }
 
         // length check
@@ -71,11 +72,11 @@ public class DefaultAuthorizeRequestOidcParameterNonceValidator<TRequestContext,
         return Task.FromResult(new AuthorizeRequestOidcParameterNonceValidationResult(nonce));
     }
 
-    protected virtual AuthorizeRequestOidcParameterNonceValidationResult InferDefaultResult(string authorizationFlow)
+    protected virtual AuthorizeRequestOidcParameterNonceValidationResult InferDefaultResult(IReadOnlySet<string> responseType)
     {
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.3.2.11
         // nonce - Use of the "nonce" Claim is REQUIRED for this flow (hybrid).
-        if (authorizationFlow == DefaultAuthorizationFlows.Hybrid)
+        if (DefaultResponseTypes.CodeIdToken.SetEquals(responseType))
         {
             return AuthorizeRequestOidcParameterNonceValidationResult.NonceIsMissing;
         }

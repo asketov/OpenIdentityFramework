@@ -6,19 +6,15 @@ namespace OpenIdentityFramework.Services.Static.Cryptography;
 
 public static class CryptoRandom
 {
+    private const int MaxStackallocBytesCount = 1024;
     private static readonly RandomNumberGenerator Rng = RandomNumberGenerator.Create();
 
     public static string Create(int bytesCount)
     {
-        const int maxStackallocBytesCount = 1024;
-        if (bytesCount <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(bytesCount));
-        }
-
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bytesCount);
         byte[]? randomBytesBufferFromPool = null;
-        var randomBytesBuffer = bytesCount <= maxStackallocBytesCount
-            ? stackalloc byte[maxStackallocBytesCount]
+        var randomBytesBuffer = bytesCount <= MaxStackallocBytesCount
+            ? stackalloc byte[MaxStackallocBytesCount]
             : randomBytesBufferFromPool = ArrayPool<byte>.Shared.Rent(bytesCount);
         randomBytesBuffer = randomBytesBuffer[..bytesCount];
         string result;

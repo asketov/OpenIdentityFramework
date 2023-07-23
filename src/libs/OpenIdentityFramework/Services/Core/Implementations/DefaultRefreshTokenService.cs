@@ -2,7 +2,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Models;
@@ -21,29 +20,29 @@ public class DefaultRefreshTokenService<TRequestContext, TClient, TClientSecret,
     : IRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
     where TRefreshToken : AbstractRefreshToken<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
     where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
     public DefaultRefreshTokenService(
         OpenIdentityFrameworkOptions frameworkOptions,
-        ISystemClock systemClock,
+        TimeProvider timeProvider,
         IRefreshTokenStorage<TRequestContext, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> storage)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
-        ArgumentNullException.ThrowIfNull(systemClock);
+        ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(storage);
         FrameworkOptions = frameworkOptions;
-        SystemClock = systemClock;
+        TimeProvider = timeProvider;
         Storage = storage;
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
-    protected ISystemClock SystemClock { get; }
+    protected TimeProvider TimeProvider { get; }
     protected IRefreshTokenStorage<TRequestContext, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> Storage { get; }
 
     public virtual async Task<RefreshTokenCreationResult> CreateAsync(
@@ -55,7 +54,7 @@ public class DefaultRefreshTokenService<TRequestContext, TClient, TClientSecret,
     {
         ArgumentNullException.ThrowIfNull(createdAccessToken);
         cancellationToken.ThrowIfCancellationRequested();
-        var referenceAccessTokenHandle = createdAccessToken.AccessTokenFormat == DefaultAccessTokenFormat.Reference
+        var referenceAccessTokenHandle = createdAccessToken.AccessTokenFormat == DefaultAccessTokenStrategy.Opaque
             ? createdAccessToken.Handle
             : null;
         if (createdAccessToken.ResourceOwnerProfile is null)
@@ -92,13 +91,13 @@ public class DefaultRefreshTokenService<TRequestContext, TClient, TClientSecret,
         if (refreshToken.GetClientId() == client.GetClientId())
         {
             var expiresAt = refreshToken.GetExpirationDate();
-            if (SystemClock.UtcNow > expiresAt)
+            if (TimeProvider.GetUtcNow() > expiresAt)
             {
                 await Storage.DeleteAsync(requestContext, refreshTokenHandle, cancellationToken);
                 return null;
             }
 
-            if (client.GetAllowedAuthorizationFlows().Contains(DefaultAuthorizationFlows.RefreshToken))
+            if (client.GetGrantTypes().Contains(DefaultGrantTypes.RefreshToken))
             {
                 return refreshToken;
             }
@@ -169,10 +168,10 @@ public class DefaultRefreshTokenService<TRequestContext, TClient, TClientSecret,
     protected virtual bool TryComputeTokenLifetime(TClient client, [NotNullWhen(true)] out TimeSpan? result)
     {
         ArgumentNullException.ThrowIfNull(client);
-        var expirationType = client.GetRefreshTokenExpirationType();
-        var absoluteLifetime = client.GetRefreshTokenAbsoluteLifetime();
-        var slidingLifetime = client.GetRefreshTokenSlidingLifetime();
-        if (expirationType == DefaultRefreshTokenExpirationType.Sliding)
+        var expirationStrategy = client.GetRefreshTokenExpirationStrategy();
+        var absoluteLifetime = TimeSpan.FromSeconds(client.GetRefreshTokenAbsoluteLifetime());
+        var slidingLifetime = TimeSpan.FromSeconds(client.GetRefreshTokenSlidingLifetime());
+        if (expirationStrategy == DefaultRefreshTokenExpirationStrategy.Sliding)
         {
             if (absoluteLifetime > TimeSpan.Zero && slidingLifetime > absoluteLifetime)
             {
@@ -184,7 +183,7 @@ public class DefaultRefreshTokenService<TRequestContext, TClient, TClientSecret,
             return true;
         }
 
-        if (expirationType == DefaultRefreshTokenExpirationType.Absolute)
+        if (expirationStrategy == DefaultRefreshTokenExpirationStrategy.Absolute)
         {
             result = absoluteLifetime;
             return true;
@@ -208,8 +207,8 @@ public class DefaultRefreshTokenService<TRequestContext, TClient, TClientSecret,
             return true;
         }
 
-        var expirationType = client.GetRefreshTokenExpirationType();
-        if (expirationType == DefaultRefreshTokenExpirationType.Absolute)
+        var expirationStrategy = client.GetRefreshTokenExpirationStrategy();
+        if (expirationStrategy == DefaultRefreshTokenExpirationStrategy.Absolute)
         {
             absoluteExpirationDate = DateTimeOffset.FromUnixTimeSeconds(currentExpiresAt.ToUnixTimeSeconds());
             return true;

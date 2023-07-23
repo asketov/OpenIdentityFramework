@@ -1,4 +1,6 @@
-﻿using System.Threading;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Configuration;
@@ -9,12 +11,12 @@ namespace OpenIdentityFramework.Services.Endpoints.Authorize.Validation;
 public interface IAuthorizeRequestParameterResponseModeValidator<TRequestContext, TClient, TClientSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
 {
     Task<AuthorizeRequestParameterResponseModeValidationResult> ValidateResponseModeParameterAsync(
         TRequestContext requestContext,
         AuthorizeRequestParametersToValidate parameters,
         TClient client,
-        string responseType,
+        IReadOnlySet<string> responseType,
         CancellationToken cancellationToken);
 }

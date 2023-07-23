@@ -19,10 +19,10 @@ public class DefaultDiscoveryResponseGenerator<TRequestContext, TClient, TClient
     : IDiscoveryResponseGenerator<TRequestContext>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
 {
     public DefaultDiscoveryResponseGenerator(
         OpenIdentityFrameworkOptions frameworkOptions,
@@ -193,7 +193,7 @@ public class DefaultDiscoveryResponseGenerator<TRequestContext, TClient, TClient
 
     protected virtual IReadOnlyCollection<string> GetResponseTypesSupported()
     {
-        return DefaultResponseType.Supported;
+        return DefaultResponseTypes.Supported;
     }
 
     protected virtual IReadOnlyCollection<string>? GetResponseModesSupported()

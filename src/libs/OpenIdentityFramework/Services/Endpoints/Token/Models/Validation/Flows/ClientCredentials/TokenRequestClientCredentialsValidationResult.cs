@@ -7,10 +7,10 @@ namespace OpenIdentityFramework.Services.Endpoints.Token.Models.Validation.Flows
 
 public class TokenRequestClientCredentialsValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret>
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
 {
     public TokenRequestClientCredentialsValidationResult(ValidClientCredentialsTokenRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret> validTokenRequest)
     {

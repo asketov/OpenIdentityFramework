@@ -7,7 +7,7 @@ namespace OpenIdentityFramework.Services.Endpoints.Authorize.Models.AuthorizeReq
 
 public class AuthorizeRequestValidationError<TClient, TClientSecret>
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
 {
     public AuthorizeRequestValidationError(
         DateTimeOffset requestDate,

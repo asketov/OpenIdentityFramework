@@ -11,7 +11,7 @@ public class DefaultClientService<TRequestContext, TClient, TClientSecret>
     : IClientService<TRequestContext, TClient, TClientSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
 {
     public DefaultClientService(IClientStorage<TRequestContext, TClient, TClientSecret> storage)
     {

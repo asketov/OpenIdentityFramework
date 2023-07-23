@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Authentication;
 using OpenIdentityFramework.Models.Operation;
@@ -18,19 +17,19 @@ public class DefaultAuthorizeRequestConsentService<TRequestContext, TAuthorizeRe
 {
     public DefaultAuthorizeRequestConsentService(
         IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequestConsent, TResourceOwnerIdentifiers> storage,
-        ISystemClock systemClock,
+        TimeProvider timeProvider,
         IEqualityComparer<TResourceOwnerIdentifiers> equalityComparer)
     {
         ArgumentNullException.ThrowIfNull(storage);
-        ArgumentNullException.ThrowIfNull(systemClock);
+        ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(equalityComparer);
         Storage = storage;
-        SystemClock = systemClock;
+        TimeProvider = timeProvider;
         EqualityComparer = equalityComparer;
     }
 
     protected IAuthorizeRequestConsentStorage<TRequestContext, TAuthorizeRequestConsent, TResourceOwnerIdentifiers> Storage { get; }
-    protected ISystemClock SystemClock { get; }
+    protected TimeProvider TimeProvider { get; }
     protected IEqualityComparer<TResourceOwnerIdentifiers> EqualityComparer { get; }
 
     public virtual async Task<TAuthorizeRequestConsent?> FindAsync(
@@ -43,7 +42,7 @@ public class DefaultAuthorizeRequestConsentService<TRequestContext, TAuthorizeRe
         var consent = await Storage.FindAsync(requestContext, authorizeRequestId, authorIdentifiers, cancellationToken);
         if (consent != null && EqualityComparer.Equals(consent.GetAuthorIdentifiers(), authorIdentifiers))
         {
-            var currentDate = SystemClock.UtcNow;
+            var currentDate = TimeProvider.GetUtcNow();
             var expirationDate = consent.GetExpirationDate();
             if (currentDate > expirationDate)
             {

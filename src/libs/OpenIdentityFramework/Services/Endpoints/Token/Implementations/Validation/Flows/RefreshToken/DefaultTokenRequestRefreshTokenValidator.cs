@@ -20,10 +20,10 @@ public class DefaultTokenRequestRefreshTokenValidator<TRequestContext, TClient, 
     : ITokenRequestRefreshTokenValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
     where TRefreshToken : AbstractRefreshToken<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
     where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
@@ -63,7 +63,7 @@ public class DefaultTokenRequestRefreshTokenValidator<TRequestContext, TClient, 
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(client);
-        if (!client.GetAllowedAuthorizationFlows().Contains(DefaultAuthorizationFlows.RefreshToken))
+        if (!client.GetGrantTypes().Contains(DefaultGrantTypes.RefreshToken))
         {
             return UnauthorizedClient;
         }

@@ -1,66 +1,48 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using OpenIdentityFramework.Models.Configuration;
 
 namespace OpenIdentityFramework.InMemory.Models.Configuration;
 
 public class InMemoryScope : AbstractScope
 {
-    public InMemoryScope(
-        string protocolName,
-        string scopeTokenType,
-        bool required,
-        bool showInDiscovery,
-        IReadOnlySet<string> userClaimTypes)
+    private readonly bool _isRequired;
+
+    private readonly string _scopeId;
+    private readonly string _scopeTokenType;
+    private readonly bool _showInDiscoveryEndpoint;
+    private readonly IReadOnlySet<string> _userClaimTypes;
+
+    public InMemoryScope(string scopeId, string scopeTokenType, bool isRequired, bool showInDiscoveryEndpoint, IReadOnlySet<string> userClaimTypes)
     {
-        if (string.IsNullOrEmpty(protocolName))
-        {
-            throw new ArgumentException("Value cannot be null or empty.", nameof(protocolName));
-        }
-
-        if (string.IsNullOrEmpty(scopeTokenType))
-        {
-            throw new ArgumentException("Value cannot be null or empty.", nameof(scopeTokenType));
-        }
-
-        ArgumentNullException.ThrowIfNull(userClaimTypes);
-
-        ProtocolName = protocolName;
-        ScopeTokenType = scopeTokenType;
-        Required = required;
-        ShowInDiscovery = showInDiscovery;
-        UserClaimTypes = userClaimTypes;
+        _scopeId = scopeId;
+        _scopeTokenType = scopeTokenType;
+        _isRequired = isRequired;
+        _showInDiscoveryEndpoint = showInDiscoveryEndpoint;
+        _userClaimTypes = userClaimTypes;
     }
 
-    public string ProtocolName { get; }
-    public string ScopeTokenType { get; }
-    public bool Required { get; }
-    public bool ShowInDiscovery { get; }
-    public IReadOnlySet<string> UserClaimTypes { get; }
-
-
-    public override string GetProtocolName()
+    public override string GetScopeId()
     {
-        return ProtocolName;
+        return _scopeId;
     }
 
     public override string GetScopeTokenType()
     {
-        return ScopeTokenType;
+        return _scopeTokenType;
     }
 
     public override bool IsRequired()
     {
-        return Required;
+        return _isRequired;
     }
 
     public override bool ShowInDiscoveryEndpoint()
     {
-        return ShowInDiscovery;
+        return _showInDiscoveryEndpoint;
     }
 
     public override IReadOnlySet<string> GetUserClaimTypes()
     {
-        return UserClaimTypes;
+        return _userClaimTypes;
     }
 }

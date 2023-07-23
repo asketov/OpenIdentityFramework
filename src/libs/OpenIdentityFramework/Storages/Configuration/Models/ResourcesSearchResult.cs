@@ -7,7 +7,7 @@ namespace OpenIdentityFramework.Storages.Configuration.Models;
 public class ResourcesSearchResult<TScope, TResource, TResourceSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
 {
     public ResourcesSearchResult(IReadOnlySet<TScope> scopes, IReadOnlySet<TResource> resources)
     {

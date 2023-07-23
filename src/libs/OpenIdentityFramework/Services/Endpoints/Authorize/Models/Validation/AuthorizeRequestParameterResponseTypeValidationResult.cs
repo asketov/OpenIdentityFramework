@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using OpenIdentityFramework.Constants;
 using OpenIdentityFramework.Constants.Response.Errors;
@@ -9,12 +10,12 @@ namespace OpenIdentityFramework.Services.Endpoints.Authorize.Models.Validation;
 public class AuthorizeRequestParameterResponseTypeValidationResult
 {
     public static readonly AuthorizeRequestParameterResponseTypeValidationResult Code = new(
-        DefaultResponseType.Code,
-        DefaultAuthorizationFlows.AuthorizationCode);
+        DefaultGrantTypes.AuthorizationCode,
+        DefaultResponseTypes.Code);
 
     public static readonly AuthorizeRequestParameterResponseTypeValidationResult CodeIdToken = new(
-        DefaultResponseType.CodeIdToken,
-        DefaultAuthorizationFlows.Hybrid);
+        DefaultGrantTypes.AuthorizationCode,
+        DefaultResponseTypes.CodeIdToken);
 
     public static readonly AuthorizeRequestParameterResponseTypeValidationResult ResponseTypeIsMissing = new(new(
         AuthorizeErrors.InvalidRequest,
@@ -35,22 +36,21 @@ public class AuthorizeRequestParameterResponseTypeValidationResult
         HasError = true;
     }
 
-    public AuthorizeRequestParameterResponseTypeValidationResult(string responseType, string authorizationFlow)
+    public AuthorizeRequestParameterResponseTypeValidationResult(string grantType, IReadOnlySet<string> responseType)
     {
+        ArgumentNullException.ThrowIfNull(grantType);
         ArgumentNullException.ThrowIfNull(responseType);
-        ArgumentNullException.ThrowIfNull(authorizationFlow);
+        GrantType = grantType;
         ResponseType = responseType;
-        AuthorizationFlow = authorizationFlow;
     }
 
-    public string? ResponseType { get; }
-
-    public string? AuthorizationFlow { get; }
+    public string? GrantType { get; }
+    public IReadOnlySet<string>? ResponseType { get; }
 
     public ProtocolError? Error { get; }
 
     [MemberNotNullWhen(true, nameof(Error))]
     [MemberNotNullWhen(false, nameof(ResponseType))]
-    [MemberNotNullWhen(false, nameof(AuthorizationFlow))]
+    [MemberNotNullWhen(false, nameof(GrantType))]
     public bool HasError { get; }
 }

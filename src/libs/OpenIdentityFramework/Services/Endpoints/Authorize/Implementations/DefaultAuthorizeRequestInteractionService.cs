@@ -20,10 +20,10 @@ public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient,
     : IAuthorizeRequestInteractionService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TAuthorizeRequestConsent, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
     where TScope : AbstractScope
     where TResource : AbstractResource<TResourceSecret>
-    where TResourceSecret : AbstractSecret
+    where TResourceSecret : AbstractResourceSecret, IEquatable<TResourceSecret>
     where TAuthorizeRequestConsent : AbstractAuthorizeRequestConsent<TResourceOwnerIdentifiers>
     where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
     where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
@@ -229,7 +229,7 @@ public class DefaultAuthorizeRequestInteractionService<TRequestContext, TClient,
         // or by establishing consent via conditions for processing the request or other means (for example, via previous administrative consent).
         // ---------------------
         // administrative consent check
-        if (!authorizeRequest.Client.IsConsentRequired())
+        if (authorizeRequest.Client.CanSkipConsentScreen())
         {
             return false;
         }

@@ -1,42 +1,57 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using OpenIdentityFramework.Models.Configuration;
+using OpenIdentityFramework.Services.Core.Implementations;
 
 namespace OpenIdentityFramework.InMemory.Models.Configuration;
 
 public class InMemoryResource : AbstractResource<InMemoryResourceSecret>
 {
-    public InMemoryResource(string protocolName, IReadOnlySet<string> accessTokenScopes, IReadOnlyCollection<InMemoryResourceSecret> secrets)
+    private readonly string _resourceId;
+    private readonly long _resourceIdIssuedAt;
+    private readonly IReadOnlyCollection<InMemoryResourceSecret> _secrets;
+    private readonly IReadOnlySet<string> _supportedAccessTokenScopes;
+
+    public InMemoryResource(string resourceId, long resourceIdIssuedAt, IReadOnlySet<string> supportedAccessTokenScopes, IReadOnlyCollection<InMemoryResourceSecret> secrets)
     {
-        if (string.IsNullOrEmpty(protocolName))
+        _resourceId = resourceId;
+        _resourceIdIssuedAt = resourceIdIssuedAt;
+        _supportedAccessTokenScopes = supportedAccessTokenScopes;
+        _secrets = secrets;
+    }
+
+    public static InMemoryResource Create(string resourceId, string secret, DateTimeOffset resourceIdIssuedAt, IEnumerable<string> supportedAccessTokenScopes)
+    {
+        var issuedAtUnixTime = resourceIdIssuedAt.ToUnixTimeSeconds();
+        var secrets = new HashSet<InMemoryResourceSecret>
         {
-            throw new ArgumentException("Value cannot be null or empty.", nameof(protocolName));
-        }
-
-        ArgumentNullException.ThrowIfNull(secrets);
-        ArgumentNullException.ThrowIfNull(accessTokenScopes);
-
-        ProtocolName = protocolName;
-        AccessTokenScopes = accessTokenScopes;
-        Secrets = secrets;
+            new(DefaultClientSecretHasher.Instance.ComputeHash(secret), issuedAtUnixTime, 0)
+        };
+        return new(
+            resourceId,
+            issuedAtUnixTime,
+            supportedAccessTokenScopes.ToHashSet(StringComparer.Ordinal),
+            secrets);
     }
 
-    public string ProtocolName { get; }
-    public IReadOnlySet<string> AccessTokenScopes { get; }
-    public IReadOnlyCollection<InMemoryResourceSecret> Secrets { get; }
-
-    public override string GetProtocolName()
+    public override string GetResourceId()
     {
-        return ProtocolName;
+        return _resourceId;
     }
 
-    public override IReadOnlySet<string> GetAccessTokenScopes()
+    public override long GetResourceIdIssuedAt()
     {
-        return AccessTokenScopes;
+        return _resourceIdIssuedAt;
+    }
+
+    public override IReadOnlySet<string> GetSupportedAccessTokenScopes()
+    {
+        return _supportedAccessTokenScopes;
     }
 
     public override IReadOnlyCollection<InMemoryResourceSecret> GetSecrets()
     {
-        return Secrets;
+        return _secrets;
     }
 }

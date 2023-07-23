@@ -3,7 +3,6 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.WebUtilities;
 using OpenIdentityFramework.Configuration.Options;
@@ -18,19 +17,19 @@ public class InMemoryAuthorizeRequestErrorStorage : IAuthorizeRequestErrorStorag
 {
     public InMemoryAuthorizeRequestErrorStorage(
         OpenIdentityFrameworkOptions frameworkOptions,
-        ISystemClock systemClock,
+        TimeProvider timeProvider,
         IDataProtectionProvider provider)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
-        ArgumentNullException.ThrowIfNull(systemClock);
+        ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(provider);
         FrameworkOptions = frameworkOptions;
-        SystemClock = systemClock;
+        TimeProvider = timeProvider;
         DataProtector = provider.CreateProtector($"{typeof(InMemoryAuthorizeRequestErrorStorage).Namespace}.{nameof(InMemoryAuthorizeRequestErrorStorage)}");
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
-    protected ISystemClock SystemClock { get; }
+    protected TimeProvider TimeProvider { get; }
     protected IDataProtector DataProtector { get; }
 
     public Task<string> CreateAsync(
@@ -74,7 +73,7 @@ public class InMemoryAuthorizeRequestErrorStorage : IAuthorizeRequestErrorStorag
             var errorBytes = DataProtector.Unprotect(protectedBytes);
             var serializedValue = Encoding.UTF8.GetString(errorBytes);
             var deserializedValue = JsonSerializer.Deserialize<InMemoryAuthorizeRequestError>(serializedValue);
-            var currentDate = SystemClock.UtcNow;
+            var currentDate = TimeProvider.GetUtcNow();
             if (deserializedValue is not null && currentDate < deserializedValue.GetExpirationDate())
             {
                 return Task.FromResult<InMemoryAuthorizeRequestError?>(deserializedValue);

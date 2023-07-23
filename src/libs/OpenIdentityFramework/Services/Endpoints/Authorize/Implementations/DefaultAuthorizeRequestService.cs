@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Primitives;
 using OpenIdentityFramework.Configuration.Options;
 using OpenIdentityFramework.Models;
@@ -19,19 +18,19 @@ public class DefaultAuthorizeRequestService<TRequestContext, TAuthorizeRequest>
     public DefaultAuthorizeRequestService(
         OpenIdentityFrameworkOptions frameworkOptions,
         IAuthorizeRequestStorage<TRequestContext, TAuthorizeRequest> storage,
-        ISystemClock systemClock)
+        TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
         ArgumentNullException.ThrowIfNull(storage);
-        ArgumentNullException.ThrowIfNull(systemClock);
+        ArgumentNullException.ThrowIfNull(timeProvider);
         FrameworkOptions = frameworkOptions;
         Storage = storage;
-        SystemClock = systemClock;
+        TimeProvider = timeProvider;
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
     protected IAuthorizeRequestStorage<TRequestContext, TAuthorizeRequest> Storage { get; }
-    protected ISystemClock SystemClock { get; }
+    protected TimeProvider TimeProvider { get; }
 
     public virtual async Task<string> SaveAsync(
         TRequestContext requestContext,
@@ -41,7 +40,7 @@ public class DefaultAuthorizeRequestService<TRequestContext, TAuthorizeRequest>
     {
         cancellationToken.ThrowIfCancellationRequested();
         var expiresAt = initialRequestDate.Add(FrameworkOptions.Endpoints.Authorize.AuthorizeRequestLifetime);
-        var createdAt = DateTimeOffset.FromUnixTimeSeconds(SystemClock.UtcNow.ToUnixTimeSeconds());
+        var createdAt = DateTimeOffset.FromUnixTimeSeconds(TimeProvider.GetUtcNow().ToUnixTimeSeconds());
         return await Storage.SaveAsync(requestContext, initialRequestDate, parameters, createdAt, expiresAt, cancellationToken);
     }
 
@@ -54,7 +53,7 @@ public class DefaultAuthorizeRequestService<TRequestContext, TAuthorizeRequest>
         var parameters = await Storage.FindAsync(requestContext, authorizeRequestId, cancellationToken);
         if (parameters != null)
         {
-            var currentDate = SystemClock.UtcNow;
+            var currentDate = TimeProvider.GetUtcNow();
             var expirationDate = parameters.GetExpirationDate();
             if (currentDate > expirationDate)
             {

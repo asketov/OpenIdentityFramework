@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -11,7 +12,7 @@ namespace OpenIdentityFramework.Services.Core;
 public interface IClientAuthenticationService<TRequestContext, TClient, TClientSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
 {
     Task<ClientAuthenticationResult<TClient, TClientSecret>> AuthenticateAsync(
         TRequestContext requestContext,

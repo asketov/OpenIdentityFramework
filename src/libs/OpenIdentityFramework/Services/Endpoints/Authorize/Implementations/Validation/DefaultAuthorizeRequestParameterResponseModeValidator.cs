@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using OpenIdentityFramework.Constants;
@@ -14,13 +15,13 @@ public class DefaultAuthorizeRequestParameterResponseModeValidator<TRequestConte
     : IAuthorizeRequestParameterResponseModeValidator<TRequestContext, TClient, TClientSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
 {
     public virtual Task<AuthorizeRequestParameterResponseModeValidationResult> ValidateResponseModeParameterAsync(
         TRequestContext requestContext,
         AuthorizeRequestParametersToValidate parameters,
         TClient client,
-        string responseType,
+        IReadOnlySet<string> responseType,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(parameters);
@@ -53,11 +54,16 @@ public class DefaultAuthorizeRequestParameterResponseModeValidator<TRequestConte
         return Task.FromResult(ResponseModeToResult(responseMode));
     }
 
-    protected virtual AuthorizeRequestParameterResponseModeValidationResult InferResponseMode(string responseType)
+    protected virtual AuthorizeRequestParameterResponseModeValidationResult InferResponseMode(IReadOnlySet<string> responseType)
     {
-        if (DefaultResponseType.ToResponseMode.TryGetValue(responseType, out var inferredResponseMode))
+        if (DefaultResponseTypes.Code.SetEquals(responseType))
         {
-            return ResponseModeToResult(inferredResponseMode);
+            return AuthorizeRequestParameterResponseModeValidationResult.Query;
+        }
+
+        if (DefaultResponseTypes.CodeIdToken.SetEquals(responseType))
+        {
+            return AuthorizeRequestParameterResponseModeValidationResult.Fragment;
         }
 
         return AuthorizeRequestParameterResponseModeValidationResult.UnableToInferResponseMode;

@@ -15,7 +15,7 @@ public class DefaultAuthorizeRequestOidcParameterAcrValuesValidator<TRequestCont
     : IAuthorizeRequestOidcParameterAcrValuesValidator<TRequestContext, TClient, TClientSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
 {
     public DefaultAuthorizeRequestOidcParameterAcrValuesValidator(OpenIdentityFrameworkOptions frameworkOptions)
     {

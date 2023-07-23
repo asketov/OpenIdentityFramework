@@ -17,7 +17,7 @@ public class DefaultAuthorizeRequestParameterCodeChallengeValidator<TRequestCont
     : IAuthorizeRequestParameterCodeChallengeValidator<TRequestContext, TClient, TClientSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
 {
     public DefaultAuthorizeRequestParameterCodeChallengeValidator(OpenIdentityFrameworkOptions frameworkOptions)
     {

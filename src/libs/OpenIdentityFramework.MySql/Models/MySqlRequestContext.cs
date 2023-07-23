@@ -91,11 +91,7 @@ public class MySqlRequestContext : IRequestContext
             return resultConnection;
         }
 
-        if (_objectDisposed)
-        {
-            throw new ObjectDisposedException(nameof(MySqlConnection));
-        }
-
+        ObjectDisposedException.ThrowIf(_objectDisposed, this);
         throw new InvalidOperationException($"Can't get {nameof(MySqlConnection)}");
     }
 
@@ -107,11 +103,7 @@ public class MySqlRequestContext : IRequestContext
             return resultTransaction;
         }
 
-        if (_objectDisposed)
-        {
-            throw new ObjectDisposedException(nameof(MySqlTransaction));
-        }
-
+        ObjectDisposedException.ThrowIf(_objectDisposed, this);
         throw new InvalidOperationException($"Can't get {nameof(MySqlTransaction)}");
     }
 

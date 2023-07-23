@@ -22,7 +22,7 @@ public class DefaultClientAuthenticationService<TRequestContext, TClient, TClien
     : IClientAuthenticationService<TRequestContext, TClient, TClientSecret>
     where TRequestContext : class, IRequestContext
     where TClient : AbstractClient<TClientSecret>
-    where TClientSecret : AbstractSecret
+    where TClientSecret : AbstractClientSecret, IEquatable<TClientSecret>
 {
     protected static readonly ClientAuthenticationResult<TClient, TClientSecret> NotAuthenticated = new();
     protected static readonly ClientAuthenticationResult<TClient, TClientSecret> MultipleAuthorizeHeader = new($"Multiple \"{HeaderNames.Authorization}\" headers are present");
@@ -36,13 +36,6 @@ public class DefaultClientAuthenticationService<TRequestContext, TClient, TClien
     protected static readonly ClientAuthenticationResult<TClient, TClientSecret> MultipleClientId = new($"Multiple \"{ClientAuthenticationParameters.ClientId}\" values are present, but only one is allowed");
     protected static readonly ClientAuthenticationResult<TClient, TClientSecret> MissingClientSecret = new($"\"{ClientAuthenticationParameters.ClientSecret}\" is missing");
     protected static readonly ClientAuthenticationResult<TClient, TClientSecret> MultipleClientSecret = new($"Multiple \"{ClientAuthenticationParameters.ClientSecret}\" values are present, but only one is allowed");
-
-    protected static readonly IReadOnlySet<string> SupportedAuthenticationMethods = new HashSet<string>(StringComparer.Ordinal)
-    {
-        DefaultClientAuthenticationMethods.ClientSecretBasic,
-        DefaultClientAuthenticationMethods.None,
-        DefaultClientAuthenticationMethods.ClientSecretPost
-    };
 
     public DefaultClientAuthenticationService(
         OpenIdentityFrameworkOptions frameworkOptions,
@@ -97,7 +90,7 @@ public class DefaultClientAuthenticationService<TRequestContext, TClient, TClien
     public Task<IReadOnlySet<string>> GetSupportedAuthenticationMethodsAsync(TRequestContext requestContext, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Task.FromResult(SupportedAuthenticationMethods);
+        return Task.FromResult(DefaultSupported.AuthenticationMethods);
     }
 
     protected virtual async Task<ClientAuthenticationResult<TClient, TClientSecret>> AuthenticateUsingHttpBasicSchemeAsync(
@@ -164,7 +157,8 @@ public class DefaultClientAuthenticationService<TRequestContext, TClient, TClien
             return UnknownOrDisabledClient;
         }
 
-        if (client.GetClientAuthenticationMethod() != DefaultClientAuthenticationMethods.ClientSecretBasic)
+        var clientAuthenticationMethod = client.GetTokenEndpointAuthMethod() ?? DefaultClientAuthenticationMethods.ClientSecretBasic;
+        if (clientAuthenticationMethod != DefaultClientAuthenticationMethods.ClientSecretBasic)
         {
             return InvalidAuthenticationMethod;
         }
@@ -318,9 +312,8 @@ public class DefaultClientAuthenticationService<TRequestContext, TClient, TClien
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.3.1
         // If the Client is a Confidential Client, then it MUST authenticate to the Token Endpoint using the authentication method registered for its client_id.
         // => Non public clients should perform authentication
-        var clientType = client.GetClientType();
-        var clientAuthenticationMethod = client.GetClientAuthenticationMethod();
-        if (clientType == DefaultClientTypes.Public)
+        var clientAuthenticationMethod = client.GetTokenEndpointAuthMethod() ?? DefaultClientAuthenticationMethods.ClientSecretBasic;
+        if (!client.IsConfidential())
         {
             if (clientAuthenticationMethod == DefaultClientAuthenticationMethods.None)
             {

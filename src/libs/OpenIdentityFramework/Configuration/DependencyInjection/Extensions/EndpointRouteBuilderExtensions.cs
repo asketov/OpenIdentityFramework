@@ -109,19 +109,9 @@ public static class EndpointRouteBuilderExtensions
         ArgumentNullException.ThrowIfNull(httpContext);
         ArgumentNullException.ThrowIfNull(contextFactory);
         ArgumentNullException.ThrowIfNull(handler);
-        IEndpointHandlerResult result;
         await using var requestContext = await contextFactory.CreateAsync(httpContext, cancellationToken);
-        try
-        {
-            result = await handler.HandleAsync(requestContext, httpContext.RequestAborted);
-            await requestContext.CommitAsync(httpContext.RequestAborted);
-        }
-        catch
-        {
-            await requestContext.RollbackAsync(httpContext.RequestAborted);
-            throw;
-        }
-
+        var result = await handler.HandleAsync(requestContext, httpContext.RequestAborted);
+        await requestContext.CommitAsync(httpContext.RequestAborted);
         return result;
     }
 }

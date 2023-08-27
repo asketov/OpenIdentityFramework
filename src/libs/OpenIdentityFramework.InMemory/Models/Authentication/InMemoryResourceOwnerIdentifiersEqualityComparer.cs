@@ -27,11 +27,11 @@ public class InMemoryResourceOwnerIdentifiersEqualityComparer : IEqualityCompare
             return false;
         }
 
-        return x.SubjectId == y.SubjectId && x.SessionId == y.SessionId;
+        return x.GetSubjectId() == y.GetSubjectId() && x.GetSessionId() == y.GetSessionId();
     }
 
     public int GetHashCode(InMemoryResourceOwnerIdentifiers? obj)
     {
-        return HashCode.Combine(obj?.SubjectId, obj?.SessionId);
+        return HashCode.Combine(obj?.GetSubjectId(), obj?.GetSessionId());
     }
 }

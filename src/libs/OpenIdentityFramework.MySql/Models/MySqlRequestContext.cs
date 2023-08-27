@@ -43,16 +43,6 @@ public class MySqlRequestContext : IRequestContext
         }
     }
 
-    public async Task RollbackAsync(CancellationToken cancellationToken)
-    {
-        var transaction = _transaction;
-        if (transaction is not null)
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            await DisposeAsync();
-        }
-    }
-
     public void Dispose()
     {
         Dispose(true);
@@ -81,6 +71,16 @@ public class MySqlRequestContext : IRequestContext
         }
 
         GC.SuppressFinalize(this);
+    }
+
+    public async Task RollbackAsync(CancellationToken cancellationToken)
+    {
+        var transaction = _transaction;
+        if (transaction is not null)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            await DisposeAsync();
+        }
     }
 
     private MySqlConnection GetConnection()

@@ -1,4 +1,4 @@
-﻿namespace OpenIdentityFramework.Host.Mvc.Models;
+﻿namespace OpenIdentityFramework.Host.Mvc.ViewModels;
 
 public class ErrorViewModel
 {

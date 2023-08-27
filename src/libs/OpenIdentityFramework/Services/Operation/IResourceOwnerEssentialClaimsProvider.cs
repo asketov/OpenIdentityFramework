@@ -7,12 +7,12 @@ using OpenIdentityFramework.Services.Operation.Models.ResourceOwnerEssentialClai
 
 namespace OpenIdentityFramework.Services.Operation;
 
-public interface IResourceOwnerEssentialClaimsFactory<TRequestContext, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+public interface IResourceOwnerEssentialClaimsProvider<TRequestContext, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext
     where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
     where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
-    Task<ResourceOwnerEssentialClaimsCreationResult<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>> CreateAsync(
+    Task<ResourceOwnerEssentialClaimsCreationResult<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>> GetAsync(
         TRequestContext requestContext,
         AuthenticationTicket authenticationTicket,
         CancellationToken cancellationToken);

@@ -9,5 +9,4 @@ public interface IRequestContext : IDisposable, IAsyncDisposable
 {
     public HttpContext HttpContext { get; }
     public Task CommitAsync(CancellationToken cancellationToken);
-    public Task RollbackAsync(CancellationToken cancellationToken);
 }

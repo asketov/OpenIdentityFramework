@@ -19,19 +19,19 @@ public class DefaultResourceOwnerAuthenticationService<TRequestContext, TResourc
     public DefaultResourceOwnerAuthenticationService(
         OpenIdentityFrameworkOptions frameworkOptions,
         IAuthenticationSchemeProvider schemeProvider,
-        IResourceOwnerEssentialClaimsFactory<TRequestContext, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> essentialClaimsFactory)
+        IResourceOwnerEssentialClaimsProvider<TRequestContext, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> essentialClaimsProvider)
     {
         ArgumentNullException.ThrowIfNull(frameworkOptions);
         ArgumentNullException.ThrowIfNull(schemeProvider);
-        ArgumentNullException.ThrowIfNull(essentialClaimsFactory);
+        ArgumentNullException.ThrowIfNull(essentialClaimsProvider);
         FrameworkOptions = frameworkOptions;
         SchemeProvider = schemeProvider;
-        EssentialClaimsFactory = essentialClaimsFactory;
+        EssentialClaimsProvider = essentialClaimsProvider;
     }
 
     protected OpenIdentityFrameworkOptions FrameworkOptions { get; }
     protected IAuthenticationSchemeProvider SchemeProvider { get; }
-    protected IResourceOwnerEssentialClaimsFactory<TRequestContext, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> EssentialClaimsFactory { get; }
+    protected IResourceOwnerEssentialClaimsProvider<TRequestContext, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> EssentialClaimsProvider { get; }
 
     public virtual async Task<ResourceOwnerAuthenticationResult<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>> AuthenticateAsync(TRequestContext requestContext, CancellationToken cancellationToken)
     {
@@ -68,7 +68,7 @@ public class DefaultResourceOwnerAuthenticationService<TRequestContext, TResourc
             return new();
         }
 
-        var claimsResult = await EssentialClaimsFactory.CreateAsync(requestContext, authenticateResult.Ticket, cancellationToken);
+        var claimsResult = await EssentialClaimsProvider.GetAsync(requestContext, authenticateResult.Ticket, cancellationToken);
         if (claimsResult.HasError)
         {
             return new(claimsResult.ErrorDescription);

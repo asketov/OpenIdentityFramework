@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Tokens;
@@ -13,9 +14,11 @@ using OpenIdentityFramework.InMemory.Models.Operation;
 using OpenIdentityFramework.InMemory.Services.Operation.RequestContextFactory;
 using OpenIdentityFramework.InMemory.Services.Operation.ResourceOwnerEssentialClaimsFactory;
 using OpenIdentityFramework.InMemory.Storages.Configuration;
+using OpenIdentityFramework.InMemory.Storages.Integration;
 using OpenIdentityFramework.InMemory.Storages.Operation;
 using OpenIdentityFramework.Services.Operation;
 using OpenIdentityFramework.Storages.Configuration;
+using OpenIdentityFramework.Storages.Integration;
 using OpenIdentityFramework.Storages.Operation;
 
 namespace OpenIdentityFramework.InMemory.Configuration.DependencyInjection.Extensions;
@@ -103,9 +106,10 @@ public static class ServiceCollectionExtensions
             IRequestContextFactory<InMemoryRequestContext>,
             InMemoryRequestContextFactory>();
         builder.Services.TryAddSingleton<
-            IResourceOwnerEssentialClaimsFactory<InMemoryRequestContext, InMemoryResourceOwnerEssentialClaims, InMemoryResourceOwnerIdentifiers>,
-            InMemoryResourceOwnerEssentialClaimsFactory>();
-        builder.Services.Configure<InMemoryResourceOwnerEssentialClaimsFactoryOptions>(claimsFactoryOptions => configureClaimsFactory?.Invoke(claimsFactoryOptions));
+            IResourceOwnerEssentialClaimsProvider<InMemoryRequestContext, InMemoryResourceOwnerEssentialClaims, InMemoryResourceOwnerIdentifiers>,
+            InMemoryResourceOwnerEssentialClaimsProvider>();
+        builder.Services.Configure<InMemoryResourceOwnerEssentialClaimsFactoryOptions>(
+            claimsFactoryOptions => configureClaimsFactory?.Invoke(claimsFactoryOptions));
         return builder;
     }
 
@@ -141,7 +145,8 @@ public static class ServiceCollectionExtensions
                 InMemoryGrantedConsent,
                 InMemoryAuthorizationCode,
                 InMemoryAccessToken,
-                InMemoryRefreshToken> builder)
+                InMemoryRefreshToken> builder,
+            Action<InMemoryResourceOwnerServerSessionStorageOptions>? configureServerSessionStorageOptions = null)
     {
         ArgumentNullException.ThrowIfNull(builder);
         // Operation
@@ -177,6 +182,14 @@ public static class ServiceCollectionExtensions
         builder.Services.TryAddSingleton<
             IResourceStorage<InMemoryRequestContext, InMemoryScope, InMemoryResource, InMemoryResourceSecret>,
             InMemoryResourceStorage>();
+
+        // Integration
+        builder.Services.TryAddSingleton<IDataSerializer<AuthenticationTicket>>(TicketSerializer.Default);
+        builder.Services.TryAddSingleton<
+            IResourceOwnerServerSessionStorage<InMemoryRequestContext, InMemoryResourceOwnerEssentialClaims, InMemoryResourceOwnerIdentifiers>,
+            InMemoryResourceOwnerServerSessionStorage>();
+        builder.Services.Configure<InMemoryResourceOwnerServerSessionStorageOptions>(
+            serverSessionStorageOptions => configureServerSessionStorageOptions?.Invoke(serverSessionStorageOptions));
         return builder;
     }
 

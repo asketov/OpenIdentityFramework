@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -82,6 +83,18 @@ public static class ServiceCollectionExtensions
             .AddRequiredPlatformServices()
             .AddCoreServices(configure)
             .AddDefaultEndpointHandlers();
+    }
+
+    public static IServiceCollection ConfigureCookieAuthenticationServerSideStorage(this IServiceCollection services, string cookieAuthenticationSchemeName)
+    {
+        if (string.IsNullOrWhiteSpace(cookieAuthenticationSchemeName))
+        {
+            throw new ArgumentException("Value cannot be null or whitespace.", nameof(cookieAuthenticationSchemeName));
+        }
+
+        services.AddOptions<CookieAuthenticationOptions>(cookieAuthenticationSchemeName)
+            .Configure<ITicketStore>((options, store) => options.SessionStore = store);
+        return services;
     }
 
     // https://devblogs.microsoft.com/aspnet/upcoming-samesite-cookie-changes-in-asp-net-and-asp-net-core/

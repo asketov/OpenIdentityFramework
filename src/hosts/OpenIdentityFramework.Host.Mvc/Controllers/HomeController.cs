@@ -1,7 +1,10 @@
 ﻿using System.Diagnostics;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using OpenIdentityFramework.Host.Mvc.Models;
+using OpenIdentityFramework.Host.Mvc.Constants;
+using OpenIdentityFramework.Host.Mvc.ViewModels;
 
 namespace OpenIdentityFramework.Host.Mvc.Controllers;
 
@@ -14,11 +17,14 @@ public class HomeController : Controller
         _logger = logger;
     }
 
-    public IActionResult Index()
+    [HttpGet]
+    public async Task<IActionResult> Index()
     {
-        return View();
+        var authentication = await HttpContext.AuthenticateAsync(LocalAuthenticationSchemes.Cookies);
+        return View(authentication);
     }
 
+    [HttpGet]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {

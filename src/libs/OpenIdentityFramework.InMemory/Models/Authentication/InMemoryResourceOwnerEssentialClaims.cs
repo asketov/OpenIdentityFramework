@@ -13,8 +13,8 @@ public class InMemoryResourceOwnerEssentialClaims : AbstractResourceOwnerEssenti
         AuthenticationDate = authenticationDate;
     }
 
-    public InMemoryResourceOwnerIdentifiers ResourceOwnerIdentifiers { get; }
-    public DateTimeOffset AuthenticationDate { get; }
+    protected InMemoryResourceOwnerIdentifiers ResourceOwnerIdentifiers { get; }
+    protected DateTimeOffset AuthenticationDate { get; }
 
     public override InMemoryResourceOwnerIdentifiers GetResourceOwnerIdentifiers()
     {

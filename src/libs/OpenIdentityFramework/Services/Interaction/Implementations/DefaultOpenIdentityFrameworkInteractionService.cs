@@ -58,18 +58,8 @@ public class DefaultOpenIdentityFrameworkInteractionService<TClient, TClientSecr
         ArgumentNullException.ThrowIfNull(httpContext);
         var contextFactory = httpContext.RequestServices.GetRequiredService<IRequestContextFactory<TRequestContext>>();
         await using var requestContext = await contextFactory.CreateAsync(httpContext, cancellationToken);
-        ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>? result;
-        try
-        {
-            result = await GetAuthorizeRequestInformationAsync(requestContext, authorizeRequestId, cancellationToken);
-            await requestContext.CommitAsync(httpContext.RequestAborted);
-        }
-        catch
-        {
-            await requestContext.RollbackAsync(httpContext.RequestAborted);
-            throw;
-        }
-
+        var result = await GetAuthorizeRequestInformationAsync(requestContext, authorizeRequestId, cancellationToken);
+        await requestContext.CommitAsync(httpContext.RequestAborted);
         return result;
     }
 
@@ -84,16 +74,8 @@ public class DefaultOpenIdentityFrameworkInteractionService<TClient, TClientSecr
         ArgumentNullException.ThrowIfNull(httpContext);
         var contextFactory = httpContext.RequestServices.GetRequiredService<IRequestContextFactory<TRequestContext>>();
         await using var requestContext = await contextFactory.CreateAsync(httpContext, cancellationToken);
-        try
-        {
-            await GrantAsync(requestContext, authorizeRequestId, authorIdentifiers, grantedConsent, cancellationToken);
-            await requestContext.CommitAsync(httpContext.RequestAborted);
-        }
-        catch
-        {
-            await requestContext.RollbackAsync(httpContext.RequestAborted);
-            throw;
-        }
+        await GrantAsync(requestContext, authorizeRequestId, authorIdentifiers, grantedConsent, cancellationToken);
+        await requestContext.CommitAsync(httpContext.RequestAborted);
     }
 
     public virtual async Task DenyAsync(
@@ -107,16 +89,8 @@ public class DefaultOpenIdentityFrameworkInteractionService<TClient, TClientSecr
         ArgumentNullException.ThrowIfNull(httpContext);
         var contextFactory = httpContext.RequestServices.GetRequiredService<IRequestContextFactory<TRequestContext>>();
         await using var requestContext = await contextFactory.CreateAsync(httpContext, cancellationToken);
-        try
-        {
-            await DenyAsync(requestContext, authorizeRequestId, authorIdentifiers, deniedConsent, cancellationToken);
-            await requestContext.CommitAsync(httpContext.RequestAborted);
-        }
-        catch
-        {
-            await requestContext.RollbackAsync(httpContext.RequestAborted);
-            throw;
-        }
+        await DenyAsync(requestContext, authorizeRequestId, authorIdentifiers, deniedConsent, cancellationToken);
+        await requestContext.CommitAsync(httpContext.RequestAborted);
     }
 
     protected virtual async Task<ValidAuthorizeRequest<TClient, TClientSecret, TScope, TResource, TResourceSecret>?> GetAuthorizeRequestInformationAsync(

@@ -8,7 +8,7 @@ using OpenIdentityFramework.Models.Authentication;
 using OpenIdentityFramework.Services.Operation;
 using OpenIdentityFramework.Services.Operation.Models.UserProfileService;
 
-namespace OpenIdentityFramework.Host.Mvc.Services;
+namespace OpenIdentityFramework.Host.Mvc.Services.OpenIdentityFramework;
 
 public class LocalUserProfileService<TRequestContext, TResourceOwnerIdentifiers> : IUserProfileService<TRequestContext, TResourceOwnerIdentifiers>
     where TRequestContext : class, IRequestContext

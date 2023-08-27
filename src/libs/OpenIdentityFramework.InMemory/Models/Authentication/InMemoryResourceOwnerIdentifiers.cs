@@ -21,9 +21,8 @@ public class InMemoryResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
         SessionId = sessionId;
     }
 
-    public string SubjectId { get; }
-
-    public string SessionId { get; }
+    protected string SubjectId { get; }
+    protected string SessionId { get; }
 
     public override string GetSubjectId()
     {

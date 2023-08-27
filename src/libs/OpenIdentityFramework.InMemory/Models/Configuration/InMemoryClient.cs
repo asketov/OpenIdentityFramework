@@ -240,6 +240,98 @@ public class InMemoryClient : AbstractClient<InMemoryClientSecret>
             DefaultRefreshTokenExpirationStrategy.Hybrid);
     }
 
+    public static InMemoryClient AuthorizationCode(
+        string clientId,
+        string clientSecret,
+        DateTimeOffset clientIdIssuedAt,
+        IEnumerable<string> scopes,
+        IEnumerable<Uri> redirectUris,
+        string accessTokenStrategy = DefaultAccessTokenStrategy.Jwt,
+        long accessTokenLifetime = 3600)
+    {
+        var issuedAtUnixTime = clientIdIssuedAt.ToUnixTimeSeconds();
+        var secrets = new HashSet<InMemoryClientSecret>
+        {
+            new(DefaultClientSecretHasher.Instance.ComputeHash(clientSecret), issuedAtUnixTime, 0)
+        };
+        var actualGrantTypes = new HashSet<string>(StringComparer.Ordinal)
+        {
+            DefaultGrantTypes.AuthorizationCode
+        };
+        var actualResponseTypes = new HashSet<string>(StringComparer.Ordinal)
+        {
+            DefaultResponseType.Code
+        };
+        var actualScopes = scopes.ToHashSet(StringComparer.Ordinal);
+        if (actualScopes.Contains(DefaultScopes.OfflineAccess))
+        {
+            actualGrantTypes.Add(DefaultGrantTypes.RefreshToken);
+        }
+
+        if (actualScopes.Contains(DefaultScopes.OpenId))
+        {
+            actualResponseTypes.Add(DefaultResponseType.CodeIdToken);
+        }
+
+        var actualRedirectUris = redirectUris.ToHashSet();
+
+        return new(
+            clientId,
+            issuedAtUnixTime,
+            secrets,
+            actualRedirectUris,
+            DefaultClientAuthenticationMethods.ClientSecretPost,
+            actualGrantTypes,
+            actualResponseTypes,
+            new Dictionary<string, string>(),
+            new Dictionary<string, Uri>(),
+            new Dictionary<string, Uri>(),
+            actualScopes,
+            new HashSet<string>(StringComparer.Ordinal),
+            new Dictionary<string, Uri>(),
+            new Dictionary<string, Uri>(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            new HashSet<string>(StringComparer.Ordinal),
+            null,
+            new HashSet<Uri>(),
+            new HashSet<string>(StringComparer.Ordinal)
+            {
+                DefaultCodeChallengeMethod.S256
+            },
+            null,
+            false,
+            false,
+            null,
+            0,
+            false,
+            false,
+            0,
+            accessTokenStrategy,
+            false,
+            accessTokenLifetime,
+            86400,
+            0,
+            DefaultRefreshTokenExpirationStrategy.Hybrid);
+    }
+
     public override string GetClientId()
     {
         return _clientId;

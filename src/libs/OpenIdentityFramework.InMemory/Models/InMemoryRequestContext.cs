@@ -34,11 +34,6 @@ public class InMemoryRequestContext : IRequestContext
         return Task.CompletedTask;
     }
 
-    public Task RollbackAsync(CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
-
     [SuppressMessage("ReSharper", "UnusedParameter.Global")]
     protected virtual void Dispose(bool disposing)
     {

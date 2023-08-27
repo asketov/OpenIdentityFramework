@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -39,6 +40,7 @@ using OpenIdentityFramework.Services.Endpoints.Token.Validation.Flows.Authorizat
 using OpenIdentityFramework.Services.Endpoints.Token.Validation.Flows.ClientCredentials;
 using OpenIdentityFramework.Services.Endpoints.Token.Validation.Flows.RefreshToken;
 using OpenIdentityFramework.Services.Endpoints.Token.Validation.Flows.RefreshToken.Parameters;
+using OpenIdentityFramework.Services.Integration.Implementations;
 
 namespace OpenIdentityFramework.Configuration.Builder;
 
@@ -121,6 +123,12 @@ public class OpenIdentityFrameworkBuilder<
         Services.AddHttpClient();
         Services.AddDataProtection();
         Services.AddAuthentication();
+        Services.TryAddSingleton<
+            ITicketStore,
+            OpenIdentityFrameworkTicketStore<TRequestContext>>();
+        Services.TryAddSingleton<
+            IResourceOwnerServerSessionService<TRequestContext>,
+            DefaultResourceOwnerServerSessionService<TRequestContext, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>>();
         Services.AddMemoryCache();
         return this;
     }

@@ -6,17 +6,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
-using OpenIdentityFramework.MySql.Models;
-using OpenIdentityFramework.MySql.Models.Authentication;
+using OpenIdentityFramework.InMemory.Models;
+using OpenIdentityFramework.InMemory.Models.Authentication;
 using OpenIdentityFramework.Services.Operation;
 using OpenIdentityFramework.Services.Operation.Models.ResourceOwnerEssentialClaimsFactory;
 
-namespace OpenIdentityFramework.MySql.Services.Operation.ResourceOwnerEssentialClaimsFactory;
+namespace OpenIdentityFramework.InMemory.Services.Operation.ResourceOwnerEssentialClaimsFactory;
 
-public class MySqlResourceOwnerEssentialClaimsFactory
-    : IResourceOwnerEssentialClaimsFactory<MySqlRequestContext, MySqlResourceOwnerEssentialClaims, MySqlResourceOwnerIdentifiers>
+public class InMemoryResourceOwnerEssentialClaimsProvider
+    : IResourceOwnerEssentialClaimsProvider<InMemoryRequestContext, InMemoryResourceOwnerEssentialClaims, InMemoryResourceOwnerIdentifiers>
 {
-    public MySqlResourceOwnerEssentialClaimsFactory(IOptions<MySqlResourceOwnerEssentialClaimsFactoryOptions> options)
+    public InMemoryResourceOwnerEssentialClaimsProvider(IOptions<InMemoryResourceOwnerEssentialClaimsFactoryOptions> options)
     {
         ArgumentNullException.ThrowIfNull(options);
         var optionsValue = options.Value;
@@ -27,8 +27,8 @@ public class MySqlResourceOwnerEssentialClaimsFactory
     protected string SubjectIdClaimType { get; }
     protected string SessionIdIdClaimType { get; }
 
-    public virtual Task<ResourceOwnerEssentialClaimsCreationResult<MySqlResourceOwnerEssentialClaims, MySqlResourceOwnerIdentifiers>> CreateAsync(
-        MySqlRequestContext requestContext,
+    public virtual Task<ResourceOwnerEssentialClaimsCreationResult<InMemoryResourceOwnerEssentialClaims, InMemoryResourceOwnerIdentifiers>> GetAsync(
+        InMemoryRequestContext requestContext,
         AuthenticationTicket authenticationTicket,
         CancellationToken cancellationToken)
     {
@@ -36,25 +36,25 @@ public class MySqlResourceOwnerEssentialClaimsFactory
         cancellationToken.ThrowIfCancellationRequested();
         if (!TryGetSingleClaimValue(authenticationTicket.Principal, SubjectIdClaimType, out var subjectId))
         {
-            return Task.FromResult(new ResourceOwnerEssentialClaimsCreationResult<MySqlResourceOwnerEssentialClaims, MySqlResourceOwnerIdentifiers>(
+            return Task.FromResult(new ResourceOwnerEssentialClaimsCreationResult<InMemoryResourceOwnerEssentialClaims, InMemoryResourceOwnerIdentifiers>(
                 $"Can't read \"{SubjectIdClaimType}\" claim"));
         }
 
         if (!TryGetSingleClaimValue(authenticationTicket.Principal, SessionIdIdClaimType, out var sessionId))
         {
-            return Task.FromResult(new ResourceOwnerEssentialClaimsCreationResult<MySqlResourceOwnerEssentialClaims, MySqlResourceOwnerIdentifiers>(
+            return Task.FromResult(new ResourceOwnerEssentialClaimsCreationResult<InMemoryResourceOwnerEssentialClaims, InMemoryResourceOwnerIdentifiers>(
                 $"Can't read \"{SessionIdIdClaimType}\" claim"));
         }
 
         if (!TryGetAuthenticationDate(authenticationTicket, out var authenticatedAt))
         {
-            return Task.FromResult(new ResourceOwnerEssentialClaimsCreationResult<MySqlResourceOwnerEssentialClaims, MySqlResourceOwnerIdentifiers>(
+            return Task.FromResult(new ResourceOwnerEssentialClaimsCreationResult<InMemoryResourceOwnerEssentialClaims, InMemoryResourceOwnerIdentifiers>(
                 $"Can't read \"{typeof(AuthenticationTicket).Namespace}.{nameof(AuthenticationTicket)}.{nameof(AuthenticationTicket.Properties)}.{nameof(AuthenticationProperties.IssuedUtc)}\" authentication property"));
         }
 
-        var identifiers = new MySqlResourceOwnerIdentifiers(subjectId, sessionId);
-        var essentialClaims = new MySqlResourceOwnerEssentialClaims(identifiers, authenticatedAt.Value);
-        var result = new ResourceOwnerEssentialClaimsCreationResult<MySqlResourceOwnerEssentialClaims, MySqlResourceOwnerIdentifiers>(essentialClaims);
+        var identifiers = new InMemoryResourceOwnerIdentifiers(subjectId, sessionId);
+        var essentialClaims = new InMemoryResourceOwnerEssentialClaims(identifiers, authenticatedAt.Value);
+        var result = new ResourceOwnerEssentialClaimsCreationResult<InMemoryResourceOwnerEssentialClaims, InMemoryResourceOwnerIdentifiers>(essentialClaims);
         return Task.FromResult(result);
     }
 

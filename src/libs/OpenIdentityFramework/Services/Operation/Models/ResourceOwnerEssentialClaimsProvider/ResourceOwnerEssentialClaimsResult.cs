@@ -2,19 +2,19 @@
 using System.Diagnostics.CodeAnalysis;
 using OpenIdentityFramework.Models.Authentication;
 
-namespace OpenIdentityFramework.Services.Operation.Models.ResourceOwnerEssentialClaimsFactory;
+namespace OpenIdentityFramework.Services.Operation.Models.ResourceOwnerEssentialClaimsProvider;
 
-public class ResourceOwnerEssentialClaimsCreationResult<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
+public class ResourceOwnerEssentialClaimsResult<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>
     where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
     where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
-    public ResourceOwnerEssentialClaimsCreationResult(TResourceOwnerEssentialClaims essentialClaims)
+    public ResourceOwnerEssentialClaimsResult(TResourceOwnerEssentialClaims essentialClaims)
     {
         ArgumentNullException.ThrowIfNull(essentialClaims);
         EssentialClaims = essentialClaims;
     }
 
-    public ResourceOwnerEssentialClaimsCreationResult(string errorDescription)
+    public ResourceOwnerEssentialClaimsResult(string errorDescription)
     {
         ArgumentNullException.ThrowIfNull(errorDescription);
         ErrorDescription = errorDescription;

@@ -41,6 +41,8 @@ using OpenIdentityFramework.Services.Endpoints.Token.Validation.Flows.ClientCred
 using OpenIdentityFramework.Services.Endpoints.Token.Validation.Flows.RefreshToken;
 using OpenIdentityFramework.Services.Endpoints.Token.Validation.Flows.RefreshToken.Parameters;
 using OpenIdentityFramework.Services.Integration.Implementations;
+using OpenIdentityFramework.Services.Interaction;
+using OpenIdentityFramework.Services.Interaction.Implementations;
 
 namespace OpenIdentityFramework.Configuration.Builder;
 
@@ -123,12 +125,6 @@ public class OpenIdentityFrameworkBuilder<
         Services.AddHttpClient();
         Services.AddDataProtection();
         Services.AddAuthentication();
-        Services.TryAddSingleton<
-            ITicketStore,
-            OpenIdentityFrameworkTicketStore<TRequestContext>>();
-        Services.TryAddSingleton<
-            IResourceOwnerServerSessionService<TRequestContext>,
-            DefaultResourceOwnerServerSessionService<TRequestContext, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>>();
         Services.AddMemoryCache();
         return this;
     }
@@ -199,6 +195,15 @@ public class OpenIdentityFrameworkBuilder<
         Services.TryAddSingleton<
             IRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>,
             DefaultRefreshTokenService<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret, TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>>();
+        Services.TryAddSingleton<
+            ITicketStore,
+            OpenIdentityFrameworkTicketStore<TRequestContext>>();
+        Services.TryAddSingleton<
+            IResourceOwnerServerSessionService<TRequestContext>,
+            DefaultResourceOwnerServerSessionService<TRequestContext, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>>();
+        Services.TryAddSingleton<
+            IOpenIdentityFrameworkInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerIdentifiers>,
+            DefaultOpenIdentityFrameworkInteractionService<TClient, TClientSecret, TScope, TResource, TResourceSecret, TResourceOwnerIdentifiers, TRequestContext, TAuthorizeRequest, TAuthorizeRequestConsent>>();
         return this;
     }
 

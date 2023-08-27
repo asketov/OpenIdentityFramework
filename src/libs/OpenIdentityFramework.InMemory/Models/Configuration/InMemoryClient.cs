@@ -237,7 +237,7 @@ public class InMemoryClient : AbstractClient<InMemoryClientSecret>
             accessTokenLifetime,
             86400,
             0,
-            DefaultRefreshTokenExpirationStrategy.Hybrid);
+            DefaultRefreshTokenExpirationStrategy.Absolute);
     }
 
     public static InMemoryClient AuthorizationCode(
@@ -317,19 +317,19 @@ public class InMemoryClient : AbstractClient<InMemoryClientSecret>
                 DefaultCodeChallengeMethod.S256
             },
             null,
-            false,
-            false,
+            true,
+            true,
             null,
-            0,
+            300,
             false,
             false,
-            0,
+            300,
             accessTokenStrategy,
             false,
             accessTokenLifetime,
             86400,
-            0,
-            DefaultRefreshTokenExpirationStrategy.Hybrid);
+            7200,
+            DefaultRefreshTokenExpirationStrategy.Absolute);
     }
 
     public override string GetClientId()

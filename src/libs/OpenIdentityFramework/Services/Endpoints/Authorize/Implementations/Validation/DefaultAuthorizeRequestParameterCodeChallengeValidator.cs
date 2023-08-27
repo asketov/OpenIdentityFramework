@@ -103,7 +103,7 @@ public class DefaultAuthorizeRequestParameterCodeChallengeValidator<TRequestCont
             return false;
         }
 
-        var base64DecodedCodeChallengeBufferSize = ((base64EncodedCodeChallenge.Length >> 2) * 3) + 2;
+        var base64DecodedCodeChallengeBufferSize = Base64UrlDecoder.ComputeRequiredBufferSize(base64EncodedCodeChallenge.Length);
         byte[]? base64DecodedCodeChallengeBufferFromPool = null;
         var base64DecodedCodeChallengeBuffer = base64DecodedCodeChallengeBufferSize <= maxStackallocBytesCount
             ? stackalloc byte[maxStackallocBytesCount]

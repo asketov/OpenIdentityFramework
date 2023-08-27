@@ -1,0 +1,28 @@
+﻿@model OpenIdentityFramework.Host.Mvc.ViewModels.Consent.ConsentViewModel
+<div class="row">
+    <div class="col-12">
+        <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-12">
+        <form asp-action="Index" asp-controller="Consent" asp-route-authzId="@Model.AuthorizeRequestId" asp-route-returnUrl="@Model.ReturnUrl">
+            <div class="form-group">
+                <div class="card">
+                    <ul class="list-group list-group-flush">
+                        @for (var i = 0; i < Model.AllScopes.Length; i++)
+                        {
+                            var index = i;
+                            var item = Model.AllScopes[index];
+                            <li class="list-group-item">
+                                <label asp-for="@Model.CheckedScopes[index]" class="form-label">
+                                    <input class="form-check-input" type="checkbox" name="@Model.CheckedScopes"/>
+                                </label>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

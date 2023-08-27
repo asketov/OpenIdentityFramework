@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace OpenIdentityFramework.Host.Mvc.ViewModels;
+namespace OpenIdentityFramework.Host.Mvc.ViewModels.Account;
 
-public class LoginViewModel
+public class LoginInputViewModel
 {
     [Required]
     [MaxLength(100)]

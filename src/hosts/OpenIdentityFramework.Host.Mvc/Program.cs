@@ -99,6 +99,7 @@ public sealed class Program
         builder.Services.AddInMemoryOpenIdentityFrameworkBuilder(options =>
             {
                 options.UserInteraction.LoginUrl = "/account/login";
+                options.ErrorHandling.HideErrorDescriptionsOnSafeAuthorizeErrorResponses = false;
             })
             .AddInMemoryStorages(options =>
             {
@@ -134,7 +135,7 @@ public sealed class Program
                 }),
             InMemoryClient.AuthorizationCode(
                 "authz_code",
-                "client_creds_secret",
+                "client_authz_code_secret",
                 DateTimeOffset.UtcNow,
                 new HashSet<string>
                 {

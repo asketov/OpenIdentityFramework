@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using OpenIdentityFramework.Models;
 using OpenIdentityFramework.Models.Authentication;
-using OpenIdentityFramework.Services.Operation.Models.ResourceOwnerEssentialClaimsFactory;
+using OpenIdentityFramework.Services.Operation.Models.ResourceOwnerEssentialClaimsProvider;
 
 namespace OpenIdentityFramework.Services.Operation;
 
@@ -12,7 +12,7 @@ public interface IResourceOwnerEssentialClaimsProvider<TRequestContext, TResourc
     where TResourceOwnerEssentialClaims : AbstractResourceOwnerEssentialClaims<TResourceOwnerIdentifiers>
     where TResourceOwnerIdentifiers : AbstractResourceOwnerIdentifiers
 {
-    Task<ResourceOwnerEssentialClaimsCreationResult<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>> GetAsync(
+    Task<ResourceOwnerEssentialClaimsResult<TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>> GetAsync(
         TRequestContext requestContext,
         AuthenticationTicket authenticationTicket,
         CancellationToken cancellationToken);

@@ -5,6 +5,11 @@ namespace OpenIdentityFramework.Services.Static.WebUtilities;
 
 public static class Base64UrlDecoder
 {
+    public static int ComputeRequiredBufferSize(int inputLength)
+    {
+        return ((inputLength >> 2) * 3) + 2;
+    }
+
     public static bool TryDecode(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
     {
         const int maxStackallocCharsCount = 512;

@@ -9,14 +9,14 @@ using Microsoft.Extensions.Options;
 using OpenIdentityFramework.MySql.Models;
 using OpenIdentityFramework.MySql.Models.Authentication;
 using OpenIdentityFramework.Services.Operation;
-using OpenIdentityFramework.Services.Operation.Models.ResourceOwnerEssentialClaimsFactory;
+using OpenIdentityFramework.Services.Operation.Models.ResourceOwnerEssentialClaimsProvider;
 
-namespace OpenIdentityFramework.MySql.Services.Operation.ResourceOwnerEssentialClaimsFactory;
+namespace OpenIdentityFramework.MySql.Services.Operation.ResourceOwnerEssentialClaimsProvider;
 
 public class MySqlResourceOwnerEssentialClaimsProvider
     : IResourceOwnerEssentialClaimsProvider<MySqlRequestContext, MySqlResourceOwnerEssentialClaims, MySqlResourceOwnerIdentifiers>
 {
-    public MySqlResourceOwnerEssentialClaimsProvider(IOptions<MySqlResourceOwnerEssentialClaimsFactoryOptions> options)
+    public MySqlResourceOwnerEssentialClaimsProvider(IOptions<MySqlResourceOwnerEssentialClaimsProviderOptions> options)
     {
         ArgumentNullException.ThrowIfNull(options);
         var optionsValue = options.Value;
@@ -27,7 +27,7 @@ public class MySqlResourceOwnerEssentialClaimsProvider
     protected string SubjectIdClaimType { get; }
     protected string SessionIdIdClaimType { get; }
 
-    public virtual Task<ResourceOwnerEssentialClaimsCreationResult<MySqlResourceOwnerEssentialClaims, MySqlResourceOwnerIdentifiers>> GetAsync(
+    public virtual Task<ResourceOwnerEssentialClaimsResult<MySqlResourceOwnerEssentialClaims, MySqlResourceOwnerIdentifiers>> GetAsync(
         MySqlRequestContext requestContext,
         AuthenticationTicket authenticationTicket,
         CancellationToken cancellationToken)
@@ -36,25 +36,25 @@ public class MySqlResourceOwnerEssentialClaimsProvider
         cancellationToken.ThrowIfCancellationRequested();
         if (!TryGetSingleClaimValue(authenticationTicket.Principal, SubjectIdClaimType, out var subjectId))
         {
-            return Task.FromResult(new ResourceOwnerEssentialClaimsCreationResult<MySqlResourceOwnerEssentialClaims, MySqlResourceOwnerIdentifiers>(
+            return Task.FromResult(new ResourceOwnerEssentialClaimsResult<MySqlResourceOwnerEssentialClaims, MySqlResourceOwnerIdentifiers>(
                 $"Can't read \"{SubjectIdClaimType}\" claim"));
         }
 
         if (!TryGetSingleClaimValue(authenticationTicket.Principal, SessionIdIdClaimType, out var sessionId))
         {
-            return Task.FromResult(new ResourceOwnerEssentialClaimsCreationResult<MySqlResourceOwnerEssentialClaims, MySqlResourceOwnerIdentifiers>(
+            return Task.FromResult(new ResourceOwnerEssentialClaimsResult<MySqlResourceOwnerEssentialClaims, MySqlResourceOwnerIdentifiers>(
                 $"Can't read \"{SessionIdIdClaimType}\" claim"));
         }
 
         if (!TryGetAuthenticationDate(authenticationTicket, out var authenticatedAt))
         {
-            return Task.FromResult(new ResourceOwnerEssentialClaimsCreationResult<MySqlResourceOwnerEssentialClaims, MySqlResourceOwnerIdentifiers>(
+            return Task.FromResult(new ResourceOwnerEssentialClaimsResult<MySqlResourceOwnerEssentialClaims, MySqlResourceOwnerIdentifiers>(
                 $"Can't read \"{typeof(AuthenticationTicket).Namespace}.{nameof(AuthenticationTicket)}.{nameof(AuthenticationTicket.Properties)}.{nameof(AuthenticationProperties.IssuedUtc)}\" authentication property"));
         }
 
         var identifiers = new MySqlResourceOwnerIdentifiers(subjectId, sessionId);
         var essentialClaims = new MySqlResourceOwnerEssentialClaims(identifiers, authenticatedAt.Value);
-        var result = new ResourceOwnerEssentialClaimsCreationResult<MySqlResourceOwnerEssentialClaims, MySqlResourceOwnerIdentifiers>(essentialClaims);
+        var result = new ResourceOwnerEssentialClaimsResult<MySqlResourceOwnerEssentialClaims, MySqlResourceOwnerIdentifiers>(essentialClaims);
         return Task.FromResult(result);
     }
 

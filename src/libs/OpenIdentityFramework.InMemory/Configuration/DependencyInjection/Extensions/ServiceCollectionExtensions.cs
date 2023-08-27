@@ -12,7 +12,7 @@ using OpenIdentityFramework.InMemory.Models.Authentication;
 using OpenIdentityFramework.InMemory.Models.Configuration;
 using OpenIdentityFramework.InMemory.Models.Operation;
 using OpenIdentityFramework.InMemory.Services.Operation.RequestContextFactory;
-using OpenIdentityFramework.InMemory.Services.Operation.ResourceOwnerEssentialClaimsFactory;
+using OpenIdentityFramework.InMemory.Services.Operation.ResourceOwnerEssentialClaimsProvider;
 using OpenIdentityFramework.InMemory.Storages.Configuration;
 using OpenIdentityFramework.InMemory.Storages.Integration;
 using OpenIdentityFramework.InMemory.Storages.Operation;
@@ -96,7 +96,7 @@ public static class ServiceCollectionExtensions
                 InMemoryAuthorizationCode,
                 InMemoryAccessToken,
                 InMemoryRefreshToken> builder,
-            Action<InMemoryResourceOwnerEssentialClaimsFactoryOptions>? configureClaimsFactory = null)
+            Action<InMemoryResourceOwnerEssentialClaimsProviderOptions>? configureClaimsFactory = null)
     {
         ArgumentNullException.ThrowIfNull(builder);
         builder.Services.TryAddSingleton<
@@ -108,7 +108,7 @@ public static class ServiceCollectionExtensions
         builder.Services.TryAddSingleton<
             IResourceOwnerEssentialClaimsProvider<InMemoryRequestContext, InMemoryResourceOwnerEssentialClaims, InMemoryResourceOwnerIdentifiers>,
             InMemoryResourceOwnerEssentialClaimsProvider>();
-        builder.Services.Configure<InMemoryResourceOwnerEssentialClaimsFactoryOptions>(
+        builder.Services.Configure<InMemoryResourceOwnerEssentialClaimsProviderOptions>(
             claimsFactoryOptions => configureClaimsFactory?.Invoke(claimsFactoryOptions));
         return builder;
     }

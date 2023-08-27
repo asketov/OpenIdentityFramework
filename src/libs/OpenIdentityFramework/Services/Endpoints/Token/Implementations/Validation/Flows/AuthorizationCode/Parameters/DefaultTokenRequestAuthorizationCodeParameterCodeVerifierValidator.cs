@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,6 +15,7 @@ using OpenIdentityFramework.Services.Endpoints.Token.Models.Validation.Flows.Aut
 using OpenIdentityFramework.Services.Endpoints.Token.Validation.Flows.AuthorizationCode.Parameters;
 using OpenIdentityFramework.Services.Static.Cryptography;
 using OpenIdentityFramework.Services.Static.SyntaxValidation;
+using OpenIdentityFramework.Services.Static.WebUtilities;
 
 namespace OpenIdentityFramework.Services.Endpoints.Token.Implementations.Validation.Flows.AuthorizationCode.Parameters;
 
@@ -117,19 +119,49 @@ public class DefaultTokenRequestAuthorizationCodeParameterCodeVerifierValidator<
 
     private static bool IsS256Valid(string? codeChallenge, string? codeVerifier)
     {
+        const int maxStackallocBytesCount = 1024;
         if (string.IsNullOrEmpty(codeChallenge) || string.IsNullOrEmpty(codeVerifier))
         {
             return false;
         }
 
-        if (!HexValidator.IsValid(codeChallenge))
+
+        if (string.IsNullOrEmpty(codeChallenge))
         {
             return false;
         }
 
+        var base64DecodedCodeChallengeBufferSize = Base64UrlDecoder.ComputeRequiredBufferSize(codeChallenge.Length);
+        byte[]? base64DecodedCodeChallengeBufferFromPool = null;
+        var base64DecodedCodeChallengeBuffer = base64DecodedCodeChallengeBufferSize <= maxStackallocBytesCount
+            ? stackalloc byte[maxStackallocBytesCount]
+            : base64DecodedCodeChallengeBufferFromPool = ArrayPool<byte>.Shared.Rent(base64DecodedCodeChallengeBufferSize);
         Span<byte> codeVerifierHash = stackalloc byte[Sha256Hasher.Sha256BytesCount];
-        Sha256Hasher.ComputeSha256(codeVerifier, codeVerifierHash);
-        var codeChallengeBytes = Convert.FromHexString(codeChallenge);
-        return CryptographicOperations.FixedTimeEquals(codeVerifierHash, codeChallengeBytes);
+        try
+        {
+            if (Base64UrlDecoder.TryDecode(codeChallenge, base64DecodedCodeChallengeBuffer, out var base64BytesCount)
+                && base64BytesCount == Sha256Hasher.Sha256BytesCount)
+            {
+                var codeChallengeBytes = base64DecodedCodeChallengeBuffer.Slice(0, base64BytesCount);
+                Sha256Hasher.ComputeSha256(codeVerifier, codeVerifierHash);
+                return CryptographicOperations.FixedTimeEquals(codeVerifierHash, codeChallengeBytes);
+            }
+            else
+            {
+                return false;
+            }
+        }
+        finally
+        {
+            codeVerifierHash.Clear();
+            if (base64DecodedCodeChallengeBufferFromPool is not null)
+            {
+                ArrayPool<byte>.Shared.Return(base64DecodedCodeChallengeBufferFromPool, true);
+            }
+            else
+            {
+                base64DecodedCodeChallengeBuffer.Clear();
+            }
+        }
     }
 }

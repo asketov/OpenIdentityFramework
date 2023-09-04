@@ -27,7 +27,7 @@ public class DefaultTokenRequestCommonParameterGrantTypeValidator<TRequestContex
         ArgumentNullException.ThrowIfNull(client);
         cancellationToken.ThrowIfCancellationRequested();
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.3.1
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.2.2
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.2.2
         // grant_type - REQUIRED. Identifier of the grant type the client uses with the particular token request.
         // This specification defines the values "authorization_code", "refresh_token", and "client_credentials".
         if (!form.TryGetValue(TokenRequestParameters.GrantType, out var grantTypeValues) || grantTypeValues.Count == 0)
@@ -35,7 +35,7 @@ public class DefaultTokenRequestCommonParameterGrantTypeValidator<TRequestContex
             return Task.FromResult(TokenRequestCommonParameterGrantTypeValidationResult.GrantTypeIsMissing);
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.2
         // Request and response parameters defined by this specification MUST NOT be included more than once.
         if (grantTypeValues.Count != 1)
         {

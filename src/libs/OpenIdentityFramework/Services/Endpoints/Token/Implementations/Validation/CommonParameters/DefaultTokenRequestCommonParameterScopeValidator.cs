@@ -50,7 +50,7 @@ public class DefaultTokenRequestCommonParameterScopeValidator<TRequestContext, T
         ArgumentNullException.ThrowIfNull(grantedScopes);
         cancellationToken.ThrowIfCancellationRequested();
         string scopeParameterValue;
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.2.2.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.2.2.1
         // The authorization and token endpoints allow the client to specify the scope of the access request using the scope request parameter.
         // In turn, the authorization server uses the scope response parameter to inform the client of the scope of the access token issued.
         if (!form.TryGetValue(TokenRequestParameters.Scope, out var scopeValues)
@@ -60,7 +60,7 @@ public class DefaultTokenRequestCommonParameterScopeValidator<TRequestContext, T
             scopeParameterValue = string.Join(' ', grantedScopes);
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.2
         // Request and response parameters defined by this specification MUST NOT be included more than once.
         if (scopeValues.Count > 1)
         {
@@ -73,7 +73,7 @@ public class DefaultTokenRequestCommonParameterScopeValidator<TRequestContext, T
             return TokenRequestCommonParameterScopeValidationResult<TScope, TResource, TResourceSecret>.ScopeIsTooLong;
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.2.2.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.2.2.1
         // The value of the scope parameter is expressed as a list of space-delimited, case-sensitive strings. The strings are defined by the authorization server.
         // If the value contains multiple space-delimited strings, their order does not matter, and each string adds an additional access range to the requested scope.
         var requestedScopes = scopeParameterValue

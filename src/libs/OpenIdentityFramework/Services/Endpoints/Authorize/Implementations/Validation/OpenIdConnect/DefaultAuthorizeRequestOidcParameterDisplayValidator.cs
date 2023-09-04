@@ -33,14 +33,14 @@ public class DefaultAuthorizeRequestOidcParameterDisplayValidator<TRequestContex
         }
 
         // Inherit from OAuth 2.1 (because OpenID Connect 1.0 doesn't define behaviour).
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // Request and response parameters defined by this specification MUST NOT be included more than once.
         if (displayValues.Count != 1)
         {
             return Task.FromResult(AuthorizeRequestOidcParameterDisplayValidationResult.MultipleDisplayValues);
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
         var display = displayValues.ToString();
         if (string.IsNullOrEmpty(display))

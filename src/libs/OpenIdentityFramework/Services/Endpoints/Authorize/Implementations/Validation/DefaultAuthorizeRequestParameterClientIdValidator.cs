@@ -38,24 +38,24 @@ public class DefaultAuthorizeRequestParameterClientIdValidator<TRequestContext, 
     {
         ArgumentNullException.ThrowIfNull(parameters);
         cancellationToken.ThrowIfCancellationRequested();
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-4.1.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-4.1.1
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.1
         // "client_id" - REQUIRED.
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
         if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.ClientId, out var clientIdValues) || clientIdValues.Count == 0)
         {
             return AuthorizeRequestParameterClientIdValidationResult<TClient, TClientSecret>.ClientIdIsMissing;
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // Request and response parameters defined by this specification MUST NOT be included more than once.
         if (clientIdValues.Count != 1)
         {
             return AuthorizeRequestParameterClientIdValidationResult<TClient, TClientSecret>.MultipleClientIdValuesNotAllowed;
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
         var clientId = clientIdValues.ToString();
         if (string.IsNullOrEmpty(clientId))
@@ -69,7 +69,7 @@ public class DefaultAuthorizeRequestParameterClientIdValidator<TRequestContext, 
             return AuthorizeRequestParameterClientIdValidationResult<TClient, TClientSecret>.ClientIdIsTooLong;
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#appendix-A.1
         // "client_id" syntax validation
         if (!ClientIdSyntaxValidator.IsValid(clientId))
         {

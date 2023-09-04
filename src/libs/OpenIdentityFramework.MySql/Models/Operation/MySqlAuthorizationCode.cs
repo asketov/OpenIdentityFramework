@@ -11,7 +11,6 @@ public class MySqlAuthorizationCode : AbstractAuthorizationCode<MySqlResourceOwn
         string clientId,
         MySqlResourceOwnerEssentialClaims essentialResourceOwnerClaims,
         IReadOnlySet<string> grantedScopes,
-        string? authorizeRequestRedirectUri,
         string codeChallenge,
         string codeChallengeMethod,
         DateTimeOffset issuedAt,
@@ -38,7 +37,6 @@ public class MySqlAuthorizationCode : AbstractAuthorizationCode<MySqlResourceOwn
         ClientId = clientId;
         EssentialResourceOwnerClaims = essentialResourceOwnerClaims;
         GrantedScopes = grantedScopes;
-        AuthorizeRequestRedirectUri = authorizeRequestRedirectUri;
         CodeChallenge = codeChallenge;
         CodeChallengeMethod = codeChallengeMethod;
         IssuedAt = issuedAt;
@@ -48,7 +46,6 @@ public class MySqlAuthorizationCode : AbstractAuthorizationCode<MySqlResourceOwn
     public string ClientId { get; }
     public MySqlResourceOwnerEssentialClaims EssentialResourceOwnerClaims { get; }
     public IReadOnlySet<string> GrantedScopes { get; }
-    public string? AuthorizeRequestRedirectUri { get; }
     public string CodeChallenge { get; }
     public string CodeChallengeMethod { get; }
     public DateTimeOffset IssuedAt { get; }
@@ -67,11 +64,6 @@ public class MySqlAuthorizationCode : AbstractAuthorizationCode<MySqlResourceOwn
     public override IReadOnlySet<string> GetGrantedScopes()
     {
         return GrantedScopes;
-    }
-
-    public override string? GetAuthorizeRequestRedirectUri()
-    {
-        return AuthorizeRequestRedirectUri;
     }
 
     public override string GetCodeChallenge()

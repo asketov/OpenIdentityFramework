@@ -15,7 +15,7 @@ public static class UnreservedCharSyntaxValidator
 
     public static bool IsValid(ReadOnlySpan<char> value)
     {
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.18
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#appendix-A.18
         foreach (var ch in value)
         {
             if (!IsUnreserved(ch))

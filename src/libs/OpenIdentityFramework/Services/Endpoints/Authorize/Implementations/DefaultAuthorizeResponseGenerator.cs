@@ -52,7 +52,6 @@ public class DefaultAuthorizeResponseGenerator<TRequestContext, TClient, TClient
             request.AuthorizeRequest.Client,
             request.ResourceOwnerProfile.EssentialClaims,
             request.GrantedResources.RawScopes,
-            request.AuthorizeRequest.AuthorizeRequestRedirectUri,
             request.AuthorizeRequest.CodeChallenge,
             request.AuthorizeRequest.CodeChallengeMethod,
             authorizationCodeIssuedAt,

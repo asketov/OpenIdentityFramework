@@ -36,7 +36,7 @@ public class DefaultAuthorizeRequestParameterRedirectUriValidator<TRequestContex
         ArgumentNullException.ThrowIfNull(parameters);
         ArgumentNullException.ThrowIfNull(client);
         cancellationToken.ThrowIfCancellationRequested();
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-2.3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-2.3.1
         // Authorization servers MUST require clients to register their complete redirect URI (including the path component).
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.1
         // This URI MUST exactly match one of the Redirection URI values for the Client pre-registered at the OpenID Provider
@@ -46,7 +46,7 @@ public class DefaultAuthorizeRequestParameterRedirectUriValidator<TRequestContex
             return Task.FromResult(AuthorizeRequestParameterRedirectUriValidationResult.NoPreRegisteredRedirectUrisInClientConfiguration);
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-4.1.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-4.1.1
         // "redirect_uri" - OPTIONAL
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.1
         // "redirect_uri" - REQUIRED.
@@ -55,29 +55,29 @@ public class DefaultAuthorizeRequestParameterRedirectUriValidator<TRequestContex
             return Task.FromResult(InferRedirectUri(parameters.IsOpenIdRequest, preRegisteredRedirectUris));
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // Request and response parameters defined by this specification MUST NOT be included more than once.
         if (redirectUriValues.Count != 1)
         {
             return Task.FromResult(AuthorizeRequestParameterRedirectUriValidationResult.MultipleRedirectUriValuesNotAllowed);
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
-        var originalRedirectUri = redirectUriValues.ToString();
-        if (string.IsNullOrEmpty(originalRedirectUri))
+        var redirectUri = redirectUriValues.ToString();
+        if (string.IsNullOrEmpty(redirectUri))
         {
             return Task.FromResult(InferRedirectUri(parameters.IsOpenIdRequest, preRegisteredRedirectUris));
         }
 
         // length check
-        if (originalRedirectUri.Length > FrameworkOptions.InputLengthRestrictions.RedirectUri)
+        if (redirectUri.Length > FrameworkOptions.InputLengthRestrictions.RedirectUri)
         {
             return Task.FromResult(AuthorizeRequestParameterRedirectUriValidationResult.RedirectUriIsTooLong);
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-2.3
-        if (!ClientRedirectUriSyntaxValidator.IsValid(originalRedirectUri, out var typedRedirectUri))
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-2.3
+        if (!ClientRedirectUriSyntaxValidator.IsValid(redirectUri, out var typedRedirectUri))
         {
             return Task.FromResult(AuthorizeRequestParameterRedirectUriValidationResult.InvalidRedirectUriSyntax);
         }
@@ -102,31 +102,31 @@ public class DefaultAuthorizeRequestParameterRedirectUriValidator<TRequestContex
                     return Task.FromResult(AuthorizeRequestParameterRedirectUriValidationResult.InvalidRedirectUri);
                 }
 
-                return Task.FromResult(new AuthorizeRequestParameterRedirectUriValidationResult(originalRedirectUri, originalRedirectUri));
+                return Task.FromResult(new AuthorizeRequestParameterRedirectUriValidationResult(redirectUri));
             }
 
             return Task.FromResult(AuthorizeRequestParameterRedirectUriValidationResult.InvalidRedirectUri);
         }
 
         // OAuth 2.1
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-1.5
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-1.5
         // OAuth URLs MUST use the https scheme except for loopback interface redirect URIs, which MAY use the http scheme.
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-2.3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-2.3.1
         // Authorization servers MUST require clients to register their complete redirect URI (including the path component).
         // Authorization servers MUST reject authorization requests that specify a redirect URI that doesn't exactly match one that was registered,
         // with an exception for loopback redirects, where an exact match is required except for the port URI component.
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-4.1.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-4.1.1
         // In particular, the authorization server MUST validate the redirect_uri in the request if present,
         // ensuring that it matches one of the registered redirect URIs previously established during client registration (Section 2).
         // When comparing the two URIs the authorization server MUST using simple character-by-character string comparison as defined in [RFC3986], Section 6.2.1.
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-7.5.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-7.5.1
         // Loopback interface redirect URIs MAY use the http scheme (i.e., without TLS). This is acceptable for loopback interface redirect URIs as the HTTP request never leaves the device.
         // Clients should use loopback IP literals rather than the string localhost as described in Section 8.4.2.
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-8.4.2
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-8.4.2
         // While redirect URIs using the name localhost (i.e., http://localhost:{port}/{path}) function similarly to loopback IP redirects, the use of localhost is NOT RECOMMENDED.
         // The authorization server MUST allow any port to be specified at the time of the request for loopback IP redirect URIs,
         // to accommodate clients that obtain an available ephemeral port from the operating system at the time of the request.
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-8.4.3
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-8.4.3
         // To perform an authorization request with a private-use URI scheme redirect, the native app launches the browser with a standard authorization request,
         // but one where the redirect URI utilizes a private-use URI scheme it registered with the operating system.
         if (typedRedirectUri.IsLoopback)
@@ -143,7 +143,7 @@ public class DefaultAuthorizeRequestParameterRedirectUriValidator<TRequestContex
                     && string.IsNullOrEmpty(clientRedirectUri.Fragment)
                     && string.IsNullOrEmpty(typedRedirectUri.Fragment))
                 {
-                    return Task.FromResult(new AuthorizeRequestParameterRedirectUriValidationResult(originalRedirectUri, originalRedirectUri));
+                    return Task.FromResult(new AuthorizeRequestParameterRedirectUriValidationResult(redirectUri));
                 }
             }
 
@@ -155,7 +155,7 @@ public class DefaultAuthorizeRequestParameterRedirectUriValidator<TRequestContex
             && typedRedirectUri.Scheme != Uri.UriSchemeHttp
             && preRegisteredRedirectUris.Contains(typedRedirectUri))
         {
-            return Task.FromResult(new AuthorizeRequestParameterRedirectUriValidationResult(originalRedirectUri, originalRedirectUri));
+            return Task.FromResult(new AuthorizeRequestParameterRedirectUriValidationResult(redirectUri));
         }
 
         return Task.FromResult(AuthorizeRequestParameterRedirectUriValidationResult.InvalidRedirectUri);
@@ -169,10 +169,10 @@ public class DefaultAuthorizeRequestParameterRedirectUriValidator<TRequestContex
         {
             if (clientRedirectUris.Count == 1)
             {
-                return new(clientRedirectUris.Single().ToString(), null);
+                return new(clientRedirectUris.Single().ToString());
             }
 
-            // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-2.3.2
+            // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-2.3.2
             // If multiple redirect URIs have been registered, the client MUST include a redirect URI with the authorization request using the redirect_uri request parameter.
             return AuthorizeRequestParameterRedirectUriValidationResult.InvalidRedirectUri;
         }

@@ -42,20 +42,17 @@ public class DefaultTokenRequestAuthorizationCodeValidator<TRequestContext, TCli
     public DefaultTokenRequestAuthorizationCodeValidator(
         ITokenRequestAuthorizationCodeParameterCodeValidator<TRequestContext, TClient, TClientSecret, TAuthorizationCode, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> codeValidator,
         ITokenRequestAuthorizationCodeParameterCodeVerifierValidator<TRequestContext, TClient, TClientSecret, TAuthorizationCode, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> codeVerifierValidator,
-        ITokenRequestAuthorizationCodeParameterRedirectUriValidator<TRequestContext, TClient, TClientSecret, TAuthorizationCode, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> redirectUriValidator,
         ITokenRequestCommonParameterScopeValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> scopeValidator,
         IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> resourceOwnerProfile,
         IGrantedConsentService<TRequestContext, TClient, TClientSecret, TGrantedConsent> grantedConsents)
     {
         ArgumentNullException.ThrowIfNull(codeValidator);
         ArgumentNullException.ThrowIfNull(codeVerifierValidator);
-        ArgumentNullException.ThrowIfNull(redirectUriValidator);
         ArgumentNullException.ThrowIfNull(scopeValidator);
         ArgumentNullException.ThrowIfNull(resourceOwnerProfile);
         ArgumentNullException.ThrowIfNull(grantedConsents);
         CodeValidator = codeValidator;
         CodeVerifierValidator = codeVerifierValidator;
-        RedirectUriValidator = redirectUriValidator;
         ScopeValidator = scopeValidator;
         ResourceOwnerProfile = resourceOwnerProfile;
         GrantedConsents = grantedConsents;
@@ -63,7 +60,6 @@ public class DefaultTokenRequestAuthorizationCodeValidator<TRequestContext, TCli
 
     protected ITokenRequestAuthorizationCodeParameterCodeValidator<TRequestContext, TClient, TClientSecret, TAuthorizationCode, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> CodeValidator { get; }
     protected ITokenRequestAuthorizationCodeParameterCodeVerifierValidator<TRequestContext, TClient, TClientSecret, TAuthorizationCode, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> CodeVerifierValidator { get; }
-    protected ITokenRequestAuthorizationCodeParameterRedirectUriValidator<TRequestContext, TClient, TClientSecret, TAuthorizationCode, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> RedirectUriValidator { get; }
     protected ITokenRequestCommonParameterScopeValidator<TRequestContext, TClient, TClientSecret, TScope, TResource, TResourceSecret> ScopeValidator { get; }
     protected IResourceOwnerProfileService<TRequestContext, TScope, TResource, TResourceSecret, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers> ResourceOwnerProfile { get; }
     protected IGrantedConsentService<TRequestContext, TClient, TClientSecret, TGrantedConsent> GrantedConsents { get; }
@@ -97,12 +93,6 @@ public class DefaultTokenRequestAuthorizationCodeValidator<TRequestContext, TCli
         if (codeVerifierValidation.HasError)
         {
             return new(codeVerifierValidation.Error);
-        }
-
-        var redirectUriValidation = await RedirectUriValidator.ValidateRedirectUriAsync(requestContext, form, client, codeValidation.AuthorizationCode, cancellationToken);
-        if (redirectUriValidation.HasError)
-        {
-            return new(redirectUriValidation.Error);
         }
 
         var codeScopes = codeValidation.AuthorizationCode.GetGrantedScopes();

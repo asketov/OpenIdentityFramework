@@ -29,4 +29,4 @@ This is a fundamental position of the project, and will never change in the futu
 
 [idsrv4]: https://github.com/IdentityServer/IdentityServer4
 
-[oauth-2.1]: https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html
+[oauth-2.1]: https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html

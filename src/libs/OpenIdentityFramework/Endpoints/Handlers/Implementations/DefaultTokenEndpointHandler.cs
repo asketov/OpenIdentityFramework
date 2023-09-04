@@ -60,7 +60,7 @@ public class DefaultTokenEndpointHandler<TRequestContext, TClient, TClientSecret
     {
         ArgumentNullException.ThrowIfNull(requestContext);
         cancellationToken.ThrowIfCancellationRequested();
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.2
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.2
         // The client MUST use the HTTP POST method when making access token requests.
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.3
         // To obtain an Access Token, an ID Token, and optionally a Refresh Token,

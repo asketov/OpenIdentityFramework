@@ -9,7 +9,7 @@ public static class VsCharSyntaxValidator
 
     public static bool IsValid(ReadOnlySpan<char> value)
     {
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#appendix-A
         foreach (var ch in value)
         {
             if (ch is < VsCharMin or > VsCharMax)

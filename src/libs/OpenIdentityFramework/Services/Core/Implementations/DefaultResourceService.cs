@@ -40,7 +40,7 @@ public class DefaultResourceService<TRequestContext, TClient, TClientSecret, TSc
         ArgumentNullException.ThrowIfNull(tokenTypesFilter);
         cancellationToken.ThrowIfCancellationRequested();
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.2.2.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.2.2.1
         // The authorization server MAY fully or partially ignore the scope requested by the client, based on the authorization server policy or the resource owner's instructions.
         // If the issued access token scope is different from the one requested by the client, the authorization server MUST include the scope response parameter in the token response (Section 3.2.3)
         // to inform the client of the actual scope granted.

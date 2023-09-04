@@ -90,7 +90,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
         cancellationToken.ThrowIfCancellationRequested();
         var initialRequestDate = TimeProvider.GetUtcNow();
         IReadOnlyDictionary<string, StringValues> parameters;
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // The authorization server MUST support the use of the HTTP GET method Section 9.3.1 of [RFC9110] for the authorization endpoint
         // and MAY support the POST method (Section 9.3.3 of RFC9110) as well.
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.1
@@ -163,7 +163,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
             FrameworkOptions,
             HtmlEncoder,
             successfulResponseParameters,
-            interactionResult.ValidRequest.AuthorizeRequest.RedirectUriToUse,
+            interactionResult.ValidRequest.AuthorizeRequest.RedirectUri,
             interactionResult.ValidRequest.AuthorizeRequest.ResponseMode);
     }
 
@@ -235,7 +235,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
                 FrameworkOptions,
                 HtmlEncoder,
                 errorParameters,
-                authorizeRequest.RedirectUriToUse,
+                authorizeRequest.RedirectUri,
                 authorizeRequest.ResponseMode);
         }
 
@@ -243,7 +243,7 @@ public class DefaultAuthorizeEndpointHandler<TRequestContext, TClient, TClientSe
             requestContext,
             protocolError,
             authorizeRequest.Client.GetClientId(),
-            authorizeRequest.RedirectUriToUse,
+            authorizeRequest.RedirectUri,
             authorizeRequest.ResponseMode,
             authorizeRequest.State,
             authorizeRequest.Issuer,

@@ -6,8 +6,9 @@
 public abstract class AbstractClientSecret
 {
     /// <summary>
-    ///     Returns the client secret ("client_secret") hash used by confidential clients to authenticate themselves to the token endpoint, as stated in <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-2.4.1">section 2.4.1 of the OAuth 2.1 specification</a>
-    ///     . This value corresponds to the "client_secret" value specified in <a href="https://www.rfc-editor.org/rfc/rfc7591#section-3.2.1">section 3.2.1 of the OAuth 2.0 Dynamic Client Registration Protocol specification</a>.
+    ///     Returns the client secret ("client_secret") hash used by confidential clients to authenticate themselves to the token endpoint, as stated in <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-2.4.1">section 2.4.1 of the OAuth 2.1 specification</a>
+    ///     .
+    ///     This value corresponds to the "client_secret" value specified in <a href="https://www.rfc-editor.org/rfc/rfc7591#section-3.2.1">section 3.2.1 of the OAuth 2.0 Dynamic Client Registration Protocol specification</a>.
     /// </summary>
     /// <returns>A non-empty <see cref="byte" /> array that is not equal to <see langword="null" />.</returns>
     public abstract byte[] GetHashedValue();

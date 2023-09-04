@@ -11,7 +11,6 @@ public class InMemoryAuthorizationCode : AbstractAuthorizationCode<InMemoryResou
         string clientId,
         InMemoryResourceOwnerEssentialClaims essentialResourceOwnerClaims,
         IReadOnlySet<string> grantedScopes,
-        string? authorizeRequestRedirectUri,
         string codeChallenge,
         string codeChallengeMethod,
         DateTimeOffset issuedAt,
@@ -38,7 +37,6 @@ public class InMemoryAuthorizationCode : AbstractAuthorizationCode<InMemoryResou
         ClientId = clientId;
         EssentialResourceOwnerClaims = essentialResourceOwnerClaims;
         GrantedScopes = grantedScopes;
-        AuthorizeRequestRedirectUri = authorizeRequestRedirectUri;
         CodeChallenge = codeChallenge;
         CodeChallengeMethod = codeChallengeMethod;
         IssuedAt = issuedAt;
@@ -48,7 +46,6 @@ public class InMemoryAuthorizationCode : AbstractAuthorizationCode<InMemoryResou
     public string ClientId { get; }
     public InMemoryResourceOwnerEssentialClaims EssentialResourceOwnerClaims { get; }
     public IReadOnlySet<string> GrantedScopes { get; }
-    public string? AuthorizeRequestRedirectUri { get; }
     public string CodeChallenge { get; }
     public string CodeChallengeMethod { get; }
     public DateTimeOffset IssuedAt { get; }
@@ -67,11 +64,6 @@ public class InMemoryAuthorizationCode : AbstractAuthorizationCode<InMemoryResou
     public override IReadOnlySet<string> GetGrantedScopes()
     {
         return GrantedScopes;
-    }
-
-    public override string? GetAuthorizeRequestRedirectUri()
-    {
-        return AuthorizeRequestRedirectUri;
     }
 
     public override string GetCodeChallenge()

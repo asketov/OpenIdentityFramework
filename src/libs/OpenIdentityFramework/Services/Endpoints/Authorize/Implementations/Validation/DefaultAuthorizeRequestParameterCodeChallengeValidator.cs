@@ -38,7 +38,7 @@ public class DefaultAuthorizeRequestParameterCodeChallengeValidator<TRequestCont
     {
         ArgumentNullException.ThrowIfNull(parameters);
         cancellationToken.ThrowIfCancellationRequested();
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-7.6.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-7.6.1
         // To prevent injection of authorization codes into the client, using code_challenge and code_verifier is REQUIRED for clients,
         // and authorization servers MUST enforce their use, unless both of the following criteria are met:
         // * The client is a confidential client.
@@ -51,14 +51,14 @@ public class DefaultAuthorizeRequestParameterCodeChallengeValidator<TRequestCont
             return Task.FromResult(AuthorizeRequestParameterCodeChallengeValidationResult.CodeChallengeIsMissing);
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // Request and response parameters defined by this specification MUST NOT be included more than once.
         if (codeChallengeValues.Count != 1)
         {
             return Task.FromResult(AuthorizeRequestParameterCodeChallengeValidationResult.MultipleCodeChallenge);
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
         var codeChallenge = codeChallengeValues.ToString();
         if (string.IsNullOrEmpty(codeChallenge))
@@ -66,7 +66,7 @@ public class DefaultAuthorizeRequestParameterCodeChallengeValidator<TRequestCont
             return Task.FromResult(AuthorizeRequestParameterCodeChallengeValidationResult.CodeChallengeIsMissing);
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.18
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#appendix-A.18
         if (!CodeChallengeSyntaxValidator.IsValid(codeChallenge))
         {
             return Task.FromResult(AuthorizeRequestParameterCodeChallengeValidationResult.InvalidCodeChallengeSyntax);
@@ -74,13 +74,13 @@ public class DefaultAuthorizeRequestParameterCodeChallengeValidator<TRequestCont
 
         if (codeChallengeMethod == DefaultCodeChallengeMethod.Plain)
         {
-            // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.18
+            // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#appendix-A.18
             if (codeChallenge.Length < FrameworkOptions.InputLengthRestrictions.CodeChallengeMinLength)
             {
                 return Task.FromResult(AuthorizeRequestParameterCodeChallengeValidationResult.CodeChallengeIsTooShort);
             }
 
-            // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.18
+            // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#appendix-A.18
             if (codeChallenge.Length > FrameworkOptions.InputLengthRestrictions.CodeChallengeMaxLength)
             {
                 return Task.FromResult(AuthorizeRequestParameterCodeChallengeValidationResult.CodeChallengeIsTooLong);

@@ -28,7 +28,7 @@ public static class EndpointRouteBuilderExtensions
             frameworkOptions.Endpoints.Authorize.Path,
             new(new[]
             {
-                // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+                // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
                 // The authorization server MUST support the use of the HTTP GET method Section 9.3.1 of [RFC9110] for the authorization endpoint
                 // and MAY support the POST method (Section 9.3.3 of RFC9110) as well.
                 HttpMethods.Get,
@@ -46,7 +46,7 @@ public static class EndpointRouteBuilderExtensions
             frameworkOptions.Endpoints.Token.Path,
             new(new[]
             {
-                // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.2
+                // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.2
                 // The client MUST use the HTTP POST method when making access token requests.
                 HttpMethods.Post
             }));
@@ -74,7 +74,7 @@ public static class EndpointRouteBuilderExtensions
         return builder;
     }
 
-    public static void AddEndpoint<TRequestContext, THandler>(
+    public static IEndpointConventionBuilder AddEndpoint<TRequestContext, THandler>(
         this IEndpointRouteBuilder builder,
         string path,
         HttpMethodMetadata metadata)
@@ -84,18 +84,18 @@ public static class EndpointRouteBuilderExtensions
         ArgumentNullException.ThrowIfNull(builder);
         ArgumentNullException.ThrowIfNull(path);
         ArgumentNullException.ThrowIfNull(metadata);
-        var endpointBuilder = builder.Map(
-            RoutePatternFactory.Parse(path),
-            static async httpContext =>
-            {
-                httpContext.RequestAborted.ThrowIfCancellationRequested();
-                var contextFactory = httpContext.RequestServices.GetRequiredService<IRequestContextFactory<TRequestContext>>();
-                var handler = httpContext.RequestServices.GetRequiredService<THandler>();
-                var result = await ExecuteHandlerInContextAsync(httpContext, contextFactory, handler, httpContext.RequestAborted);
-                await result.ExecuteAsync(httpContext, httpContext.RequestAborted);
-            });
-        endpointBuilder.WithMetadata(metadata);
-        endpointBuilder.WithDisplayName($"{path} HTTP: {string.Join(", ", metadata.HttpMethods)}");
+        return builder.Map(
+                RoutePatternFactory.Parse(path),
+                static async httpContext =>
+                {
+                    httpContext.RequestAborted.ThrowIfCancellationRequested();
+                    var contextFactory = httpContext.RequestServices.GetRequiredService<IRequestContextFactory<TRequestContext>>();
+                    var handler = httpContext.RequestServices.GetRequiredService<THandler>();
+                    var result = await ExecuteHandlerInContextAsync(httpContext, contextFactory, handler, httpContext.RequestAborted);
+                    await result.ExecuteAsync(httpContext, httpContext.RequestAborted);
+                })
+            .WithMetadata(metadata)
+            .WithDisplayName($"{path} HTTP: {string.Join(", ", metadata.HttpMethods)}");
     }
 
     public static async Task<IEndpointHandlerResult> ExecuteHandlerInContextAsync<TRequestContext, THandler>(
@@ -110,8 +110,8 @@ public static class EndpointRouteBuilderExtensions
         ArgumentNullException.ThrowIfNull(contextFactory);
         ArgumentNullException.ThrowIfNull(handler);
         await using var requestContext = await contextFactory.CreateAsync(httpContext, cancellationToken);
-        var result = await handler.HandleAsync(requestContext, httpContext.RequestAborted);
-        await requestContext.CommitAsync(httpContext.RequestAborted);
+        var result = await handler.HandleAsync(requestContext, cancellationToken);
+        await requestContext.CommitAsync(cancellationToken);
         return result;
     }
 }

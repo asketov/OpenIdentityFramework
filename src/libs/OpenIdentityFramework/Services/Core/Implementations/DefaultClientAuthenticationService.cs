@@ -144,7 +144,7 @@ public class DefaultClientAuthenticationService<TRequestContext, TClient, TClien
             return ClientSecretIsTooLong;
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#appendix-A.1
         // "client_id" syntax validation
         if (!ClientIdSyntaxValidator.IsValid(clientId))
         {
@@ -212,7 +212,7 @@ public class DefaultClientAuthenticationService<TRequestContext, TClient, TClien
                         var clientSecretSpan = loginPassword[(divideIndex + 1)..loginPassword.Length];
                         if (IsNonCtl(clientIdSpan) && IsNonCtl(clientSecretSpan))
                         {
-                            // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-2.4.1
+                            // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-2.4.1
                             // The client identifier is encoded using the application/x-www-form-urlencoded encoding algorithm per Appendix B, and the encoded value is used as the username;
                             // the client secret is encoded using the same algorithm and used as the password.
                             clientId = WebUtility.UrlDecode(new(clientIdSpan));
@@ -296,7 +296,7 @@ public class DefaultClientAuthenticationService<TRequestContext, TClient, TClien
             return ClientIdIsTooLong;
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#appendix-A.1
         // "client_id" syntax validation
         if (!ClientIdSyntaxValidator.IsValid(clientId))
         {

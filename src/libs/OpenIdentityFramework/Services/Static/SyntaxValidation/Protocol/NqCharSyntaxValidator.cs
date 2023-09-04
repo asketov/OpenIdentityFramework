@@ -8,11 +8,11 @@ public static class NqCharSyntaxValidator
     private const char Range1Min = (char) 0x23;
     private const char Range1Max = (char) 0x5B;
     private const char Range2Min = (char) 0x5D;
-    private const char Range2Max = (char) 0x5B;
+    private const char Range2Max = (char) 0x7E;
 
     public static bool IsValid(ReadOnlySpan<char> value)
     {
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#appendix-A
         foreach (var ch in value)
         {
             if (ch is not (SeparateValue or >= Range1Min and <= Range1Max or >= Range2Min and <= Range2Max))

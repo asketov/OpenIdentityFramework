@@ -49,7 +49,7 @@ public class DefaultTokenRequestRefreshTokenParameterRefreshTokenValidator<TRequ
         ArgumentNullException.ThrowIfNull(form);
         ArgumentNullException.ThrowIfNull(client);
         cancellationToken.ThrowIfCancellationRequested();
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-4.3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-4.3.1
         // "refresh_token" - REQUIRED. The refresh token issued to the client.
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.12
         // A request to the Token Endpoint can also use a Refresh Token by using the grant_type value refresh_token, as described in Section 6 of OAuth 2.0 [RFC6749].
@@ -59,7 +59,7 @@ public class DefaultTokenRequestRefreshTokenParameterRefreshTokenValidator<TRequ
             return TokenRequestRefreshTokenParameterRefreshTokenValidationResult<TRefreshToken, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>.RefreshTokenIsMissing;
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.2
         // Request and response parameters defined by this specification MUST NOT be included more than once.
         if (refreshTokenValues.Count != 1)
         {
@@ -67,7 +67,7 @@ public class DefaultTokenRequestRefreshTokenParameterRefreshTokenValidator<TRequ
         }
 
         var refreshTokenHandle = refreshTokenValues.ToString();
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.2
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
         if (string.IsNullOrEmpty(refreshTokenHandle))
         {

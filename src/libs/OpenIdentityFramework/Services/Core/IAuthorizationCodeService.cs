@@ -23,7 +23,6 @@ public interface IAuthorizationCodeService<TRequestContext, TClient, TClientSecr
         TClient client,
         TResourceOwnerEssentialClaims essentialClaims,
         IReadOnlySet<string> grantedScopes,
-        string? authorizeRequestRedirectUri,
         string codeChallenge,
         string codeChallengeMethod,
         DateTimeOffset issuedAt,

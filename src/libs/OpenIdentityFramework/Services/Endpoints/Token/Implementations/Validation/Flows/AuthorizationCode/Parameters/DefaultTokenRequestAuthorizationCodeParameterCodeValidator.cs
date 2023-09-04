@@ -49,14 +49,14 @@ public class DefaultTokenRequestAuthorizationCodeParameterCodeValidator<TRequest
         ArgumentNullException.ThrowIfNull(client);
         cancellationToken.ThrowIfCancellationRequested();
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.3.1
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-4.1.3
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-4.1.3
         // code - REQUIRED. The authorization code received from the authorization server.
         if (!form.TryGetValue(TokenRequestParameters.Code, out var codeValues))
         {
             return TokenRequestAuthorizationCodeParameterCodeValidationResult<TAuthorizationCode, TResourceOwnerEssentialClaims, TResourceOwnerIdentifiers>.AuthorizationCodeIsMissing;
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.2
         // Request and response parameters defined by this specification MUST NOT be included more than once.
         if (codeValues.Count != 1)
         {
@@ -64,7 +64,7 @@ public class DefaultTokenRequestAuthorizationCodeParameterCodeValidator<TRequest
         }
 
         var code = codeValues.ToString();
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.2
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
         if (string.IsNullOrEmpty(code))
         {

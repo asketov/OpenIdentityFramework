@@ -48,14 +48,14 @@ public class DefaultTokenRequestAuthorizationCodeParameterCodeVerifierValidator<
         ArgumentNullException.ThrowIfNull(authorizationCode);
         cancellationToken.ThrowIfCancellationRequested();
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.3.1
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-4.1.3
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-4.1.3
         // code_verifier - REQUIRED, if the code_challenge parameter was included in the authorization request. MUST NOT be used otherwise. The original code verifier string.
         if (!form.TryGetValue(TokenRequestParameters.CodeVerifier, out var codeVerifierValues))
         {
             return Task.FromResult(TokenRequestAuthorizationCodeParameterCodeVerifierValidationResult.CodeVerifierIsMissing);
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.2
         // Request and response parameters defined by this specification MUST NOT be included more than once.
         if (codeVerifierValues.Count != 1)
         {
@@ -63,7 +63,7 @@ public class DefaultTokenRequestAuthorizationCodeParameterCodeVerifierValidator<
         }
 
         var codeVerifier = codeVerifierValues.ToString();
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.2
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
         if (string.IsNullOrEmpty(codeVerifier))
         {

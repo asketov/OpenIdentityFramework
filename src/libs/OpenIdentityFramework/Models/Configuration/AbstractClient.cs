@@ -21,7 +21,7 @@ public abstract class AbstractClient<TClientSecret>
     //
 
     /// <summary>
-    ///     Returns <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-2.2">the client identifier ("client_id")</a>, which is a unique string that represents the registration information provided by the client. The value of the client identifier corresponds
+    ///     Returns <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-2.2">the client identifier ("client_id")</a>, which is a unique string that represents the registration information provided by the client. The value of the client identifier corresponds
     ///     to the "client_id" value described in <a href="https://www.rfc-editor.org/rfc/rfc7591#section-3.2.1">section 3.2.1 of the OAuth 2.0 Dynamic Client Registration Protocol specification</a>. It is recommended that the client identifier should not be currently valid for any
     ///     other registered client.
     /// </summary>
@@ -43,7 +43,7 @@ public abstract class AbstractClient<TClientSecret>
 
     /// <summary>
     ///     Returns redirection URI strings for use in redirect-based flows such as the authorization code.<br />
-    ///     <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-2.3.1">As required by section 2.3.1 of OAuth 2.1</a>, clients using flows with redirection must register their redirection URI values.<br />
+    ///     <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-2.3.1">As required by section 2.3.1 of OAuth 2.1</a>, clients using flows with redirection must register their redirection URI values.<br />
     ///     The value should correspond to the "redirect_uris" value as described in <a href="https://www.rfc-editor.org/rfc/rfc7591#section-2">section 2 of the OAuth 2.0 Dynamic Client Registration Protocol specification.</a>
     /// </summary>
     /// <returns>A set that contains 0 or more values. Cannot be <see langword="null" />.</returns>
@@ -57,19 +57,19 @@ public abstract class AbstractClient<TClientSecret>
     ///         <item>
     ///             <term>"none"</term>
     ///             <description>
-    ///                 The client is a public client as defined in <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-2.1">OAuth 2.1, section 2.1,</a> and does not have a client secret, because it does not authenticate itself at the token endpoint.
+    ///                 The client is a public client as defined in <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-2.1">OAuth 2.1, section 2.1,</a> and does not have a client secret, because it does not authenticate itself at the token endpoint.
     ///             </description>
     ///         </item>
     ///         <item>
     ///             <term>"client_secret_post"</term>
     ///             <description>
-    ///                 The client uses the HTTP POST parameters as defined in <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-2.4.1">OAuth 2.1, section 2.4.1.</a>
+    ///                 The client uses the HTTP POST parameters as defined in <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-2.4.1">OAuth 2.1, section 2.4.1.</a>
     ///             </description>
     ///         </item>
     ///         <item>
     ///             <term>"client_secret_basic"</term>
     ///             <description>
-    ///                 The client uses HTTP Basic as defined in <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-2.4.1">OAuth 2.1, section 2.4.1.</a>
+    ///                 The client uses HTTP Basic as defined in <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-2.4.1">OAuth 2.1, section 2.4.1.</a>
     ///             </description>
     ///         </item>
     ///         <item>
@@ -99,19 +99,19 @@ public abstract class AbstractClient<TClientSecret>
     ///         <item>
     ///             <term>"authorization_code"</term>
     ///             <description>
-    ///                 The authorization code grant type defined in <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-4.1.3">OAuth 2.1, Section 4.1.3</a>.
+    ///                 The authorization code grant type defined in <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-4.1.3">OAuth 2.1, Section 4.1.3</a>.
     ///             </description>
     ///         </item>
     ///         <item>
     ///             <term>"client_credentials"</term>
     ///             <description>
-    ///                 The client credentials grant type defined in <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-4.2.1">OAuth 2.1, Section 4.2.1</a>.
+    ///                 The client credentials grant type defined in <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-4.2.1">OAuth 2.1, Section 4.2.1</a>.
     ///             </description>
     ///         </item>
     ///         <item>
     ///             <term>"refresh_token"</term>
     ///             <description>
-    ///                 The refresh token grant type defined in <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-4.3.1">OAuth 2.1, Section 4.3.1</a>.
+    ///                 The refresh token grant type defined in <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-4.3.1">OAuth 2.1, Section 4.3.1</a>.
     ///             </description>
     ///         </item>
     ///     </list>
@@ -127,7 +127,7 @@ public abstract class AbstractClient<TClientSecret>
     ///         <item>
     ///             <term>"code"</term>
     ///             <description>
-    ///                 The authorization code response type defined in <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-4.1.1">OAuth 2.1, Section 4.1.1</a>.
+    ///                 The authorization code response type defined in <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-4.1.1">OAuth 2.1, Section 4.1.1</a>.
     ///             </description>
     ///         </item>
     ///     </list>
@@ -160,7 +160,7 @@ public abstract class AbstractClient<TClientSecret>
     public abstract Uri? GetLogoUri(CultureInfo cultureInfo);
 
     /// <summary>
-    ///     Returns a set of scope values (<a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.2.2.1">as described in section 3.2.2.1 of OAuth 2.1</a>) that the client can use when requesting access tokens. The value should correspond to the "scope" value as
+    ///     Returns a set of scope values (<a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.2.2.1">as described in section 3.2.2.1 of OAuth 2.1</a>) that the client can use when requesting access tokens. The value should correspond to the "scope" value as
     ///     described in <a href="https://www.rfc-editor.org/rfc/rfc7591#section-2">section 2 of the OAuth 2.0 Dynamic Client Registration Protocol specification.</a>
     /// </summary>
     /// <returns>A set that contains 0 or more values. Cannot be <see langword="null" />.</returns>
@@ -414,7 +414,7 @@ public abstract class AbstractClient<TClientSecret>
 
     /// <summary>
     ///     Returns the set of pre-configured "code_challenge_method" values that this client can use in requests to the authorization endpoint. Allowed values
-    ///     <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-4.1.1">defined in the OAuth 2.1 specification</a> are "S256" and "plain".
+    ///     <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-4.1.1">defined in the OAuth 2.1 specification</a> are "S256" and "plain".
     /// </summary>
     /// <returns>A set that contains 0 or more values. Cannot be <see langword="null" />.</returns>
     public abstract IReadOnlySet<string> GetAllowedCodeChallengeMethods();

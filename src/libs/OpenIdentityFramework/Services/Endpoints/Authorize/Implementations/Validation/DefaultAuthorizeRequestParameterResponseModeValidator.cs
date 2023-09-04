@@ -29,21 +29,21 @@ public class DefaultAuthorizeRequestParameterResponseModeValidator<TRequestConte
         // https://openid.net/specs/oauth-v2-multiple-response-types-1_0.html
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.1
         // "response_mode" - OPTIONAL (OAuth 2.0, OpenID Connect 1.0).
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
         if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.ResponseMode, out var responseModeValues) || responseModeValues.Count == 0)
         {
             return Task.FromResult(InferResponseMode(responseType));
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // Request and response parameters defined by this specification MUST NOT be included more than once.
         if (responseModeValues.Count != 1)
         {
             return Task.FromResult(AuthorizeRequestParameterResponseModeValidationResult.MultipleResponseModeValuesNotAllowed);
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
         var responseMode = responseModeValues.ToString();
         if (string.IsNullOrEmpty(responseMode))

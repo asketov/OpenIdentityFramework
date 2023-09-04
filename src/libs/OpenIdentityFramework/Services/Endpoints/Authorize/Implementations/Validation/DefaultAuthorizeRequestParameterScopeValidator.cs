@@ -45,15 +45,16 @@ public class DefaultAuthorizeRequestParameterScopeValidator<TRequestContext, TCl
         ArgumentNullException.ThrowIfNull(parameters);
         ArgumentNullException.ThrowIfNull(client);
         cancellationToken.ThrowIfCancellationRequested();
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-4.1.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-4.1.1
         // "scope" - OPTIONAL. The scope of the access request as described by Section 3.2.2.1.
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.2.2.1
-        // If the client omits the scope parameter when requesting authorization, the authorization server MUST either process the request using a pre-defined default value or fail the request indicating an invalid scope.
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.2.2.1
+        // If the client omits the scope parameter when requesting authorization,
+        // the authorization server MUST either process the request using a pre-defined default value or fail the request indicating an invalid scope.
         // The authorization server SHOULD document its scope requirements and default value (if defined).
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.1
         // REQUIRED. OpenID Connect requests MUST contain the "openid" scope value. If the openid scope value is not present, the behavior is entirely unspecified.
         // Other scope values MAY be present. Scope values used that are not understood by an implementation SHOULD be ignored.
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
         string scopeParameterValue;
         if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.Scope, out var scopeValues)
@@ -85,7 +86,7 @@ public class DefaultAuthorizeRequestParameterScopeValidator<TRequestContext, TCl
         }
 
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // Request and response parameters defined by this specification MUST NOT be included more than once.
         if (scopeValues.Count > 1)
         {
@@ -98,8 +99,8 @@ public class DefaultAuthorizeRequestParameterScopeValidator<TRequestContext, TCl
             return AuthorizeRequestParameterScopeValidationResult<TScope, TResource, TResourceSecret>.ScopeIsTooLong;
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.2.2.1
-        // The value of the scope parameter is expressed as a list of space-delimited, case-sensitive strings. The strings are defined by the authorization server.
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.2.2.1
+        // The value of the scope parameter is expressed as a list of space- delimited, case-sensitive strings. The strings are defined by the authorization server.
         // If the value contains multiple space-delimited strings, their order does not matter, and each string adds an additional access range to the requested scope.
         var requestedScopes = scopeParameterValue
             .Split(' ')

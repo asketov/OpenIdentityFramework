@@ -7,7 +7,7 @@ public static class ClientRedirectUriSyntaxValidator
 {
     public static bool IsValid(string value, [NotNullWhen(true)] out Uri? uri)
     {
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-2.3
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-2.3
         // The redirect URI MUST be an absolute URI as defined by [RFC3986] Section 4.3.
         // The endpoint URI MAY include an "application/x-www-form-urlencoded" formatted query component, which MUST be retained when adding additional query parameters.
         // The endpoint URI MUST NOT include a fragment component.

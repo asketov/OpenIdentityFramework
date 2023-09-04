@@ -26,25 +26,25 @@ public class DefaultAuthorizeRequestParameterResponseTypeValidator<TRequestConte
         ArgumentNullException.ThrowIfNull(parameters);
         ArgumentNullException.ThrowIfNull(client);
         cancellationToken.ThrowIfCancellationRequested();
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-4.1.1 (Authorization Code)
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-4.1.1 (Authorization Code)
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.1.2.1 (Authorization Code)
         // https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.3.3.2.1 (Hybrid Flow)
         // response_type - REQUIRED in both specs
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
         if (!parameters.Raw.TryGetValue(AuthorizeRequestParameters.ResponseType, out var responseTypeValues) || responseTypeValues.Count == 0)
         {
             return Task.FromResult(AuthorizeRequestParameterResponseTypeValidationResult.ResponseTypeIsMissing);
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // Request and response parameters defined by this specification MUST NOT be included more than once.
         if (responseTypeValues.Count != 1)
         {
             return Task.FromResult(AuthorizeRequestParameterResponseTypeValidationResult.MultipleResponseTypeValuesNotAllowed);
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
         var responseTypeString = responseTypeValues.ToString();
         if (string.IsNullOrEmpty(responseTypeString))
@@ -61,7 +61,7 @@ public class DefaultAuthorizeRequestParameterResponseTypeValidator<TRequestConte
 
         var allowedGrantTypes = client.GetGrantTypes();
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-4.1.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-4.1.1
         // This specification defines the value "code", which must be used to signal that the client wants to use the authorization code flow.
         // Extension response types MAY contain a space-delimited (%x20) list of values, where the order of values does not matter (e.g., response type "a b" is the same as "b a").
         // The meaning of such composite response types is defined by their respective specifications.

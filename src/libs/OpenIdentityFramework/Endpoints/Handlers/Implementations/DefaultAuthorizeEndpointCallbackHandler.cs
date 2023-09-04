@@ -165,7 +165,7 @@ public class DefaultAuthorizeEndpointCallbackHandler<TRequestContext, TClient, T
             FrameworkOptions,
             HtmlEncoder,
             successfulResponseParameters,
-            interactionResult.ValidRequest.AuthorizeRequest.RedirectUriToUse,
+            interactionResult.ValidRequest.AuthorizeRequest.RedirectUri,
             interactionResult.ValidRequest.AuthorizeRequest.ResponseMode);
     }
 
@@ -277,7 +277,7 @@ public class DefaultAuthorizeEndpointCallbackHandler<TRequestContext, TClient, T
                 FrameworkOptions,
                 HtmlEncoder,
                 errorParameters,
-                authorizeRequest.RedirectUriToUse,
+                authorizeRequest.RedirectUri,
                 authorizeRequest.ResponseMode);
         }
 
@@ -285,7 +285,7 @@ public class DefaultAuthorizeEndpointCallbackHandler<TRequestContext, TClient, T
             requestContext,
             protocolError,
             authorizeRequest.Client.GetClientId(),
-            authorizeRequest.RedirectUriToUse,
+            authorizeRequest.RedirectUri,
             authorizeRequest.ResponseMode,
             authorizeRequest.State,
             authorizeRequest.Issuer,

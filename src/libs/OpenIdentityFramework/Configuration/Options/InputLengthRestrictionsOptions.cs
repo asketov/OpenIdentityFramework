@@ -53,22 +53,22 @@ public class InputLengthRestrictionsOptions
     public int UiLocales { get; set; } = 100;
 
     /// <summary>
-    ///     Min length for "code_verifier". https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.17
+    ///     Min length for "code_verifier". https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#appendix-A.17
     /// </summary>
     public int CodeVerifierMinLength { get; set; } = 43;
 
     /// <summary>
-    ///     Max length for "code_verifier". https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.17
+    ///     Max length for "code_verifier". https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#appendix-A.17
     /// </summary>
     public int CodeVerifierMaxLength { get; set; } = 128;
 
     /// <summary>
-    ///     Min length for "code_challenge". https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.18
+    ///     Min length for "code_challenge". https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#appendix-A.18
     /// </summary>
     public int CodeChallengeMinLength { get; set; } = 43;
 
     /// <summary>
-    ///     Max length for "code_challenge". https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#appendix-A.18
+    ///     Max length for "code_challenge". https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#appendix-A.18
     /// </summary>
     public int CodeChallengeMaxLength { get; set; } = 128;
 

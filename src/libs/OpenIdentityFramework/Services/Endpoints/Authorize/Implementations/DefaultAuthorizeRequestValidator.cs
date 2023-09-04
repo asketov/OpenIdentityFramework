@@ -151,8 +151,7 @@ public class DefaultAuthorizeRequestValidator<TRequestContext, TClient, TClientS
                 initialRequestDate,
                 issuer,
                 coreParameters.Client,
-                coreParameters.RedirectUriToUse,
-                coreParameters.AuthorizeRequestRedirectUri,
+                coreParameters.RedirectUri,
                 scopeValidation.ValidResources,
                 codeChallengeValidation.CodeChallenge,
                 codeChallengeMethodValidation.CodeChallengeMethod,
@@ -226,8 +225,7 @@ public class DefaultAuthorizeRequestValidator<TRequestContext, TClient, TClientS
             initialRequestDate,
             issuer,
             coreParameters.Client,
-            coreParameters.RedirectUriToUse,
-            coreParameters.AuthorizeRequestRedirectUri,
+            coreParameters.RedirectUri,
             scopeValidation.ValidResources,
             codeChallengeValidation.CodeChallenge,
             codeChallengeMethodValidation.CodeChallengeMethod,
@@ -289,8 +287,7 @@ public class DefaultAuthorizeRequestValidator<TRequestContext, TClient, TClientS
             responseTypeValidation.ResponseType,
             stateValidation.State,
             responseModeValidation.ResponseMode,
-            redirectUriValidation.RedirectUriToUse,
-            redirectUriValidation.AuthorizeRequestRedirectUri));
+            redirectUriValidation.RedirectUri));
     }
 
     protected virtual async Task<AuthorizeRequestParametersToValidate> GetParametersToValidateAsync(
@@ -310,9 +307,9 @@ public class DefaultAuthorizeRequestValidator<TRequestContext, TClient, TClientS
     {
         ArgumentNullException.ThrowIfNull(parameters);
         cancellationToken.ThrowIfCancellationRequested();
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-4.1.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-4.1.1
         // "scope" is optional, but
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.2.2.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.2.2.1
         // If the client omits the scope parameter when requesting authorization,
         // the authorization server MUST either process the request using a pre-defined default value or fail the request indicating an invalid scope.
         // The authorization server SHOULD document its scope requirements and default value (if defined).
@@ -321,21 +318,21 @@ public class DefaultAuthorizeRequestValidator<TRequestContext, TClient, TClientS
         // If the "openid" scope value is not present, the behavior is entirely unspecified.
         // Other scope values MAY be present.
         // Scope values used that are not understood by an implementation SHOULD be ignored.
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
         if (!parameters.TryGetValue(AuthorizeRequestParameters.Scope, out var scopeValues) || scopeValues.Count == 0)
         {
             return Task.FromResult(false);
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // Request and response parameters defined by this specification MUST NOT be included more than once.
         if (scopeValues.Count > 1)
         {
             return Task.FromResult(false);
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.1
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.1
         // Parameters sent without a value MUST be treated as if they were omitted from the request.
         var scope = scopeValues.ToString();
         if (string.IsNullOrEmpty(scope))
@@ -343,8 +340,8 @@ public class DefaultAuthorizeRequestValidator<TRequestContext, TClient, TClientS
             return Task.FromResult(false);
         }
 
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-08.html#section-3.2.2.1
-        // The value of the scope parameter is expressed as a list of space- delimited, case-sensitive strings.
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#section-3.2.2.1
+        // The value of the scope parameter is expressed as a list of space-delimited, case-sensitive strings.
         // https://learn.microsoft.com/en-us/dotnet/standard/base-types/best-practices-strings#recommendations-for-string-usage
         // Use the non-linguistic StringComparison.Ordinal or StringComparison.OrdinalIgnoreCase values instead of string operations based on CultureInfo.InvariantCulture
         // when the comparison is linguistically irrelevant (symbolic, for example).
@@ -365,22 +362,20 @@ public class DefaultAuthorizeRequestValidator<TRequestContext, TClient, TClientS
             IReadOnlySet<string> responseType,
             string? state,
             string responseMode,
-            string redirectUriToUse,
-            string? authorizeRequestRedirectUri)
+            string redirectUri)
         {
             ArgumentNullException.ThrowIfNull(issuer);
             ArgumentNullException.ThrowIfNull(client);
             ArgumentNullException.ThrowIfNull(responseType);
             ArgumentNullException.ThrowIfNull(responseMode);
-            ArgumentNullException.ThrowIfNull(redirectUriToUse);
+            ArgumentNullException.ThrowIfNull(redirectUri);
             RequestDate = requestDate;
             Issuer = issuer;
             Client = client;
             ResponseType = responseType;
             State = state;
             ResponseMode = responseMode;
-            RedirectUriToUse = redirectUriToUse;
-            AuthorizeRequestRedirectUri = authorizeRequestRedirectUri;
+            RedirectUri = redirectUri;
         }
 
         public DateTimeOffset RequestDate { get; }
@@ -395,13 +390,12 @@ public class DefaultAuthorizeRequestValidator<TRequestContext, TClient, TClientS
 
         public string ResponseMode { get; }
 
-        public string RedirectUriToUse { get; }
-        public string? AuthorizeRequestRedirectUri { get; }
+        public string RedirectUri { get; }
 
         [SuppressMessage("ReSharper", "VirtualMemberNeverOverridden.Global")]
         public virtual AuthorizeRequestValidationResult<TClient, TClientSecret, TScope, TResource, TResourceSecret> BuildError(ProtocolError error)
         {
-            return new(new AuthorizeRequestValidationError<TClient, TClientSecret>(RequestDate, Issuer, error, Client, RedirectUriToUse, ResponseMode, State));
+            return new(new AuthorizeRequestValidationError<TClient, TClientSecret>(RequestDate, Issuer, error, Client, RedirectUri, ResponseMode, State));
         }
     }
 
